@@ -13,6 +13,8 @@ repositories {
 }
 
 dependencies {
+    implementation("org.locationtech.jts:jts:1.18.2")
+    implementation("com.graphhopper:graphhopper-core:4.0")
     testImplementation(kotlin("test"))
 }
 
