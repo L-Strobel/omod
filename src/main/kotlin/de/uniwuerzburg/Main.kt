@@ -1,5 +1,9 @@
 package de.uniwuerzburg
 
-fun main(args: Array<String>) {
-    Gamg("C:/Users/strobel/Projekte/PythonPkgs/valactimod/Buildings.csv")
+import kotlin.system.measureTimeMillis
+
+fun main() {
+    val gamg = Gamg("C:/Users/strobel/Projekte/PythonPkgs/valactimod/Buildings.csv", 500.0)
+    val elapsed = measureTimeMillis { gamg.createAgents(1000) }
+    println(elapsed / 1000.0)
 }
