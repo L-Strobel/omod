@@ -94,14 +94,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         fun getWorkDist(home: Coordinate, targets: List<Coordinate>, priorWeights: List<Double>) : DoubleArray {
             require(targets.size == priorWeights.size)
 
+            val distanceWeights = getProbsByDistance(home, targets, homeWorkDist)
             val probabilities = DoubleArray (targets.size) { i ->
-                // Probability due to distance to home
-                var distance = home.distance(targets[i])
-                if (distance == 0.0) distance = 1E-3
-                var prob = homeWorkDist.density(distance)
-                // Prior probability due to landuse
-                prob *= priorWeights[i]
-                prob
+                priorWeights[i] * distanceWeights[i]
             }
             return StochasticBundle.createCumDist(probabilities)
         }
@@ -131,8 +126,48 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val weights = workCellBuildings.map { it.landuse.getWorkWeight() }
             val work = StochasticBundle.sampleCumDist(getWorkDist(homeCoords, targets, weights))
 
+            // TODO add sociodemographic features
             MobiAgent(i, home, work)
         }
         return agents
+    }
+    /**
+     * Get the location of a secondary location with a given current location
+     */
+    fun findSecondary(location: Coordinate): Int {
+        // TODO differentiate between activity types
+        val currSecDist = WeibullDistribution(0.71, 10.5)
+
+        // Get cell
+        val secDist = getProbsByDistance(location, grid.map { it.featureCentroid }, currSecDist)
+        val secCell = StochasticBundle.createAndSampleCumDist(secDist)
+
+        // Get building
+        val secCellBuildings = buildings.slice(grid[secCell].buildingIds)
+        val secDistBuilding = getProbsByDistance(location, secCellBuildings.map { it.coord }, currSecDist)
+        return StochasticBundle.createAndSampleCumDist(secDistBuilding)
+    }
+
+    /**
+     * Get the activity chain
+     * TODO: Give agent and day
+     */
+    fun getActivityChain() : List<Activity> {
+        val data = activityData.nodes[1]!!.leafs[1]!!
+        val activityChainID = StochasticBundle.createAndSampleCumDist(data.activityChainWeights.toDoubleArray())
+        return Activity.getListFromStr(data.activityChains[activityChainID])
+    }
+
+    /**
+     * Get that a discrete location is chosen based on the distance to an origin and pdf(distance)
+     * used for both cells and buildings
+     */
+    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: WeibullDistribution) : DoubleArray {
+        return DoubleArray (targets.size) { i ->
+            // Probability due to distance to home
+            var distance = origin.distance(targets[i])
+            if (distance == 0.0) distance = 1E-3
+            baseDist.density(distance)
+        }
     }
 }

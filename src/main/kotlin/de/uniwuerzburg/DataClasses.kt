@@ -4,6 +4,9 @@ import kotlinx.serialization.*
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 
+/**
+ * Data format behavior data extracted from MID 2017
+ */
 @Serializable
 data class ActivityData(val nodes: Map<Int, Node>)
 @Serializable
@@ -14,6 +17,23 @@ data class Leaf (
     val stayTimeData: Map<String, List<List<Double>>>,
     val activityChainWeights: List<Double>
 )
+
+enum class Activity {
+    HOME, WORK, SECONDARY;
+
+    companion object {
+        fun getListFromStr(str: String) : List<Activity> {
+            return str.map {
+                 when(it) {
+                    'H'  -> HOME
+                    'P'  -> WORK
+                    'S'  -> SECONDARY
+                    else -> throw(java.lang.Exception("Unknown Char: $it"))
+                }
+            }
+        }
+    }
+}
 
 /**
  * Simplified landuse for work and home probabilities
