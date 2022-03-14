@@ -18,11 +18,11 @@ data class Leaf (
     val activityChainWeights: List<Double>
 )
 
-enum class Activity {
+enum class ActivityType {
     HOME, WORK, SECONDARY;
 
     companion object {
-        fun getListFromStr(str: String) : List<Activity> {
+        fun getListFromStr(str: String) : List<ActivityType> {
             return str.map {
                  when(it) {
                     'H'  -> HOME
@@ -31,6 +31,16 @@ enum class Activity {
                     else -> throw(java.lang.Exception("Unknown Char: $it"))
                 }
             }
+        }
+
+        fun getStrFromList(lst: List<ActivityType>) : String {
+            return lst.map {
+                when(it) {
+                    HOME -> 'H'
+                    WORK -> 'P'
+                    SECONDARY -> 'S'
+                }
+            }.joinToString("")
         }
     }
 }
@@ -77,10 +87,12 @@ data class Building(
     val landuse: Landuse
 )
 
+@Serializable
 data class MobiAgent (
     val id: Int,
     val home: Int,
-    val work: Int
+    val work: Int,
+    var profile: List<Activity>? = null
 )
 
 data class Cell (
@@ -90,3 +102,12 @@ data class Cell (
     val buildingIds: List<Int>,
     val featureCentroid: Coordinate
 )
+
+@Serializable
+data class Activity (
+    val type: ActivityType,
+    val stayTime: Double,
+    val x: Double,
+    val y: Double
+)
+

@@ -1,6 +1,7 @@
 package de.uniwuerzburg
 
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.io.BufferedReader
 import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
@@ -47,12 +48,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
         // Create grid
         grid = mutableListOf()
-
         val xMin = buildings.minOfOrNull { it.coord.x } ?:0.0
         val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
         val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
         val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
-
         val geometryFactory = GeometryFactory() // For centroid calculation
         for (x in xMin..xMax step gridResolution) {
             for (y in yMin..yMax step gridResolution) {
@@ -152,10 +151,70 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get the activity chain
      * TODO: Give agent and day
      */
-    fun getActivityChain() : List<Activity> {
+    fun getActivityChain() : List<ActivityType> {
         val data = activityData.nodes[1]!!.leafs[1]!!
         val activityChainID = StochasticBundle.createAndSampleCumDist(data.activityChainWeights.toDoubleArray())
-        return Activity.getListFromStr(data.activityChains[activityChainID])
+        return ActivityType.getListFromStr(data.activityChains[activityChainID])
+    }
+
+    /**
+     * Get the stay times given an activity chain
+     * TODO: Change to gaussian
+     */
+    fun getStayTimes(activityChain: List<ActivityType>) : List<Double> {
+        if (activityChain.size == 1) {
+            return listOf(1440.0)
+        } else {
+            val activityChainID = ActivityType.getStrFromList(activityChain)
+            val data = activityData.nodes[1]!!.leafs[1]!!
+            return data.stayTimeData[activityChainID]!![0]
+        }
+    }
+
+    /**
+     * Get the activity locations for the given agent.
+     */
+    fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>) : List<Coordinate> {
+        require(activityChain[0] == ActivityType.HOME) // TODO add other start options
+        val locations = mutableListOf<Coordinate>()
+        activityChain.forEachIndexed { i, activity ->
+            locations.add(
+                when (activity) {
+                    ActivityType.HOME -> buildings[agent.home].coord
+                    ActivityType.WORK -> buildings[agent.work].coord
+                    ActivityType.SECONDARY ->  buildings[findSecondary(locations[i-1])].coord
+                }
+            )
+        }
+        return locations
+    }
+
+    /**
+     * Get the mobility profile for the given agent.
+     * TODO and given day
+     */
+    fun getMobilityProfile(agent: MobiAgent): List<Activity> {
+        val activityChain = getActivityChain()
+        val stayTimes = getStayTimes(activityChain)
+        val locations = getLocations(agent, activityChain)
+        return List(activityChain.size) { i ->
+            Activity(activityChain[i], stayTimes[i], locations[i].x, locations[i].y)
+        }
+    }
+
+    /**
+     * Determine the demand of the area for n agents at one day.
+     * Optionally safe to json.
+     */
+    fun run(n: Int, safeToJson: Boolean = false) : List<MobiAgent> {
+        val agents = createAgents(n)
+        for (agent in agents) {
+            agent.profile = getMobilityProfile(agent)
+        }
+        if (safeToJson) {
+            File("out.json").writeText(Json.encodeToString(agents))
+        }
+        return agents
     }
 
     /**
