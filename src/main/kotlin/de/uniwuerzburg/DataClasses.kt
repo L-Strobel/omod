@@ -26,13 +26,13 @@ data class ActivityGroup(
 data class ActivityChain(
     val chain: List<ActivityType>,
     val weight: Double,
-    val gaussianMixture: List<GaussianMixture>
+    val gaussianMixture: GaussianMixture?
 )
 @Serializable
 class GaussianMixture(
-    val weight: DoubleArray,
-    val mean: Array<DoubleArray>,
-    val covariance: Array<Array<DoubleArray>>
+    val weights: List<Double>,
+    val means: List<List<Double>>,
+    val covariances: List<List<List<Double>>>
 )
 @Serializable
 data class DistanceDistributions(
@@ -121,4 +121,61 @@ data class PopulationDef (
 )
 enum class ActivityType {
     HOME, WORK, BUSINESS, SCHOOL, SHOPPING, OTHER;
+}
+
+/**
+ * Holds activity data.
+ * Structure is designed for fast access. Where possible data is already processed.
+ */
+class ActivityDataMap(activityGroups: List<ActivityGroup>) {
+    private val nodes: Map<Key, Data>
+
+    init {
+        nodes = activityGroups.associateBy (
+            { Key(it.weekday, it.homogenousGroup, it.mobilityGroup, it.age) },
+            { Data(it) }
+        )
+    }
+
+    data class Key(
+        private val weekday: String,
+        private val homogenousGroup: String,
+        private val mobilityGroup: String,
+        private val age: String
+    )
+
+    fun get(weekday: String, homogenousGroup: String, mobilityGroup: String, age: String): Data? {
+        return nodes[Key(weekday, homogenousGroup, mobilityGroup, age)]
+    }
+
+    class Data(activityGroup: ActivityGroup) {
+        val sampleSize: Int
+        val chains: List<List<ActivityType>>
+        val distr: DoubleArray
+        val mixtures: List<Mixture?>
+
+        init {
+            sampleSize = activityGroup.sampleSize
+            chains = activityGroup.activityChains.map { it.chain }
+            distr = StochasticBundle.createCumDist(activityGroup.activityChains.map { it.weight }.toDoubleArray())
+            mixtures = activityGroup.activityChains.map { i ->
+                val g = i.gaussianMixture
+                if (g != null) {
+                    Mixture(
+                        StochasticBundle.createCumDist(g.weights.toDoubleArray()),
+                        g.means.map { j -> j.toDoubleArray() },
+                        g.covariances.map { j ->  (j.map { k -> k.toDoubleArray() }).toTypedArray()}
+                    )
+                } else {
+                    null
+                }
+            }
+        }
+
+        class Mixture(
+            val distr: DoubleArray,
+            val means: List<DoubleArray>,
+            val covariances: List<Array<DoubleArray>>
+        )
+    }
 }

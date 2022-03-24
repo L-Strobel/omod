@@ -23,7 +23,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     private val buildings: MutableList<Building>
     private val kdTree: KdTree
     private val grid: List<Cell>
-    private val activityGroups: List<ActivityGroup>
+    private val activityDataMap: ActivityDataMap
     private val populationDef: PopulationDef
     private val distanceDists: DistanceDistributions
 
@@ -84,13 +84,14 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
         // Get activity chain data
         val actTxt = Gamg::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
-        activityGroups = Json.decodeFromString(actTxt)
+        val activityGroups: List<ActivityGroup> = Json.decodeFromString(actTxt)
+        activityDataMap = ActivityDataMap(activityGroups)
 
         // Get distance distributions
         val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
         distanceDists = Json.decodeFromString(distrTxt)
     }
-
+    /*
     /**
      * Initialize population by assigning home and work locations
      * @param n number of agents
@@ -149,6 +150,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         }
         return agents
     }
+
     /**
      * Get the location of a secondary location with a given current location
      */
@@ -248,4 +250,6 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             baseDist.density(distance)
         }
     }
+    */
+
 }
