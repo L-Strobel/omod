@@ -7,6 +7,7 @@ import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
 import org.locationtech.jts.geom.Coordinate
 import kotlinx.serialization.json.*
+import org.apache.commons.math3.distribution.MultivariateNormalDistribution
 import java.io.File
 import org.apache.commons.math3.distribution.WeibullDistribution
 import org.locationtech.jts.geom.Envelope
@@ -91,7 +92,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
         distanceDists = Json.decodeFromString(distrTxt)
     }
-    /*
+
     /**
      * Initialize population by assigning home and work locations
      * @param n number of agents
@@ -102,7 +103,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     fun createAgents(n: Int, randomFeatures: Boolean = false, population: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
         // Get sociodemographic features
         if (population == null) {
-
+            // TODO here
         }
 
         // Assign home and work
@@ -170,25 +171,28 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
     /**
      * Get the activity chain
-     * TODO: Give agent and day
      */
-    fun getActivityChain() : List<ActivityType> {
-        val data = activityData.nodes[1]!!.leafs[1]!!
-        val activityChainID = StochasticBundle.createAndSampleCumDist(data.activityChainWeights.toDoubleArray())
-        return ActivityType.getListFromStr(data.activityChains[activityChainID])
+    fun getActivityChain(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME) : List<ActivityType> {
+        val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
+        val i = StochasticBundle.sampleCumDist(data.distr)
+        return data.chains[i]
     }
 
     /**
      * Get the stay times given an activity chain
-     * TODO: Change to gaussian
      */
-    fun getStayTimes(activityChain: List<ActivityType>) : List<Double> {
-        if (activityChain.size == 1) {
-            return listOf(1440.0)
+    fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: String = "undefined",
+                     from: ActivityType = ActivityType.HOME) : List<Double> {
+        return if (activityChain.size == 1) {
+            // Stay at one location the entire day
+            listOf(1440.0)
         } else {
-            val activityChainID = ActivityType.getStrFromList(activityChain)
-            val data = activityData.nodes[1]!!.leafs[1]!!
-            return data.stayTimeData[activityChainID]!![0]
+            // Sample stay times from gaussian mixture
+            val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from,
+                givenChain = activityChain)
+            val mixture = data.mixtures[activityChain]!! // non-null is ensured in get()
+            val i = StochasticBundle.sampleCumDist(mixture.distr)
+            MultivariateNormalDistribution(mixture.means[i], mixture.covariances[i]).sample().toList()
         }
     }
 
@@ -203,7 +207,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 when (activity) {
                     ActivityType.HOME -> buildings[agent.home].coord
                     ActivityType.WORK -> buildings[agent.work].coord
-                    ActivityType.SECONDARY ->  buildings[findSecondary(locations[i-1])].coord
+                    else ->  buildings[findSecondary(locations[i-1])].coord
                 }
             )
         }
@@ -214,9 +218,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get the mobility profile for the given agent.
      * TODO and given day
      */
-    fun getMobilityProfile(agent: MobiAgent): List<Activity> {
-        val activityChain = getActivityChain()
-        val stayTimes = getStayTimes(activityChain)
+    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME): List<Activity> {
+        val activityChain = getActivityChain(agent, weekday, from)
+        val stayTimes = getStayTimes(activityChain, agent, weekday, from)
         val locations = getLocations(agent, activityChain)
         return List(activityChain.size) { i ->
             Activity(activityChain[i], stayTimes[i], locations[i].x, locations[i].y)
@@ -227,10 +231,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Determine the demand of the area for n agents at one day.
      * Optionally safe to json.
      */
-    fun run(n: Int, safeToJson: Boolean = false) : List<MobiAgent> {
+    fun run(n: Int, weekday: String = "undefined", safeToJson: Boolean = false) : List<MobiAgent> {
         val agents = createAgents(n)
         for (agent in agents) {
-            agent.profile = getMobilityProfile(agent)
+            agent.profile = getMobilityProfile(agent, weekday)
         }
         if (safeToJson) {
             File("out.json").writeText(Json.encodeToString(agents))
@@ -250,6 +254,6 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             baseDist.density(distance)
         }
     }
-    */
+
 
 }
