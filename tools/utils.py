@@ -286,3 +286,10 @@ def getGaussianMixture(chain, activityChains, dwellTimes, grpIDs=None, mx_compon
         _ = ax.set_zlabel(chain[2])
 
     return model_best
+
+lngNameMap = {"W": "WORK", "B": "BUSINESS", "S": "SCHOOL", "P": "SHOPPING", "O": "OTHER", "H": "HOME"}
+def chainStrToList(string):
+    rslt = []
+    for char in string:
+        rslt.append(lngNameMap[char])
+    return rslt

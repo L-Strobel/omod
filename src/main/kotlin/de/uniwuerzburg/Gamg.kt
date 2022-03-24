@@ -12,6 +12,7 @@ import org.apache.commons.math3.distribution.WeibullDistribution
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
+import javax.xml.catalog.CatalogFeatures
 
 /**
  * General purpose mobility demand generator (gamg)
@@ -22,7 +23,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     private val buildings: MutableList<Building>
     private val kdTree: KdTree
     private val grid: List<Cell>
-    private val activityData: ActivityData
+    private val activityGroups: List<ActivityGroup>
+    private val populationDef: PopulationDef
+    private val distanceDists: DistanceDistributions
 
     init {
         val reader = BufferedReader(FileReader(buildingsPath))
@@ -75,17 +78,33 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid))
             }
         }
+        // Get population distribution
+        val popTxt = Gamg::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
+        populationDef = Json.decodeFromString(popTxt)
 
-        // Get activity chain data, TODO change to gaussian
-        val path = "C:/Users/strobel/Projekte/PythonPkgs/valactimod/valactimod/ActivityChainData.json"
-        activityData = Json.decodeFromString(File(path).readText(Charsets.UTF_8))
+        // Get activity chain data
+        val actTxt = Gamg::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
+        activityGroups = Json.decodeFromString(actTxt)
+
+        // Get distance distributions
+        val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
+        distanceDists = Json.decodeFromString(distrTxt)
     }
 
     /**
      * Initialize population by assigning home and work locations
+     * @param n number of agents
+     * @param randomFeatures determines whether the population be randomly chosen or as close as possible to the given distributions.
+     *                       In the random case, the sampling is still done based on said distribution. Mostly important for small agent numbers.
+     * @param population sociodemographic distribution of the agents. If null the distributions in Population.json are used.
      */
-    fun createAgents(n: Int): List<MobiAgent> {
-        // Init distributions
+    fun createAgents(n: Int, randomFeatures: Boolean = false, population: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
+        // Get sociodemographic features
+        if (population == null) {
+
+        }
+
+        // Assign home and work
         val homCumDist = StochasticBundle.createCumDist(grid.map { it.population }.toDoubleArray())
         val homeWorkDist = WeibullDistribution(0.71, 10.5)
 

@@ -1,0 +1,20 @@
+{
+  "homogenousGroup": {
+    "working":  0.8,
+    "non_working": 0.2,
+    "pupil_student":  0.0,
+    "undefined": 0.0
+  },
+  "mobilityGroup": {
+    "car_user": 0.6,
+    "car_other": 0.3,
+    "other": 0.1,
+    "undefined": 0.0
+  },
+  "age": {
+    "0_40": 0.6,
+    "40_60": 0.35,
+    "60_100": 0.05,
+    "undefined": 0.0
+  }
+}

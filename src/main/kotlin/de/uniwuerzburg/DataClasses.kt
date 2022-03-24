@@ -1,50 +1,53 @@
 package de.uniwuerzburg
 
 import kotlinx.serialization.*
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.json.JsonTransformingSerializer
+import org.apache.commons.math3.analysis.function.Gaussian
+import org.apache.commons.math3.stat.correlation.Covariance
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
+import java.beans.Encoder
 
 /**
- * Data format behavior data extracted from MID 2017
+ * Data format of behavior data extracted from MID 2017
  */
 @Serializable
-data class ActivityData(val nodes: Map<Int, Node>)
-@Serializable
-data class Node(val leafs: Map<Int, Leaf>)
-@Serializable
-data class Leaf (
-    val activityChains: List<String>,
-    val stayTimeData: Map<String, List<List<Double>>>,
-    val activityChainWeights: List<Double>
+data class ActivityGroup(
+    val weekday: String,
+    val homogenousGroup: String,
+    val mobilityGroup: String,
+    val age: String,
+    val sampleSize: Int,
+    val activityChains: List<ActivityChain>
 )
-
-enum class ActivityType {
-    HOME, WORK, SECONDARY;
-
-    companion object {
-        fun getListFromStr(str: String) : List<ActivityType> {
-            return str.map {
-                 when(it) {
-                    'H'  -> HOME
-                    'P'  -> WORK
-                    'S'  -> SECONDARY
-                    else -> throw(java.lang.Exception("Unknown Char: $it"))
-                }
-            }
-        }
-
-        fun getStrFromList(lst: List<ActivityType>) : String {
-            return lst.map {
-                when(it) {
-                    HOME -> 'H'
-                    WORK -> 'P'
-                    SECONDARY -> 'S'
-                }
-            }.joinToString("")
-        }
-    }
+@Serializable
+data class ActivityChain(
+    val chain: List<ActivityType>,
+    val weight: Double,
+    val gaussianMixture: List<GaussianMixture>
+)
+@Serializable
+class GaussianMixture(
+    val weight: DoubleArray,
+    val mean: Array<DoubleArray>,
+    val covariance: Array<Array<DoubleArray>>
+)
+@Serializable
+data class DistanceDistributions(
+    val home_work: Map<Int, Distribution>,
+    val home_school: Map<Int, Distribution>,
+    val any_shopping: Map<Int, Distribution>,
+    val any_other: Map<Int, Distribution>
+) {
+    @Serializable
+    data class Distribution(
+        val distribution: String,
+        val shape: Double,
+        val scale: Double
+    )
 }
-
 /**
  * Simplified landuse for work and home probabilities
  */
@@ -110,4 +113,12 @@ data class Activity (
     val x: Double,
     val y: Double
 )
-
+@Serializable
+data class PopulationDef (
+    val homogenousGroup: Map<String, Double>,
+    val mobilityGroup: Map<String, Double>,
+    val age: Map<String, Double>
+)
+enum class ActivityType {
+    HOME, WORK, BUSINESS, SCHOOL, SHOPPING, OTHER;
+}

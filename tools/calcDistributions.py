@@ -84,7 +84,7 @@ def getDwellTimeDists(trips, persons):
     return gaussians
 
 def safeActivityGroups(groups, gaussians):
-    jsn = {"ActivityGroups": []} 
+    jsn = [] 
     wdMap = {1: 'mo', 2: 'tu', 3: 'we', 4: 'th', 5: 'fr', 6: 'sa', 7: 'so', 8: 'ho', 'undefined': 'undefined'}
     for group in groups:
         # Get chains
@@ -96,16 +96,12 @@ def safeActivityGroups(groups, gaussians):
             # Also drop chains that end at work, shopping, business. Very few and can not be resolved sensibly because stay time is unknown.
             if n >= 30 and x[-1] in ["H", "O"]:
                 g = {}
-                g["chain"] = x
+                g["chain"] = utils.chainStrToList(x)
                 g["weight"] = n               
-                if x[0] == "H":
-                    g["from"] = "Home"
-                else:
-                    g["from"] = "Other"
                 if x != "H":
-                    g["gaussian"] = gaussians.get((group["weekday"],  group["Hom. Grp"], group["Mob. Grp"],  group["Age"], x), None)
+                    g["gaussianMixture"] = gaussians.get((group["weekday"],  group["Hom. Grp"], group["Mob. Grp"],  group["Age"], x), None)
                 else:
-                    g["gaussian"] = None
+                    g["gaussianMixture"] = None
                 activityData.append(g)
         # Records
         tmp = {}
@@ -115,7 +111,7 @@ def safeActivityGroups(groups, gaussians):
         tmp["age"] = group["Age"]
         tmp["sampleSize"] = group["count"]
         tmp["activityChains"] = activityData
-        jsn["ActivityGroups"].append(tmp)
+        jsn.append(tmp)
     with open('ActivityGroups.json', 'w', encoding='utf-8') as json_file:
         json.dump(jsn, json_file)
 
