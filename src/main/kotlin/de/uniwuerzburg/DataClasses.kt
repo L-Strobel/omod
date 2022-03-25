@@ -122,6 +122,13 @@ data class PopulationDef (
     val mobilityGroup: Map<String, Double>,
     val age: Map<String, Double>
 )
+fun PopulationDef(map: Map<String, Map<String, Double>>): PopulationDef{
+    require(map.containsKey("homogenousGroup"))
+    require(map.containsKey("mobilityGroup"))
+    require(map.containsKey("age"))
+
+    return PopulationDef(map["homogenousGroup"]!!, map["mobilityGroup"]!!, map["age"]!!)
+}
 enum class ActivityType {
     HOME, WORK, BUSINESS, SCHOOL, SHOPPING, OTHER;
 }

@@ -100,10 +100,36 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      *                       In the random case, the sampling is still done based on said distribution. Mostly important for small agent numbers.
      * @param population sociodemographic distribution of the agents. If null the distributions in Population.json are used.
      */
-    fun createAgents(n: Int, randomFeatures: Boolean = false, population: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
+    fun createAgents(n: Int, randomFeatures: Boolean = false, inputPopDef: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
         // Get sociodemographic features
-        if (population == null) {
-            // TODO here
+        val usedPopDef: PopulationDef
+        if (inputPopDef == null) {
+            usedPopDef = populationDef
+        } else {
+            usedPopDef = PopulationDef(inputPopDef)
+        }
+        val features = mutableListOf<Triple<String, String, String>>()
+        val jointProbability = mutableListOf<Double>()
+        for ((hom, p_hom) in usedPopDef.homogenousGroup) {
+            for ((mob, p_mob) in usedPopDef.mobilityGroup) {
+                for ((age, p_age) in usedPopDef.age) {
+                    features.add(Triple(hom, mob, age))
+                    jointProbability.add(p_hom*p_mob*p_age)
+                }
+            }
+        }
+        val agentFeatures: List<Int> // List of indices that map an agent to a features set
+        if (randomFeatures) {
+            val distr = StochasticBundle.createCumDist(jointProbability.toDoubleArray())
+            agentFeatures = List(n) {StochasticBundle.sampleCumDist(distr)}
+        } else {
+            // Assign the features deterministically
+            val expectedObservations = jointProbability.map { it * n }.toDoubleArray()
+            agentFeatures = List(n) { i ->
+                val j = expectedObservations.withIndex().maxByOrNull { it.value }!!.index // Assign agent to feature with highest E(f)
+                expectedObservations[j] -= 1.0 // Reduce E(f) by one
+                j
+            }
         }
 
         // Assign home and work
@@ -124,6 +150,11 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         // Generate population
         val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
         val agents = List(n) { i ->
+            // Sociodemographic features
+            val homogenousGroup = features[agentFeatures[i]].first
+            val mobilityGroup = features[agentFeatures[i]].second
+            val age = features[agentFeatures[i]].third
+
             // Get home cell
             val homeCell = StochasticBundle.sampleCumDist(homCumDist)
 
@@ -147,7 +178,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val work = StochasticBundle.sampleCumDist(getWorkDist(homeCoords, targets, weights))
 
             // TODO add sociodemographic features
-            MobiAgent(i, home, work)
+            MobiAgent(i, homogenousGroup, mobilityGroup, age, home, work)
         }
         return agents
     }
