@@ -82,12 +82,14 @@ enum class Landuse {
  * @param area area of the building in meters
  * @param population population of building. Can be non-integer.
  * @param landuse OSM-Landuse of the building
+ * @param regionType RegioStar7 of the municipality
  */
 data class Building(
     val coord: Coordinate,
     val area: Double,
     val population: Double,
-    val landuse: Landuse
+    val landuse: Landuse,
+    val regionType: Int
 )
 
 @Serializable
@@ -106,7 +108,8 @@ data class Cell (
     val priorWorkWeight: Double,
     val envelope: Envelope,
     val buildingIds: List<Int>,
-    val featureCentroid: Coordinate
+    val featureCentroid: Coordinate,
+    val regionType: Int
 )
 
 @Serializable

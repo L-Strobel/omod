@@ -7,6 +7,7 @@ import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
 import org.locationtech.jts.geom.Coordinate
 import kotlinx.serialization.json.*
+import org.apache.commons.math3.distribution.LogNormalDistribution
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution
 import java.io.File
 import org.apache.commons.math3.distribution.WeibullDistribution
@@ -33,15 +34,19 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
         // Skip header
         reader.readLine()
-        // Read body
+        // Read body TODO region type, Change landuse parsing
         buildings = mutableListOf()
         reader.forEachLine {
             val line = it.split(",")
-            buildings.add(Building(
-                coord = Coordinate(line[1].toDouble(), line[2].toDouble()),
-                area = line[0].toDouble(),
-                population = line[3].toDouble(),
-                landuse = Landuse.getFromStr(line[4])))
+            buildings.add(
+                Building(
+                    coord = Coordinate(line[1].toDouble(), line[2].toDouble()),
+                    area = line[0].toDouble(),
+                    population = line[3].toDouble(),
+                    landuse = Landuse.getFromStr(line[4]),
+                    regionType = line[4].toInt()
+                )
+            )
         }
 
         // Create KD-Tree for faster access
@@ -69,6 +74,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     buildings.slice(buildingIds).map { it.coord }.toTypedArray()
                 ).centroid.coordinate
 
+                // Most common region type
+                val regionType = buildings.slice(buildingIds).groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
+
                 // Calculate aggregate features of cell
                 var population = 0.0
                 var priorWorkWeight = 0.0
@@ -76,7 +84,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     population += buildings[i].population
                     priorWorkWeight += buildings[i].landuse.getWorkWeight()
                 }
-                grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid))
+                grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid, regionType))
             }
         }
         // Get population distribution
@@ -98,7 +106,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * @param n number of agents
      * @param randomFeatures determines whether the population be randomly chosen or as close as possible to the given distributions.
      *                       In the random case, the sampling is still done based on said distribution. Mostly important for small agent numbers.
-     * @param population sociodemographic distribution of the agents. If null the distributions in Population.json are used.
+     * @param inputPopDef sociodemographic distribution of the agents. If null the distributions in Population.json are used.
      */
     fun createAgents(n: Int, randomFeatures: Boolean = false, inputPopDef: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
         // Get sociodemographic features
@@ -132,14 +140,17 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             }
         }
 
-        // Assign home and work
+        // Assign home and work // TODO do schools
         val homCumDist = StochasticBundle.createCumDist(grid.map { it.population }.toDoubleArray())
-        val homeWorkDist = WeibullDistribution(0.71, 10.5)
 
-        // Calculate work probability of cell or building
-        fun getWorkDist(home: Coordinate, targets: List<Coordinate>, priorWeights: List<Double>) : DoubleArray {
+        // Calculate work probability of cell or building TODO add undefinded distribution to all distance dists amrked by regiontype == 0
+        fun getWorkDist(home: Coordinate, targets: List<Coordinate>, priorWeights: List<Double>,
+                        regionType: Int = 0) : DoubleArray {
             require(targets.size == priorWeights.size)
-
+            // Get distance distribution, Currently always lognormal
+            val distObj = distanceDists.home_work[regionType]!!
+            val homeWorkDist = LogNormalDistribution(distObj.scale, distObj.shape)
+            // Get the resulting total distribution by factoring in priors
             val distanceWeights = getProbsByDistance(home, targets, homeWorkDist)
             val probabilities = DoubleArray (targets.size) { i ->
                 priorWeights[i] * distanceWeights[i]
@@ -162,12 +173,13 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val homeCellBuildings = buildings.slice(grid[homeCell].buildingIds)
             val home = StochasticBundle.createAndSampleCumDist(homeCellBuildings.map { it.population }.toDoubleArray())
             val homeCoords = buildings[home].coord
+            val homeRegion = buildings[home].regionType
 
             // Get work cell
             val workCumDist = workDistCache.getOrPut(homeCell) {
                 val targets = grid.map { it.featureCentroid }
                 val weights = grid.map { it.priorWorkWeight }
-                getWorkDist(homeCoords, targets, weights)
+                getWorkDist(homeCoords, targets, weights, homeRegion)
             }
             val workCell = StochasticBundle.sampleCumDist(workCumDist)
 
@@ -175,9 +187,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val workCellBuildings = buildings.slice(grid[workCell].buildingIds)
             val targets = workCellBuildings.map { it.coord }
             val weights = workCellBuildings.map { it.landuse.getWorkWeight() }
-            val work = StochasticBundle.sampleCumDist(getWorkDist(homeCoords, targets, weights))
+            val work = StochasticBundle.sampleCumDist(getWorkDist(homeCoords, targets, weights, homeRegion))
 
-            // TODO add sociodemographic features
+            // Add the agent to the population
             MobiAgent(i, homogenousGroup, mobilityGroup, age, home, work)
         }
         return agents
@@ -186,17 +198,23 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     /**
      * Get the location of a secondary location with a given current location
      */
-    fun findSecondary(location: Coordinate): Int {
-        // TODO differentiate between activity types
-        val currSecDist = WeibullDistribution(0.71, 10.5)
+    fun findFlexibleLoc(location: Coordinate, type: ActivityType, regionType: Int = 0): Int {
+        require(type != ActivityType.HOME) // Home not flexible
+        require(type != ActivityType.WORK) // Work not flexible
+        // Get distance distribution
+        val distObj = when (type){
+            ActivityType.SHOPPING -> distanceDists.any_shopping[regionType]!!
+            else -> distanceDists.any_other[regionType]!!
+        }
+        val distr = LogNormalDistribution(distObj.scale, distObj.shape)
 
         // Get cell
-        val secDist = getProbsByDistance(location, grid.map { it.featureCentroid }, currSecDist)
+        val secDist = getProbsByDistance(location, grid.map { it.featureCentroid }, distr)
         val secCell = StochasticBundle.createAndSampleCumDist(secDist)
 
         // Get building
         val secCellBuildings = buildings.slice(grid[secCell].buildingIds)
-        val secDistBuilding = getProbsByDistance(location, secCellBuildings.map { it.coord }, currSecDist)
+        val secDistBuilding = getProbsByDistance(location, secCellBuildings.map { it.coord }, distr)
         return StochasticBundle.createAndSampleCumDist(secDistBuilding)
     }
 
@@ -229,27 +247,30 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
     /**
      * Get the activity locations for the given agent.
+     * @param agent The agent
+     * @param activityChain The activities the agent will undertake that day
+     * @param from The building the day starts at
      */
-    fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>) : List<Coordinate> {
-        require(activityChain[0] == ActivityType.HOME) // TODO add other start options
-        val locations = mutableListOf<Coordinate>()
-        activityChain.forEachIndexed { i, activity ->
+    fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
+                     from: Int) : List<Coordinate> {
+        val locations = mutableListOf(buildings[from])
+        activityChain.drop(1).forEachIndexed { i, activity ->
             locations.add(
                 when (activity) {
-                    ActivityType.HOME -> buildings[agent.home].coord
-                    ActivityType.WORK -> buildings[agent.work].coord
-                    else ->  buildings[findSecondary(locations[i-1])].coord
+                    ActivityType.HOME -> buildings[agent.home]
+                    ActivityType.WORK -> buildings[agent.work]
+                    else ->  buildings[findFlexibleLoc(locations[i-1].coord, activity, locations[i-1].regionType)]
                 }
             )
         }
-        return locations
+        return locations.map { it.coord }
     }
 
     /**
      * Get the mobility profile for the given agent.
-     * TODO and given day
      */
     fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME): List<Activity> {
+        //  TODO how do i specify the starting location if not home?
         val activityChain = getActivityChain(agent, weekday, from)
         val stayTimes = getStayTimes(activityChain, agent, weekday, from)
         val locations = getLocations(agent, activityChain)
@@ -277,7 +298,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get that a discrete location is chosen based on the distance to an origin and pdf(distance)
      * used for both cells and buildings
      */
-    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: WeibullDistribution) : DoubleArray {
+    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: LogNormalDistribution) : DoubleArray {
         return DoubleArray (targets.size) { i ->
             // Probability due to distance to home
             var distance = origin.distance(targets[i])
