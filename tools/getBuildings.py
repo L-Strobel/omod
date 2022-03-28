@@ -1,11 +1,6 @@
-from distutils.command.build import build
-from typing import NamedTuple
-from enum import Enum
-
 import psycopg2
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point
 
 landuseMap = {
     'residential': 'RESIDENTIAL',

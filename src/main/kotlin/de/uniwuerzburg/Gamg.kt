@@ -141,7 +141,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         // Assign home and work // TODO do schools
         val homCumDist = StochasticBundle.createCumDist(grid.map { it.population }.toDoubleArray())
 
-        // Calculate work probability of cell or building TODO add undefinded distribution to all distance dists amrked by regiontype == 0
+        // Calculate work probability of cell or building
         fun getWorkDist(home: Coordinate, targets: List<Coordinate>, priorWeights: List<Double>,
                         regionType: Int = 0) : DoubleArray {
             require(targets.size == priorWeights.size)
@@ -194,7 +194,11 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     }
 
     /**
-     * Get the location of a secondary location with a given current location
+     * Get the location of an activity with flexible location with a given current location
+     * @param location Coordinates of current location
+     * @param type Activity type
+     * @param regionType region type of current location according to RegioStar7. 0 indicates an undefined region type.
+     * // TODO Shopping should search for actual shops.
      */
     fun findFlexibleLoc(location: Coordinate, type: ActivityType, regionType: Int = 0): Int {
         require(type != ActivityType.HOME) // Home not flexible
@@ -236,7 +240,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         } else {
             // Sample stay times from gaussian mixture
             val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from,
-                givenChain = activityChain)
+                                           givenChain = activityChain)
             val mixture = data.mixtures[activityChain]!! // non-null is ensured in get()
             val i = StochasticBundle.sampleCumDist(mixture.distr)
             MultivariateNormalDistribution(mixture.means[i], mixture.covariances[i]).sample().toList()
@@ -247,11 +251,11 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get the activity locations for the given agent.
      * @param agent The agent
      * @param activityChain The activities the agent will undertake that day
-     * @param from The building the day starts at
+     * @param fromBuildingID The building the day starts at
      */
     fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
-                     from: Int) : List<Coordinate> {
-        val locations = mutableListOf(buildings[from])
+                     fromBuildingID: Int) : List<Coordinate> {
+        val locations = mutableListOf(buildings[fromBuildingID])
         activityChain.drop(1).forEachIndexed { i, activity ->
             locations.add(
                 when (activity) {
@@ -267,11 +271,25 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     /**
      * Get the mobility profile for the given agent.
      */
-    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME): List<Activity> {
-        //  TODO how do i specify the starting location if not home?
+    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
+                           from: ActivityType = ActivityType.HOME): List<Activity> {
+        val buildingID = when(from) {
+            ActivityType.HOME -> agent.home
+            ActivityType.WORK -> agent.work
+            else -> throw Exception("Start must be either Home, Work, or coordinates must be given. Agent: ${agent.id}")
+        }
+        return getMobilityProfile(agent, weekday, from, buildingID)
+    }
+    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
+                           from: ActivityType = ActivityType.HOME, fromCoords: Coordinate): List<Activity> {
+        val fromBuildingID = kdTree.query(fromCoords).data as Int
+        return getMobilityProfile(agent, weekday, from, fromBuildingID)
+    }
+    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME,
+                           fromBuildingID: Int): List<Activity> {
         val activityChain = getActivityChain(agent, weekday, from)
         val stayTimes = getStayTimes(activityChain, agent, weekday, from)
-        val locations = getLocations(agent, activityChain)
+        val locations = getLocations(agent, activityChain, fromBuildingID)
         return List(activityChain.size) { i ->
             Activity(activityChain[i], stayTimes[i], locations[i].x, locations[i].y)
         }
@@ -299,7 +317,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: LogNormalDistribution) : DoubleArray {
         return DoubleArray (targets.size) { i ->
             // Probability due to distance to home
-            var distance = origin.distance(targets[i])
+            val distance = origin.distance(targets[i])
             // if (distance == 0.0) distance = 1E-3
             baseDist.density(distance)
         }
