@@ -1,0 +1,100 @@
+from distutils.command.build import build
+from typing import NamedTuple
+from enum import Enum
+
+import psycopg2
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point
+
+landuseMap = {
+    'residential': 'RESIDENTIAL',
+    'commercial': 'COMMERCIAL',
+    'retail': 'COMMERCIAL',
+    'industrial': 'INDUSTRIAL',
+    'military': 'INDUSTRIAL',
+    'cemetery': 'RECREATIONAL',
+    'meadow': 'RECREATIONAL',
+    'grass': 'RECREATIONAL',
+    'park': 'RECREATIONAL',
+    'recreation_ground': 'RECREATIONAL',
+    'allotments': 'RECREATIONAL',
+    'scrub': 'RECREATIONAL',
+    'heath': 'RECREATIONAL',
+    'farmland': 'AGRICULTURE',
+    'farmyard': 'AGRICULTURE',
+    'orchard': 'AGRICULTURE',
+    'forest': 'FOREST',
+    'quarry': 'FOREST'
+}
+
+def loadBuildingsData(city='München'):
+    # OSM-Data
+    with psycopg2.connect(database="OSM_Ger", user="postgres", password="password", host="localhost") as conn:
+        # Considered area
+        sql = (f"SELECT * FROM planet_osm_polygon WHERE admin_level='6' AND name='{city}'")
+        area = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+        # Smiliar overpass:
+        # [out:csv(::id, ::lat, ::lon, name)];
+        # area["name:en"="Munich"]["admin_level"="6"]->.munich;
+        # way(area.munich)["building"];
+        # out center;
+        sql = ("SELECT b.way, b.way_area FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, ST_Centroid(b.way))"
+              f" AND a.admin_level='6' AND a.name='{city}' AND b.building IS NOT NULL")
+        buildings = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+        # Smiliar overpass:
+        # [out:json];
+        # area["name:en"="Munich"]["admin_level"="6"]->.by;
+        # way(area.by)["landuse"];
+        # out geom;
+        sql = ("SELECT b.landuse, b.way, b.way_area FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
+              f" AND a.admin_level='6' AND a.name='{city}' AND b.landuse IS NOT NULL")
+        landuse = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+    buildings = buildings.rename(columns={"way_area": "area"})
+    buildings['center'] = buildings.way.centroid
+    buildings['x'] = buildings.center.x
+    buildings['y'] = buildings.center.y
+
+    # Add Zensus data
+    path = "C:/Users/strobel/Projekte/esmregio/Daten/Zensus2011/Einwohner/Zensus_Bevoelkerung_100m-Gitter.csv"
+    zensus = pd.read_csv(path, sep=";").set_index("Gitter_ID_100m")
+
+    # Add coordinates to zensus data (Uses INSPIRE Grid with 100mx100m resolution)
+    usecols = ['OBJECTID', 'id', 'geometry']
+    path = "C:/Users/strobel/Projekte/esmregio/Daten/INSPIRE_Grids/100m/geogitter/DE_Grid_ETRS89-LAEA_100m.gpkg"
+    inspire100 = gpd.read_file(path, mask=area).to_crs(epsg=3857)
+    inspire100 = inspire100[usecols].set_index("id")
+
+    inspire100['population'] = zensus['Einwohner']
+    inspire100['population'] = inspire100['population'].apply(lambda x: 0 if x < 0 else x)
+
+    # Distribute cell population evenly to buildings
+    buildingsInCell = gpd.sjoin(inspire100, buildings, op='intersects')
+    grp = buildingsInCell.groupby(level=0)['population']
+    buildingsInCell['Pop'] = grp.mean() / grp.count()
+    buildings['population'] = buildingsInCell.groupby('index_right').Pop.sum()
+
+    # Add landuse data
+    buildings['landuse'] = gpd.sjoin(landuse, buildings, op='intersects').groupby('index_right').landuse.first()
+    buildings["landuse"] = buildings["landuse"].apply(lambda x: landuseMap.get(x, "NONE"))
+
+    # Add region type
+    regioStaR = pd.read_excel("C:/Users/strobel/Projekte/esmregio/Daten/RegioStaR/regiostar-referenzdateien.xlsx", sheet_name="ReferenzGebietsstand2019")
+    regioStaR = regioStaR[["gem_19", "RegioStaR7"]].set_index("gem_19")
+    gem = gpd.read_file("C:/Users/strobel/Projekte/esmregio/Daten/AdminGebiete/vg250_ebenen_0101/VG250_GEM.shp").to_crs(3857)
+    gem = gem[["AGS", "geometry"]]
+    gem["AGS"] = gem["AGS"].astype(int)
+    gem = gem.set_index('AGS')
+    gem["RegioStaR7"] = regioStaR["RegioStaR7"]
+    buildings = gpd.sjoin(buildings, gem, op='intersects').rename(columns={"index_right": "AGS"})
+    buildings["RegioStaR7"] = buildings["RegioStaR7"].astype(int)
+    buildings = buildings.rename(columns={"RegioStaR7": "region_type_RegioStaR7"})
+
+    return buildings
+
+if __name__ == "__main__":
+    df = loadBuildingsData()
+    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7"]].to_csv("../Buildings.csv", index=False)

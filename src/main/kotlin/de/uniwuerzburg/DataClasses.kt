@@ -1,14 +1,8 @@
 package de.uniwuerzburg
 
 import kotlinx.serialization.*
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.json.JsonTransformingSerializer
-import org.apache.commons.math3.analysis.function.Gaussian
-import org.apache.commons.math3.stat.correlation.Covariance
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
-import java.beans.Encoder
 
 /**
  * Data format of behavior data extracted from MID 2017
@@ -52,7 +46,7 @@ data class DistanceDistributions(
  * Simplified landuse for work and home probabilities
  */
 enum class Landuse {
-    RESIDENTIAL, INDUSTRIAL, COMMERCIAL, OTHER;
+    RESIDENTIAL, INDUSTRIAL, COMMERCIAL, RECREATIONAL, AGRICULTURE, FOREST, NONE;
 
     fun getWorkWeight() : Double {
         return when(this) {
@@ -60,17 +54,6 @@ enum class Landuse {
             INDUSTRIAL -> 2.0
             COMMERCIAL -> 2.0
             else -> 0.0
-        }
-    }
-
-    companion object {
-        fun getFromStr(str: String) : Landuse {
-            return when(str) {
-                "Residential" -> RESIDENTIAL
-                "Industrial"  -> INDUSTRIAL
-                "Commercial"  -> COMMERCIAL
-                else -> OTHER
-            }
         }
     }
 }

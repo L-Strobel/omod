@@ -10,17 +10,16 @@ import kotlinx.serialization.json.*
 import org.apache.commons.math3.distribution.LogNormalDistribution
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution
 import java.io.File
-import org.apache.commons.math3.distribution.WeibullDistribution
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
-import javax.xml.catalog.CatalogFeatures
 
 /**
  * General purpose mobility demand generator (gamg)
  *
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
+@Suppress("MemberVisibilityCanBePrivate")
 class Gamg(buildingsPath: String, gridResolution: Double) {
     private val buildings: MutableList<Building>
     private val kdTree: KdTree
@@ -34,7 +33,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
         // Skip header
         reader.readLine()
-        // Read body TODO region type, Change landuse parsing
+        // Read body
         buildings = mutableListOf()
         reader.forEachLine {
             val line = it.split(",")
@@ -43,8 +42,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     coord = Coordinate(line[1].toDouble(), line[2].toDouble()),
                     area = line[0].toDouble(),
                     population = line[3].toDouble(),
-                    landuse = Landuse.getFromStr(line[4]),
-                    regionType = line[4].toInt()
+                    landuse = Landuse.valueOf(line[4]),
+                    regionType = line[5].toInt()
                 )
             )
         }
@@ -110,11 +109,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      */
     fun createAgents(n: Int, randomFeatures: Boolean = false, inputPopDef: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
         // Get sociodemographic features
-        val usedPopDef: PopulationDef
-        if (inputPopDef == null) {
-            usedPopDef = populationDef
+        val usedPopDef = if (inputPopDef == null) {
+            populationDef
         } else {
-            usedPopDef = PopulationDef(inputPopDef)
+            PopulationDef(inputPopDef)
         }
         val features = mutableListOf<Triple<String, String, String>>()
         val jointProbability = mutableListOf<Double>()
@@ -133,7 +131,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         } else {
             // Assign the features deterministically
             val expectedObservations = jointProbability.map { it * n }.toDoubleArray()
-            agentFeatures = List(n) { i ->
+            agentFeatures = List(n) { _ ->
                 val j = expectedObservations.withIndex().maxByOrNull { it.value }!!.index // Assign agent to feature with highest E(f)
                 expectedObservations[j] -= 1.0 // Reduce E(f) by one
                 j
@@ -302,7 +300,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         return DoubleArray (targets.size) { i ->
             // Probability due to distance to home
             var distance = origin.distance(targets[i])
-            if (distance == 0.0) distance = 1E-3
+            // if (distance == 0.0) distance = 1E-3
             baseDist.density(distance)
         }
     }

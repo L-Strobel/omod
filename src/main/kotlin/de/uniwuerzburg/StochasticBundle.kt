@@ -1,9 +1,5 @@
 package de.uniwuerzburg
 
-import org.jetbrains.kotlinx.multik.api.mk
-import org.jetbrains.kotlinx.multik.api.ones
-import org.jetbrains.kotlinx.multik.ndarray.data.get
-import org.jetbrains.kotlinx.multik.ndarray.operations.sum
 import java.util.*
 
 object StochasticBundle {

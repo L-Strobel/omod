@@ -36,8 +36,9 @@ def getDistanceDists(trips):
     jsn = {}
     for name, df in groups.items():
         tmp = {}
-        for region in np.sort(trips.RegioStaR7.dropna().unique()):
+        for region in ["All"] + np.sort(trips.RegioStaR7.dropna().unique()).tolist():
             dist = df[(df.RegionType == region) & (df.Name == "lognorm")].iloc[0]
+            region = region if region != "All" else 0
             tmp[int(region)] = {"distribution": dist["Name"], "shape": dist["Parameters"][-3], "scale": dist["Parameters"][-1]}
         jsn[name] = tmp
         with open('DistanceDistributions.json', 'w', encoding='utf-8') as json_file:

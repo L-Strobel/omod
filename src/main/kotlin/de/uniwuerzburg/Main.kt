@@ -9,7 +9,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.sum
 import org.jetbrains.kotlinx.multik.ndarray.operations.sumBy
 
 fun main() {
-    val gamg = Gamg("C:/Users/strobel/Projekte/PythonPkgs/valactimod/Buildings.csv", 500.0)
+    val gamg = Gamg("C:/Users/strobel/Projekte/esmregio/gamg/Buildings.csv", 500.0)
     //val elapsed = measureTimeMillis { gamg.run(50000,  true) }
     //println(elapsed / 1000.0)
 }
