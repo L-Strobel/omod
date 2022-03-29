@@ -112,7 +112,7 @@ data class MobiAgent (
 @Serializable
 data class Activity (
     val type: ActivityType,
-    val stayTime: Double,
+    val stayTime: Double?,
     val x: Double,
     val y: Double
 )

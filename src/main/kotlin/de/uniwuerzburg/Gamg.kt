@@ -7,8 +7,6 @@ import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
 import org.locationtech.jts.geom.Coordinate
 import kotlinx.serialization.json.*
-import org.apache.commons.math3.distribution.LogNormalDistribution
-import org.apache.commons.math3.distribution.MultivariateNormalDistribution
 import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
@@ -147,7 +145,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             require(targets.size == priorWeights.size)
             // Get distance distribution, Currently always lognormal
             val distObj = distanceDists.home_work[regionType]!!
-            val homeWorkDist = LogNormalDistribution(distObj.scale, distObj.shape)
+            val homeWorkDist = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
             // Get the resulting total distribution by factoring in priors
             val distanceWeights = getProbsByDistance(home, targets, homeWorkDist)
             val probabilities = DoubleArray (targets.size) { i ->
@@ -208,7 +206,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             ActivityType.SHOPPING -> distanceDists.any_shopping[regionType]!!
             else -> distanceDists.any_other[regionType]!!
         }
-        val distr = LogNormalDistribution(distObj.scale, distObj.shape)
+        val distr = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
 
         // Get cell
         val secDist = getProbsByDistance(location, grid.map { it.featureCentroid }, distr)
@@ -233,17 +231,19 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get the stay times given an activity chain
      */
     fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: String = "undefined",
-                     from: ActivityType = ActivityType.HOME) : List<Double> {
+                     from: ActivityType = ActivityType.HOME) : List<Double?> {
         return if (activityChain.size == 1) {
             // Stay at one location the entire day
-            listOf(1440.0)
+            listOf(null)
         } else {
             // Sample stay times from gaussian mixture
             val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from,
                                            givenChain = activityChain)
             val mixture = data.mixtures[activityChain]!! // non-null is ensured in get()
             val i = StochasticBundle.sampleCumDist(mixture.distr)
-            MultivariateNormalDistribution(mixture.means[i], mixture.covariances[i]).sample().toList()
+            val stayTimes = StochasticBundle.sampleNDGaussian(mixture.means[i], mixture.covariances[i]).toList()
+            // Handle negative values. Last stay is always until the end of the day, marked by null
+            stayTimes.map { if (it < 0 ) 0.0 else it } + null
         }
     }
 
@@ -255,15 +255,19 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      */
     fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
                      fromBuildingID: Int) : List<Coordinate> {
-        val locations = mutableListOf(buildings[fromBuildingID])
-        activityChain.drop(1).forEachIndexed { i, activity ->
-            locations.add(
-                when (activity) {
-                    ActivityType.HOME -> buildings[agent.home]
-                    ActivityType.WORK -> buildings[agent.work]
-                    else ->  buildings[findFlexibleLoc(locations[i-1].coord, activity, locations[i-1].regionType)]
-                }
-            )
+        val locations = mutableListOf<Building>()
+        activityChain.forEachIndexed { i, activity ->
+            if (i == 0){
+                locations.add(buildings[fromBuildingID])
+            } else {
+                locations.add(
+                    when (activity) {
+                        ActivityType.HOME -> buildings[agent.home]
+                        ActivityType.WORK -> buildings[agent.work]
+                        else ->  buildings[findFlexibleLoc(locations[i-1].coord, activity, locations[i-1].regionType)]
+                    }
+                )
+            }
         }
         return locations.map { it.coord }
     }
@@ -314,7 +318,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get that a discrete location is chosen based on the distance to an origin and pdf(distance)
      * used for both cells and buildings
      */
-    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: LogNormalDistribution) : DoubleArray {
+    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: StochasticBundle.LogNorm) : DoubleArray {
         return DoubleArray (targets.size) { i ->
             // Probability due to distance to home
             val distance = origin.distance(targets[i])
