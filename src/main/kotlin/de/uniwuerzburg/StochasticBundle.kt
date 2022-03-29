@@ -13,18 +13,22 @@ object StochasticBundle {
         return createCumDist(weights.map { it.toDouble() }.toDoubleArray())
     }
     fun createCumDist(weights: DoubleArray): DoubleArray {
+        require(weights.all { it >= 0 })
+        val total = weights.sum()
+
         val cumDist = DoubleArray(weights.size)
         var cumSum = 0.0
         for (i in weights.indices) {
             cumSum += weights[i]
-            cumDist[i] = cumSum
+            cumDist[i] = cumSum / total
         }
+
         return cumDist
     }
 
     // Sample cumulative distribution
     fun sampleCumDist(cumDist: DoubleArray): Int {
-        val thresh: Double = random.nextDouble() * cumDist[cumDist.size - 1]
+        val thresh = random.nextDouble()
         var i = 0
         while (i < cumDist.size - 1) {
             if (thresh < cumDist[i]) break
@@ -68,8 +72,13 @@ object StochasticBundle {
             return exp(random.nextGaussian() * shape) * scale
         }
         fun density(x:Double): Double{
-            val xScaled = x / scale
-            return 1 / (shape * xScaled * sqrt(2 * PI)) * exp(- ln(xScaled).pow(2) / (2 * shape.pow(2))) / scale
+            require(x >= 0) { "x must be positive! Given value for x: $x"}
+            return if (x == 0.0) {
+                0.0 // Lognormal distribution converges to zero at zero
+            } else {
+                val xScaled = x / scale
+                1 / (shape * xScaled * sqrt(2 * PI)) * exp(- ln(xScaled).pow(2) / (2 * shape.pow(2))) / scale
+            }
         }
     }
 }
