@@ -166,8 +166,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val homeCell = StochasticBundle.sampleCumDist(homCumDist)
 
             // Get home building
-            val homeCellBuildings = buildings.slice(grid[homeCell].buildingIds)
-            val home = StochasticBundle.createAndSampleCumDist(homeCellBuildings.map { it.population }.toDoubleArray())
+            val homeCellBuildingIDs = grid[homeCell].buildingIds
+            val homeCellBuildings = buildings.slice(homeCellBuildingIDs)
+            val inHomeCellID = StochasticBundle.createAndSampleCumDist(homeCellBuildings.map { it.population }.toDoubleArray())
+            val home = homeCellBuildingIDs[inHomeCellID]
             val homeCoords = buildings[home].coord
             val homeRegion = buildings[home].regionType
 
@@ -180,10 +182,12 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val workCell = StochasticBundle.sampleCumDist(workCumDist)
 
             // Get work building
-            val workCellBuildings = buildings.slice(grid[workCell].buildingIds)
+            val workCellBuildingIDs = grid[workCell].buildingIds
+            val workCellBuildings = buildings.slice(workCellBuildingIDs)
             val targets = workCellBuildings.map { it.coord }
             val weights = workCellBuildings.map { it.landuse.getWorkWeight() }
-            val work = StochasticBundle.sampleCumDist(getWorkDist(homeCoords, targets, weights, homeRegion))
+            val inWorkCellID = StochasticBundle.sampleCumDist(getWorkDist(homeCoords, targets, weights, homeRegion))
+            val work = workCellBuildingIDs[inWorkCellID]
 
             // Add the agent to the population
             MobiAgent(i, homogenousGroup, mobilityGroup, age, home, work)
@@ -213,9 +217,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         val secCell = StochasticBundle.createAndSampleCumDist(secDist)
 
         // Get building
-        val secCellBuildings = buildings.slice(grid[secCell].buildingIds)
+        val secCellBuildingsID = grid[secCell].buildingIds
+        val secCellBuildings = buildings.slice(secCellBuildingsID)
         val secDistBuilding = getProbsByDistance(location, secCellBuildings.map { it.coord }, distr)
-        return StochasticBundle.createAndSampleCumDist(secDistBuilding)
+        return secCellBuildingsID[StochasticBundle.createAndSampleCumDist(secDistBuilding)]
     }
 
     /**
@@ -321,11 +326,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: StochasticBundle.LogNorm) : DoubleArray {
         return DoubleArray (targets.size) { i ->
             // Probability due to distance to home
-            val distance = origin.distance(targets[i])
-            // if (distance == 0.0) distance = 1E-3
+            var distance = origin.distance(targets[i])
             baseDist.density(distance)
         }
     }
-
-
 }

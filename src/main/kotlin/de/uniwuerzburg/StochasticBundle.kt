@@ -22,7 +22,6 @@ object StochasticBundle {
             cumSum += weights[i]
             cumDist[i] = cumSum / total
         }
-
         return cumDist
     }
 
@@ -47,8 +46,9 @@ object StochasticBundle {
         require(covariances.size == means.size) { "Dimension mismatch !" }
         val dim = means.size
 
-        // Get Cholesky decomposition
-        val l = CholeskyDecomposition(Array2DRowRealMatrix(covariances), 0.001, 1.0E-10).l
+        // Get Cholesky decomposition; Symmetry tolerance is quite high ... Maybe I should investigate why scikit-learn
+        // returns such asymmetric matrices
+        val l = CholeskyDecomposition(Array2DRowRealMatrix(covariances), 0.01, 1.0E-10).l
 
         // Get independent gaussians
         val u = DoubleArray(dim) { random.nextGaussian() }
