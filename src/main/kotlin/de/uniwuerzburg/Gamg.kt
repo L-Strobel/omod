@@ -41,7 +41,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     area = line[0].toDouble(),
                     population = line[3].toDouble(),
                     landuse = Landuse.valueOf(line[4]),
-                    regionType = line[5].toInt()
+                    regionType = line[5].toInt(),
+                    nShops = line[6].toDouble()
                 )
             )
         }
@@ -77,11 +78,13 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 // Calculate aggregate features of cell
                 var population = 0.0
                 var priorWorkWeight = 0.0
+                var nShops = 0.0
                 for ( i in buildingIds) {
                     population += buildings[i].population
                     priorWorkWeight += buildings[i].landuse.getWorkWeight()
+                    nShops += buildings[i].nShops
                 }
-                grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid, regionType))
+                grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid, regionType, nShops))
             }
         }
         // Get population distribution
@@ -142,15 +145,11 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         // Calculate work probability of cell or building
         fun getWorkDist(home: Coordinate, targets: List<Coordinate>, priorWeights: List<Double>,
                         regionType: Int = 0) : DoubleArray {
-            require(targets.size == priorWeights.size)
             // Get distance distribution, Currently always lognormal
             val distObj = distanceDists.home_work[regionType]!!
             val homeWorkDist = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
             // Get the resulting total distribution by factoring in priors
-            val distanceWeights = getProbsByDistance(home, targets, homeWorkDist)
-            val probabilities = DoubleArray (targets.size) { i ->
-                priorWeights[i] * distanceWeights[i]
-            }
+            val probabilities = getProbsByDistance(home, targets, priorWeights, homeWorkDist)
             return StochasticBundle.createCumDist(probabilities)
         }
 
@@ -200,7 +199,6 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * @param location Coordinates of current location
      * @param type Activity type
      * @param regionType region type of current location according to RegioStar7. 0 indicates an undefined region type.
-     * // TODO Shopping should search for actual shops.
      */
     fun findFlexibleLoc(location: Coordinate, type: ActivityType, regionType: Int = 0): Int {
         require(type != ActivityType.HOME) // Home not flexible
@@ -213,13 +211,25 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         val distr = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
 
         // Get cell
-        val secDist = getProbsByDistance(location, grid.map { it.featureCentroid }, distr)
+        val secDist = if (type == ActivityType.SHOPPING) {
+            //val priorWeights = grid.map { it.nShops }
+            //getProbsByDistance(location, grid.map { it.featureCentroid }, priorWeights, distr)
+            grid.map { it.nShops }.toDoubleArray()
+        } else {
+            getProbsByDistance(location, grid.map { it.featureCentroid }, distr)
+        }
         val secCell = StochasticBundle.createAndSampleCumDist(secDist)
 
         // Get building
         val secCellBuildingsID = grid[secCell].buildingIds
         val secCellBuildings = buildings.slice(secCellBuildingsID)
-        val secDistBuilding = getProbsByDistance(location, secCellBuildings.map { it.coord }, distr)
+        val secDistBuilding = if (type == ActivityType.SHOPPING) {
+            //val priorWeights = secCellBuildings.map { it.nShops }
+            //getProbsByDistance(location, secCellBuildings.map { it.coord }, priorWeights, distr)
+            secCellBuildings.map { it.nShops }.toDoubleArray()
+        } else {
+            getProbsByDistance(location, secCellBuildings.map { it.coord }, distr)
+        }
         return secCellBuildingsID[StochasticBundle.createAndSampleCumDist(secDistBuilding)]
     }
 
@@ -323,10 +333,18 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * Get that a discrete location is chosen based on the distance to an origin and pdf(distance)
      * used for both cells and buildings
      */
+    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>,
+                                   priorWeights: List<Double>, baseDist: StochasticBundle.LogNorm) : DoubleArray {
+        require(targets.size == priorWeights.size) { "Targets and prior weights are not the same shape!" }
+        val distanceWeights = getProbsByDistance(origin, targets, baseDist)
+        return DoubleArray(targets.size) { i ->
+            distanceWeights[i] * priorWeights[i]
+        }
+    }
     private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: StochasticBundle.LogNorm) : DoubleArray {
         return DoubleArray (targets.size) { i ->
             // Probability due to distance to home
-            var distance = origin.distance(targets[i])
+            val distance = origin.distance(targets[i])
             baseDist.density(distance)
         }
     }

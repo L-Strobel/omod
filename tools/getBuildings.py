@@ -48,6 +48,10 @@ def loadBuildingsData(city='München'):
               f" AND a.admin_level='6' AND a.name='{city}' AND b.landuse IS NOT NULL")
         landuse = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
+        sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
+            f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
+        shopPoint = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
     buildings = buildings.rename(columns={"way_area": "area"})
     buildings['center'] = buildings.way.centroid
     buildings['x'] = buildings.center.x
@@ -76,6 +80,10 @@ def loadBuildingsData(city='München'):
     buildings['landuse'] = gpd.sjoin(landuse, buildings, op='intersects').groupby('index_right').landuse.first()
     buildings["landuse"] = buildings["landuse"].apply(lambda x: landuseMap.get(x, "NONE"))
 
+    # Add shopping locations
+    buildings["number_shops"] = gpd.sjoin(buildings, shopPoint, op='contains').groupby(level=0).index_right.count()
+    buildings["number_shops"] = buildings["number_shops"].fillna(0).astype(int)
+
     # Add region type
     regioStaR = pd.read_excel("C:/Users/strobel/Projekte/esmregio/Daten/RegioStaR/regiostar-referenzdateien.xlsx", sheet_name="ReferenzGebietsstand2019")
     regioStaR = regioStaR[["gem_19", "RegioStaR7"]].set_index("gem_19")
@@ -92,4 +100,4 @@ def loadBuildingsData(city='München'):
 
 if __name__ == "__main__":
     df = loadBuildingsData()
-    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7"]].to_csv("../Buildings.csv", index=False)
+    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7", "number_shops"]].to_csv("../Buildings.csv", index=False)

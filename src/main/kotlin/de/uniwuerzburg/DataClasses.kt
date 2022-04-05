@@ -76,7 +76,8 @@ data class Building(
     val area: Double,
     val population: Double,
     val landuse: Landuse,
-    val regionType: Int
+    val regionType: Int,
+    val nShops: Double
 )
 
 /**
@@ -89,7 +90,8 @@ data class Cell (
     val envelope: Envelope,
     val buildingIds: List<Int>,
     val featureCentroid: Coordinate,
-    val regionType: Int
+    val regionType: Int,
+    val nShops: Double
 )
 
 /**
