@@ -48,9 +48,29 @@ def loadBuildingsData(city='München'):
               f" AND a.admin_level='6' AND a.name='{city}' AND b.landuse IS NOT NULL")
         landuse = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
+        # Shops
+        sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
+               f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
+        shopPolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+        shopPolygons["way"] = shopPolygons["way"].centroid
+
         sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-            f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
-        shopPoint = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+               f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
+        shopPoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+        shops = shopPoints.append(shopPolygons).reset_index(drop=True)
+
+        # Offices
+        sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
+               f" AND a.admin_level='6' AND a.name='{city}' AND b.office IS NOT NULL")
+        officePolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+        officePolygons["way"] = officePolygons["way"].centroid
+
+        sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
+                    f" AND a.admin_level='6' AND a.name='{city}' AND b.office IS NOT NULL")
+        officePoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+        offices = officePoints.append(officePolygons).reset_index(drop=True)
 
     buildings = buildings.rename(columns={"way_area": "area"})
     buildings['center'] = buildings.way.centroid
@@ -81,8 +101,12 @@ def loadBuildingsData(city='München'):
     buildings["landuse"] = buildings["landuse"].apply(lambda x: landuseMap.get(x, "NONE"))
 
     # Add shopping locations
-    buildings["number_shops"] = gpd.sjoin(buildings, shopPoint, op='contains').groupby(level=0).index_right.count()
+    buildings["number_shops"] = gpd.sjoin(buildings, shops, op='contains').groupby(level=0).index_right.count()
     buildings["number_shops"] = buildings["number_shops"].fillna(0).astype(int)
+
+    # Add office locations
+    buildings["number_offices"] = gpd.sjoin(buildings, offices, op='contains').groupby(level=0).index_right.count()
+    buildings["number_offices"] = buildings["number_offices"].fillna(0).astype(int)
 
     # Add region type
     regioStaR = pd.read_excel("C:/Users/strobel/Projekte/esmregio/Daten/RegioStaR/regiostar-referenzdateien.xlsx", sheet_name="ReferenzGebietsstand2019")
@@ -100,4 +124,4 @@ def loadBuildingsData(city='München'):
 
 if __name__ == "__main__":
     df = loadBuildingsData()
-    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7", "number_shops"]].to_csv("../Buildings.csv", index=False)
+    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7", "number_shops", "number_offices"]].to_csv("../Buildings.csv", index=False)

@@ -47,9 +47,9 @@ enum class Landuse {
 
     fun getWorkWeight() : Double {
         return when(this) {
-            RESIDENTIAL -> 1.0
-            INDUSTRIAL -> 2.0
-            COMMERCIAL -> 2.0
+            RESIDENTIAL -> 0.0
+            INDUSTRIAL -> 1.0
+             COMMERCIAL -> 0.0
             else -> 0.0
         }
     }
@@ -77,8 +77,11 @@ data class Building(
     val population: Double,
     val landuse: Landuse,
     val regionType: Int,
-    val nShops: Double
-)
+    val nShops: Double,
+    val nOffices: Double
+) {
+    val priorWorkWeight = nShops + nOffices + landuse.getWorkWeight()
+}
 
 /**
  * Group of buildings. For faster 2D distribution sampling.
@@ -91,7 +94,8 @@ data class Cell (
     val buildingIds: List<Int>,
     val featureCentroid: Coordinate,
     val regionType: Int,
-    val nShops: Double
+    val nShops: Double,
+    val nOffices: Double
 )
 
 /**
