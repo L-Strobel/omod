@@ -13,7 +13,7 @@ def best_fit_distribution(data):
     """Model data by finding best fit distribution to data"""
 
     # Best holders
-    fittedDists = pd.DataFrame()
+    fittedDists = []
 
     # Estimate distribution parameters from data
     for distribution in distributions:
@@ -25,15 +25,18 @@ def best_fit_distribution(data):
         loc = params[-2]
         scale = params[-1]
                
-        fittedDist = {"Name": distribution.name,  "Dist Mean": distribution.mean(loc=loc, scale=scale, *arg), "Real mean": data.mean(),
-                      "Dist Var": distribution.var(loc=loc, scale=scale, *arg), "Real Var": data.var(), "Dist Scipy": distribution, 
-                      "Parameters": params, "KS-Test": stats.kstest(data, distribution.name, args=params)[0]}
-        fittedDists = fittedDists.append(fittedDist, ignore_index=True)
-    return fittedDists
+        fittedDist = pd.DataFrame({"Name": distribution.name,  "Dist Mean": distribution.mean(loc=loc, scale=scale, *arg),
+                                   "Real mean": data.mean(), "Dist Var": distribution.var(loc=loc, scale=scale, *arg),
+                                   "Real Var": data.var(), "Dist Scipy": distribution, "Parameters": None,
+                                   "KS-Test": stats.kstest(data, distribution.name, args=params)[0]}, index = [1])
+        fittedDist.at[1, "Parameters"] = params
+        
+        fittedDists.append(fittedDist)
+    return pd.concat(fittedDists, ignore_index=True)
 
 # Fit all distributions to each regiontype and return dataframe
 def getDistanceDistributions(trips, startLoc, destLoc, plotBest=True):
-    df_distributions = pd.DataFrame()
+    df_distributions = []
     regions = ["All"] + list(np.sort(trips.RegioStaR7.dropna().unique()))
     
     # Filter dataset
@@ -53,24 +56,25 @@ def getDistanceDistributions(trips, startLoc, destLoc, plotBest=True):
             mask = baseMask & (trips.RegioStaR7 == rType)
         else:
             mask = baseMask
-        data = trips[mask].wegkm.values.squeeze()
+        data = trips[mask].wegkm.values.squeeze() * 1000 # In meters
 
         # Find best fit distribution
         df_region = best_fit_distribution(data)
         df_region.loc[:, "RegionType"] = rType
         df_region.loc[:, "Samples"] = len(data)
-        df_distributions = df_distributions.append(df_region, ignore_index=True)
+        df_distributions.append(df_region)
 
         # Plot best fitting distribution
         if plotBest:
-            sns.histplot(x="wegkm", binrange=(0, 100), binwidth=1, data=trips[mask], ax=ax.ravel()[i], color = tab10(i), stat="probability")
+            ax.ravel()[i].hist(data, bins=100, range=(0, 100_000), color = tab10(i), density=True)
             row = df_region.sort_values("KS-Test").iloc[0]
             params = row["Parameters"]
-            _ = ax.ravel()[i].plot(np.arange(0.1, 100, 0.1), row["Dist Scipy"].pdf(np.arange(0.1, 100, 0.1), loc=params[-2], scale=params[-1], *params[:-2]))
+            x = np.linspace(0.1, 100_000, 1000)
+            _ = ax.ravel()[i].plot(x, row["Dist Scipy"].pdf(x, loc=params[-2], scale=params[-1], *params[:-2]))
             _ = ax.ravel()[i].set_title(f"{rType}, Best KS-Test: {row['Name']}" )  
-            _ = ax.ravel()[i].set_xlim(0, 100)
+            _ = ax.ravel()[i].set_xlim(0, 100_000)
             _ = ax.ravel()[i].set_xlabel("")
-    return df_distributions
+    return pd.concat(df_distributions, ignore_index=True)
 
 # Run some function for each sociodemographic group
 def forAllGrps(persons, fun: callable(5)):

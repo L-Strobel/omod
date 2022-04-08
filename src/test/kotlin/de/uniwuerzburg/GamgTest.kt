@@ -14,14 +14,15 @@ internal class GamgTest {
     // Test giving custom starting coordinates
     @Test
     fun getMobilityProfile() {
-        val xExpected = 1283259.4417336076
-        val yExpected = 6120644.491439164
+        val xExpected = 1285755.5189086606
+        val yExpected = 6126968.5279632155
         val coords = Coordinate(xExpected, yExpected)
         val result = testGamg.getMobilityProfile(testAgent, fromCoords = coords )
         assertEquals(xExpected, result[0].x)
         assertEquals(yExpected, result[0].y)
     }
 
+    @Suppress("USELESS_CAST")
     @Test
     fun createAgents() {
         val popTxt = GamgTest::class.java.classLoader.getResource("testPopulation.json")!!.readText(Charsets.UTF_8)

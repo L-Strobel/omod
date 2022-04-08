@@ -152,8 +152,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             val distObj = distanceDists.home_work[regionType]!!
             val homeWorkDist = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
             // Get the resulting total distribution by factoring in priors
-            // val probabilities = getProbsByDistance(home, targets, priorWeights, homeWorkDist)
-            return StochasticBundle.createCumDist(priorWeights.toDoubleArray())
+            val probabilities = getProbsByDistance(home, targets, priorWeights, homeWorkDist)
+            return StochasticBundle.createCumDist(probabilities)
         }
 
         // Generate population
@@ -202,7 +202,6 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * @param location Coordinates of current location
      * @param type Activity type
      * @param regionType region type of current location according to RegioStar7. 0 indicates an undefined region type.
-     * TODO shopping locations not the best right now
      */
     fun findFlexibleLoc(location: Coordinate, type: ActivityType, regionType: Int = 0): Int {
         require(type != ActivityType.HOME) // Home not flexible
@@ -216,9 +215,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
         // Get cell
         val secDist = if (type == ActivityType.SHOPPING) {
-            // val priorWeights = grid.map { it.nShops }
-            // getProbsByDistance(location, grid.map { it.featureCentroid }, priorWeights, distr)
-            grid.map { it.nShops }.toDoubleArray()
+            val priorWeights = grid.map { it.nShops }
+            getProbsByDistance(location, grid.map { it.featureCentroid }, priorWeights, distr)
+            //grid.map { it.nShops }.toDoubleArray()
         } else {
             getProbsByDistance(location, grid.map { it.featureCentroid }, distr)
         }
@@ -228,9 +227,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         val secCellBuildingsID = grid[secCell].buildingIds
         val secCellBuildings = buildings.slice(secCellBuildingsID)
         val secDistBuilding = if (type == ActivityType.SHOPPING) {
-            // val priorWeights = secCellBuildings.map { it.nShops }
-            // getProbsByDistance(location, secCellBuildings.map { it.coord }, priorWeights, distr)
-            secCellBuildings.map { it.nShops }.toDoubleArray()
+            val priorWeights = secCellBuildings.map { it.nShops }
+            getProbsByDistance(location, secCellBuildings.map { it.coord }, priorWeights, distr)
+            //secCellBuildings.map { it.nShops }.toDoubleArray()
         } else {
             getProbsByDistance(location, secCellBuildings.map { it.coord }, distr)
         }
