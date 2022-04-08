@@ -5,6 +5,7 @@ from io import StringIO
 import json
 import utils
 import warnings
+import os
 
 def loadData():
     persons =  midcrypt.fetchJMU('MiD2017_Lokal_Personen.csv.encrypted')
@@ -13,7 +14,7 @@ def loadData():
     trips = midcrypt.fetchJMU('MiD2017_Lokal_Wege.csv.encrypted')
     trips = pd.read_csv(StringIO(trips), sep=";", decimal=",")
 
-    with open('mapID2Regio.json', 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'mapID2Regio.json'), 'r', encoding='utf-8') as f:
         regioMap = json.load(f)
     trips["RegioStaR7"] = trips.GITTER_500m.apply(lambda x: regioMap.get(x, None))
 
