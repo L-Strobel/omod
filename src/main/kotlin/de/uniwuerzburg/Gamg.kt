@@ -383,7 +383,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     }
 
     fun getOtherDistr(location: Coordinate, options: List<LocationOption>, regionType: Int) : DoubleArray {
-        val distObj = distanceDists.any_shopping[regionType]!!
+        val distObj = distanceDists.any_other[regionType]!!
         val distr = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
         val targets = options.map { it.coord }
         val distanceWeights = getProbsByDistance(location, targets, distr)
