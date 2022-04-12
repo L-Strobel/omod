@@ -63,6 +63,17 @@ enum class ActivityType {
 }
 
 /**
+ * Interface for cells and buildings
+ */
+interface LocationOption {
+    val coord: Coordinate
+    val population: Double
+    val workWeight: Double
+    val nShops: Double
+    val nSchools: Double
+    val nUnis: Double
+}
+/**
  * Model for a building
  *
  * @param coord coordinates in meters
@@ -71,16 +82,18 @@ enum class ActivityType {
  * @param landuse OSM-Landuse of the building
  * @param regionType RegioStar7 of the municipality
  */
-data class Building(
-    val coord: Coordinate,
+data class Building  (
+    override val coord: Coordinate,
     val area: Double,
-    val population: Double,
+    override val population: Double,
     val landuse: Landuse,
     val regionType: Int,
-    val nShops: Double,
-    val nOffices: Double
-) {
-    val priorWorkWeight = nShops + nOffices + landuse.getWorkWeight()
+    override val nShops: Double,
+    val nOffices: Double,
+    override val nSchools: Double,
+    override val nUnis: Double
+) : LocationOption {
+    override val workWeight = nShops + nOffices + landuse.getWorkWeight()
 }
 
 /**
@@ -88,15 +101,19 @@ data class Building(
  * Method: Sample from Cells -> Sample from buildings in cell
  */
 data class Cell (
-    val population: Double,
-    val priorWorkWeight: Double,
+    override val population: Double,
+    override val workWeight: Double,
     val envelope: Envelope,
     val buildingIds: List<Int>,
     val featureCentroid: Coordinate,
     val regionType: Int,
-    val nShops: Double,
-    val nOffices: Double
-)
+    override val nShops: Double,
+    val nOffices: Double,
+    override val nSchools: Double,
+    override val nUnis: Double
+) : LocationOption {
+    override val coord: Coordinate = featureCentroid
+}
 
 /**
  * Agent
@@ -109,6 +126,7 @@ data class MobiAgent (
     val age: String,
     val home: Int,
     val work: Int,
+    val school: Int,
     var profile: List<Activity>? = null
 )
 

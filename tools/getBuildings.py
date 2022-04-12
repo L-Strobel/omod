@@ -1,6 +1,6 @@
-import psycopg2
 import pandas as pd
 import geopandas as gpd
+import sqlalchemy
 
 landuseMap = {
     'residential': 'RESIDENTIAL',
@@ -25,7 +25,7 @@ landuseMap = {
 
 def loadBuildingsData(city='München'):
     # OSM-Data
-    with psycopg2.connect(database="OSM_Ger", user="postgres", password="password", host="localhost") as conn:
+    with sqlalchemy.create_engine('postgresql://postgres:password@localhost/OSM_Ger').connect() as conn:
         # Considered area
         sql = (f"SELECT * FROM planet_osm_polygon WHERE admin_level='6' AND name='{city}'")
         area = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
@@ -58,7 +58,7 @@ def loadBuildingsData(city='München'):
                f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
         shopPoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
-        shops = shopPoints.append(shopPolygons).reset_index(drop=True)
+        shops = pd.concat([shopPoints, shopPolygons], ignore_index=True)
 
         # Offices
         sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
@@ -70,7 +70,20 @@ def loadBuildingsData(city='München'):
                     f" AND a.admin_level='6' AND a.name='{city}' AND b.office IS NOT NULL")
         officePoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
-        offices = officePoints.append(officePolygons).reset_index(drop=True)
+        offices = pd.concat([officePoints, officePolygons], ignore_index=True)
+
+        # Amenities. Currently only needed for schools and universities.
+        # In the future: Restaurants, doctors, cinema, and more. I.e. OTHER stuff -> needs correlation analysis with MID
+        sql = ("SELECT b.amenity, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
+            " AND a.admin_level='6' AND a.name='München' AND b.amenity IS NOT NULL")
+        amenityPolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+        amenityPolygons["way"] = amenityPolygons["way"].centroid
+
+        sql = ("SELECT b.amenity, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
+           " AND a.admin_level='6' AND a.name='München' AND b.amenity IS NOT NULL")
+        amenityPoint = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+        amenities = pd.concat([amenityPoint, amenityPolygons], ignore_index=True)
 
     buildings = buildings.rename(columns={"way_area": "area"})
     buildings['center'] = buildings.way.centroid
@@ -108,6 +121,16 @@ def loadBuildingsData(city='München'):
     buildings["number_offices"] = gpd.sjoin(buildings, offices, op='contains').groupby(level=0).index_right.count()
     buildings["number_offices"] = buildings["number_offices"].fillna(0).astype(int)
 
+    # Add school locations
+    schools = amenities[amenities.amenity == "school"]
+    buildings["number_schools"] = gpd.sjoin(buildings, schools, op='contains').groupby(level=0).index_right.count()
+    buildings["number_schools"] = buildings["number_schools"].fillna(0).astype(int)
+
+    # Add office locations
+    universities = amenities[amenities.amenity == "university"]
+    buildings["number_universities"] = gpd.sjoin(buildings, universities, op='contains').groupby(level=0).index_right.count()
+    buildings["number_universities"] = buildings["number_universities"].fillna(0).astype(int)
+
     # Add region type
     regioStaR = pd.read_excel("C:/Users/strobel/Projekte/esmregio/Daten/RegioStaR/regiostar-referenzdateien.xlsx", sheet_name="ReferenzGebietsstand2019")
     regioStaR = regioStaR[["gem_19", "RegioStaR7"]].set_index("gem_19")
@@ -124,4 +147,5 @@ def loadBuildingsData(city='München'):
 
 if __name__ == "__main__":
     df = loadBuildingsData()
-    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7", "number_shops", "number_offices"]].to_csv("../Buildings.csv", index=False)
+    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7", "number_shops",
+        "number_offices", "number_schools", "number_universities"]].to_csv("../Buildings.csv", index=False)
