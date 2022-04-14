@@ -293,7 +293,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         return getMobilityProfile(agent, weekday, from, buildingID)
     }
     fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
-                           from: ActivityType = ActivityType.HOME, fromCoords: Coordinate): List<Activity> {
+                           from: ActivityType, fromCoords: Coordinate): List<Activity> {
         val fromBuildingID = kdTree.query(fromCoords).data as Int
         return getMobilityProfile(agent, weekday, from, fromBuildingID)
     }
