@@ -19,8 +19,8 @@ import org.locationtech.jts.index.kdtree.KdNode
  */
 @Suppress("MemberVisibilityCanBePrivate")
 class Gamg(buildingsPath: String, gridResolution: Double) {
-    private val buildings: MutableList<Building>
-    private val kdTree: KdTree
+    val buildings: List<Building>
+    val kdTree: KdTree
     private val grid: List<Cell>
     private val activityDataMap: ActivityDataMap
     private val populationDef: PopulationDef
@@ -57,7 +57,27 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         }
 
         // Create grid
-        grid = mutableListOf()
+        grid = makeGrid(gridResolution)
+
+        // Get population distribution
+        val popTxt = Gamg::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
+        populationDef = Json.decodeFromString(popTxt)
+
+        // Get activity chain data
+        val actTxt = Gamg::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
+        val activityGroups: List<ActivityGroup> = Json.decodeFromString(actTxt)
+        activityDataMap = ActivityDataMap(activityGroups)
+
+        // Get distance distributions
+        val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
+        distanceDists = Json.decodeFromString(distrTxt)
+    }
+
+    /**
+     * Group buildings with a regular grid for faster sampling.
+     */
+    fun makeGrid(gridResolution: Double) : List<Cell> {
+        val grid = mutableListOf<Cell>()
         val xMin = buildings.minOfOrNull { it.coord.x } ?:0.0
         val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
         val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
@@ -88,21 +108,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 val nSchools = cellBuildings.sumOf { it.nSchools }
                 val nUnis = cellBuildings.sumOf { it.nUnis }
                 grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid, regionType,
-                              nShops, nOffices, nSchools, nUnis))
+                    nShops, nOffices, nSchools, nUnis))
             }
         }
-        // Get population distribution
-        val popTxt = Gamg::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
-        populationDef = Json.decodeFromString(popTxt)
-
-        // Get activity chain data
-        val actTxt = Gamg::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
-        val activityGroups: List<ActivityGroup> = Json.decodeFromString(actTxt)
-        activityDataMap = ActivityDataMap(activityGroups)
-
-        // Get distance distributions
-        val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
-        distanceDists = Json.decodeFromString(distrTxt)
+        return grid.toList()
     }
 
     /**

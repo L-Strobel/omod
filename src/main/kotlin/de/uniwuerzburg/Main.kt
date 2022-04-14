@@ -36,5 +36,5 @@ fun runDay(buildingPath: String, n: Int) {
 
 fun main() {
     val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings.csv"
-    runWeek(buildingPath, 10000)
+    runDay(buildingPath, 10000)
 }
