@@ -21,13 +21,16 @@ fun runWeek(buildingPath: String, n: Int){
                 }
             }
         }
-        File("$weekday.json").writeText(Json.encodeToString(agents))
+        File("validation/out/$weekday.json").writeText(Json.encodeToString(agents))
     }
 }
 
 fun runDay(buildingPath: String, n: Int) {
     val gamg = Gamg(buildingPath, 500.0)
-    val elapsed = measureTimeMillis { gamg.run(n, safeToJson = true) }
+    val elapsed = measureTimeMillis {
+        val agents = gamg.run(n)
+        File("validation/out/singleUndefined.json").writeText(Json.encodeToString(agents))
+    }
     println(elapsed / 1000.0)
 }
 
