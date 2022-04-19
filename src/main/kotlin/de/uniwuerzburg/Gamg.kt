@@ -7,10 +7,14 @@ import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
 import org.locationtech.jts.geom.Coordinate
 import kotlinx.serialization.json.*
+import org.geotools.geometry.jts.JTS
+import org.geotools.referencing.CRS
 import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.Point
 import org.locationtech.jts.index.kdtree.KdNode
+import org.opengis.referencing.crs.CoordinateReferenceSystem
 
 /**
  * General purpose mobility demand generator (gamg)
@@ -18,26 +22,43 @@ import org.locationtech.jts.index.kdtree.KdNode
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Gamg(buildingsPath: String, gridResolution: Double) {
+class Gamg(buildingsPath: String, gridResolution: Double, calculationCRS: String = "EPSG:3857") {
     val buildings: List<Building>
     val kdTree: KdTree
     private val grid: List<Cell>
     private val activityDataMap: ActivityDataMap
     private val populationDef: PopulationDef
     private val distanceDists: DistanceDistributions
+    private val geometryFactory = GeometryFactory()
+    private val targetCRS: CoordinateReferenceSystem // Set by user. Should be flat in area of interest.
+    private val sourceCRS  = CRS.decode("EPSG:4326") // Should always be lat/lon
 
     init {
+        // Flat coordinate system used internally. Must fit to geographic region.
+        targetCRS = CRS.decode(calculationCRS)
+        // Transformer
+        val transform = CRS.findMathTransform(sourceCRS, targetCRS, true)
+
+        // Read buildings data
         val reader = BufferedReader(FileReader(buildingsPath))
 
         // Skip header
         reader.readLine()
         // Read body
+        var id = 0
         buildings = mutableListOf()
         reader.forEachLine {
             val line = it.split(",")
+
+            // Transform the lat lons to cartesian coordinates
+            val latlonCoord = Coordinate(line[1].toDouble(), line[2].toDouble())
+            val calcPoint = JTS.transform(geometryFactory.createPoint(Coordinate(latlonCoord)), transform) as Point
+
             buildings.add(
                 Building(
-                    coord = Coordinate(line[1].toDouble(), line[2].toDouble()),
+                    id = id,
+                    coord = calcPoint.coordinate,
+                    latlonCoord = latlonCoord,
                     area = line[0].toDouble(),
                     population = line[3].toDouble(),
                     landuse = Landuse.valueOf(line[4]),
@@ -48,12 +69,13 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     nUnis = line[9].toDouble()
                 )
             )
+            id += 1
         }
 
         // Create KD-Tree for faster access
         kdTree = KdTree()
-        buildings.forEachIndexed { i, building ->
-            kdTree.insert(building.coord, i)
+        buildings.forEach { building ->
+            kdTree.insert(building.coord, building.id)
         }
 
         // Create grid
@@ -82,7 +104,6 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
         val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
         val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
-        val geometryFactory = GeometryFactory() // For centroid calculation
         for (x in xMin..xMax step gridResolution) {
             for (y in yMin..yMax step gridResolution) {
                 val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
@@ -171,36 +192,34 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             // Get home building
             val homeCellBuildings = buildings.slice(homeCell.buildingIds)
             val inHomeCellID = StochasticBundle.createAndSampleCumDist(homeCellBuildings.map { it.population }.toDoubleArray())
-            val home = homeCell.buildingIds[inHomeCellID]
-            val homeCoords = buildings[home].coord
-            val homeRegion = buildings[home].regionType
+            val home = homeCellBuildings[inHomeCellID]
 
             // Get work cell
             val workCellCumDist = workDistCache.getOrPut(homeCellID) {
-                getWorkDistr(homeCell.featureCentroid, grid, homeRegion)
+                getWorkDistr(homeCell.featureCentroid, grid, home.regionType)
             }
             val workCell = grid[StochasticBundle.sampleCumDist(workCellCumDist)]
 
             // Get work building
             val workCellBuildings = buildings.slice(workCell.buildingIds)
-            val workBuildingsCumDist = getWorkDistr(homeCoords, workCellBuildings, homeRegion)
+            val workBuildingsCumDist = getWorkDistr(home.coord, workCellBuildings, home.regionType)
             val inWorkCellID = StochasticBundle.sampleCumDist(workBuildingsCumDist)
-            val work = workCell.buildingIds[inWorkCellID]
+            val work = workCellBuildings[inWorkCellID]
 
             // Get school cell
             val schoolCellCumDist = schoolDistCache.getOrPut(homeCellID) {
-                getSchoolDistr(homeCell.featureCentroid, grid, homeRegion)
+                getSchoolDistr(homeCell.featureCentroid, grid,  home.regionType)
             }
             val schoolCell = grid[StochasticBundle.sampleCumDist(schoolCellCumDist)]
 
             // Get school building
             val schoolCellBuildings = buildings.slice(schoolCell.buildingIds)
-            val schoolBuildingsCumDist = getSchoolDistr(homeCoords, schoolCellBuildings, homeRegion)
+            val schoolBuildingsCumDist = getSchoolDistr(home.coord, schoolCellBuildings, home.regionType)
             val inSchoolCellID = StochasticBundle.sampleCumDist(schoolBuildingsCumDist)
-            val school = schoolCell.buildingIds[inSchoolCellID]
+            val school = schoolCellBuildings[inSchoolCellID]
 
             // Add the agent to the population
-            MobiAgent(i, homogenousGroup, mobilityGroup, age, home, work, school)
+            MobiAgent(i, homogenousGroup, mobilityGroup, age, home.id, work.id, school.id)
         }
         return agents
     }
@@ -230,7 +249,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         } else {
             getOtherDistr(location, flexCellBuildings, regionType)
         }
-        return flexCell.buildingIds[StochasticBundle.sampleCumDist(flexBuildingCumDist)]
+        val inFlexCellID = StochasticBundle.sampleCumDist(flexBuildingCumDist)
+        return flexCellBuildings[inFlexCellID].id
     }
 
     /**
@@ -269,7 +289,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
      * @param fromBuildingID The building the day starts at
      */
     fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
-                     fromBuildingID: Int) : List<Coordinate> {
+                     fromBuildingID: Int) : List<Building> {
         val locations = mutableListOf<Building>()
         activityChain.forEachIndexed { i, activity ->
             if (i == 0){
@@ -277,15 +297,15 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             } else {
                 locations.add(
                     when (activity) {
-                        ActivityType.HOME -> buildings[agent.home]
-                        ActivityType.WORK -> buildings[agent.work]
-                        ActivityType.SCHOOL -> buildings[agent.school]
+                        ActivityType.HOME -> buildings[agent.homeID]
+                        ActivityType.WORK -> buildings[agent.workID]
+                        ActivityType.SCHOOL -> buildings[agent.schoolID]
                         else ->  buildings[findFlexibleLoc(locations[i-1].coord, activity, locations[i-1].regionType)]
                     }
                 )
             }
         }
-        return locations.map { it.coord }
+        return locations
     }
 
     /**
@@ -294,17 +314,12 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
                            from: ActivityType = ActivityType.HOME): List<Activity> {
         val buildingID = when(from) {
-            ActivityType.HOME -> agent.home
-            ActivityType.WORK -> agent.work
-            ActivityType.SCHOOL -> agent.school
+            ActivityType.HOME -> agent.homeID
+            ActivityType.WORK -> agent.workID
+            ActivityType.SCHOOL -> agent.schoolID
             else -> throw Exception("Start must be either Home, Work, School, or coordinates must be given. Agent: ${agent.id}")
         }
         return getMobilityProfile(agent, weekday, from, buildingID)
-    }
-    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
-                           from: ActivityType, fromCoords: Coordinate): List<Activity> {
-        val fromBuildingID = kdTree.query(fromCoords).data as Int
-        return getMobilityProfile(agent, weekday, from, fromBuildingID)
     }
     fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME,
                            fromBuildingID: Int): List<Activity> {
@@ -312,7 +327,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         val stayTimes = getStayTimes(activityChain, agent, weekday, from)
         val locations = getLocations(agent, activityChain, fromBuildingID)
         return List(activityChain.size) { i ->
-            Activity(activityChain[i], stayTimes[i], locations[i].x, locations[i].y)
+            Activity(activityChain[i], stayTimes[i], locations[i].id, locations[i].latlonCoord.x, locations[i].latlonCoord.y)
         }
     }
 

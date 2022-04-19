@@ -83,7 +83,9 @@ interface LocationOption {
  * @param regionType RegioStar7 of the municipality
  */
 data class Building  (
+    val id: Int,
     override val coord: Coordinate,
+    val latlonCoord: Coordinate,
     val area: Double,
     override val population: Double,
     val landuse: Landuse,
@@ -124,9 +126,9 @@ data class MobiAgent (
     val homogenousGroup: String,
     val mobilityGroup: String,
     val age: String,
-    val home: Int,
-    val work: Int,
-    val school: Int,
+    val homeID: Int,
+    val workID: Int,
+    val schoolID: Int,
     var profile: List<Activity>? = null
 )
 
@@ -137,7 +139,8 @@ data class MobiAgent (
 data class Activity (
     val type: ActivityType,
     val stayTime: Double?,
-    val x: Double,
-    val y: Double
+    val buildingID: Int,
+    val lat: Double,
+    val lon: Double
 )
 

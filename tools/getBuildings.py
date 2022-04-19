@@ -23,6 +23,8 @@ landuseMap = {
     'quarry': 'FOREST'
 }
 
+outCrs = 4326
+
 def loadBuildingsData(city='München'):
     # OSM-Data
     with sqlalchemy.create_engine('postgresql://postgres:password@localhost/OSM_Ger').connect() as conn:
@@ -85,11 +87,6 @@ def loadBuildingsData(city='München'):
 
         amenities = pd.concat([amenityPoint, amenityPolygons], ignore_index=True)
 
-    buildings = buildings.rename(columns={"way_area": "area"})
-    buildings['center'] = buildings.way.centroid
-    buildings['x'] = buildings.center.x
-    buildings['y'] = buildings.center.y
-
     # Add Zensus data
     path = "C:/Users/strobel/Projekte/esmregio/Daten/Zensus2011/Einwohner/Zensus_Bevoelkerung_100m-Gitter.csv"
     zensus = pd.read_csv(path, sep=";").set_index("Gitter_ID_100m")
@@ -143,9 +140,16 @@ def loadBuildingsData(city='München'):
     buildings["RegioStaR7"] = buildings["RegioStaR7"].astype(int)
     buildings = buildings.rename(columns={"RegioStaR7": "region_type_RegioStaR7"})
 
+    # Cosmetic and crs
+    buildings = buildings.rename(columns={"way_area": "area"})
+    buildings['center'] = buildings.way.centroid
+    buildings = buildings.set_geometry('center').to_crs(epsg=outCrs)
+    buildings['lon'] = buildings.center.x
+    buildings['lat'] = buildings.center.y
+
     return buildings
 
 if __name__ == "__main__":
     df = loadBuildingsData()
-    df[["area", "x", "y", "population", "landuse", "region_type_RegioStaR7", "number_shops",
+    df[["area", "lat", "lon", "population", "landuse", "region_type_RegioStaR7", "number_shops",
         "number_offices", "number_schools", "number_universities"]].to_csv("../Buildings.csv", index=False)

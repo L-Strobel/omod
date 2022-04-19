@@ -2,10 +2,11 @@ package de.uniwuerzburg
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.locationtech.jts.geom.Coordinate
 import java.io.File
 import kotlin.system.measureTimeMillis
 
+
+/*
 fun runWeek(buildingPath: String, n: Int){
     val gamg = Gamg(buildingPath, 500.0)
     val agents = gamg.createAgents(n)
@@ -24,7 +25,7 @@ fun runWeek(buildingPath: String, n: Int){
         File("validation/out/$weekday.json").writeText(Json.encodeToString(agents))
     }
 }
-
+*/
 fun runDay(buildingPath: String, n: Int) {
     val gamg = Gamg(buildingPath, 500.0)
     val elapsed = measureTimeMillis {
