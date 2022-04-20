@@ -22,7 +22,7 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Gamg(buildingsPath: String, gridResolution: Double, calculationCRS: String = "EPSG:3857") {
+class Gamg(buildingsPath: String, gridResolution: Double) {
     val buildings: List<Building>
     val kdTree: KdTree
     private val grid: List<Cell>
@@ -30,12 +30,10 @@ class Gamg(buildingsPath: String, gridResolution: Double, calculationCRS: String
     private val populationDef: PopulationDef
     private val distanceDists: DistanceDistributions
     private val geometryFactory = GeometryFactory()
-    private val targetCRS: CoordinateReferenceSystem // Set by user. Should be flat in area of interest.
+    private val targetCRS: CoordinateReferenceSystem = CRS.decode("EPSG:3857") // Mercator for distance calculation
     private val sourceCRS  = CRS.decode("EPSG:4326") // Should always be lat/lon
 
     init {
-        // Flat coordinate system used internally. Must fit to geographic region.
-        targetCRS = CRS.decode(calculationCRS)
         // Transformer
         val transform = CRS.findMathTransform(sourceCRS, targetCRS, true)
 
