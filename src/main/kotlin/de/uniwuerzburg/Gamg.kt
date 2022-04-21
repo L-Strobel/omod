@@ -7,14 +7,10 @@ import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
 import org.locationtech.jts.geom.Coordinate
 import kotlinx.serialization.json.*
-import org.geotools.geometry.jts.JTS
-import org.geotools.referencing.CRS
 import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Point
 import org.locationtech.jts.index.kdtree.KdNode
-import org.opengis.referencing.crs.CoordinateReferenceSystem
 
 /**
  * General purpose mobility demand generator (gamg)
@@ -30,13 +26,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
     private val populationDef: PopulationDef
     private val distanceDists: DistanceDistributions
     private val geometryFactory = GeometryFactory()
-    private val targetCRS: CoordinateReferenceSystem = CRS.decode("EPSG:3857") // Mercator for distance calculation
-    private val sourceCRS  = CRS.decode("EPSG:4326") // Should always be lat/lon
 
     init {
-        // Transformer
-        val transform = CRS.findMathTransform(sourceCRS, targetCRS, true)
-
         // Read buildings data
         val reader = BufferedReader(FileReader(buildingsPath))
 
@@ -48,14 +39,16 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         reader.forEachLine {
             val line = it.split(",")
 
+            val lat = line[1].toDouble()
+            val lon = line[2].toDouble()
+            val latlonCoord = Coordinate(lat, lon)
             // Transform the lat lons to cartesian coordinates
-            val latlonCoord = Coordinate(line[1].toDouble(), line[2].toDouble())
-            val calcPoint = JTS.transform(geometryFactory.createPoint(Coordinate(latlonCoord)), transform) as Point
+            val coord = latlonToMercator(lat, lon)
 
             buildings.add(
                 Building(
                     id = id,
-                    coord = calcPoint.coordinate,
+                    coord = coord,
                     latlonCoord = latlonCoord,
                     area = line[0].toDouble(),
                     population = line[3].toDouble(),
@@ -116,6 +109,9 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     cellBuildings.map { it.coord }.toTypedArray()
                 ).centroid.coordinate
 
+                // Transform the lat lons to cartesian coordinates
+                val latlonCentroid = mercatorToLatLon(featureCentroid.x, featureCentroid.y)
+
                 // Most common region type
                 val regionType = cellBuildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
 
@@ -126,8 +122,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 val nOffices = cellBuildings.sumOf { it.nOffices }
                 val nSchools = cellBuildings.sumOf { it.nSchools }
                 val nUnis = cellBuildings.sumOf { it.nUnis }
-                grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid, regionType,
-                    nShops, nOffices, nSchools, nUnis))
+                grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid,
+                              latlonCentroid, regionType, nShops, nOffices, nSchools, nUnis))
             }
         }
         return grid.toList()

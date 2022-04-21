@@ -58,6 +58,7 @@ enum class Landuse {
 /**
  * Activity types.
  */
+@Suppress("unused")
 enum class ActivityType {
     HOME, WORK, BUSINESS, SCHOOL, SHOPPING, OTHER;
 }
@@ -108,6 +109,7 @@ data class Cell (
     val envelope: Envelope,
     val buildingIds: List<Int>,
     val featureCentroid: Coordinate,
+    val latlonCentroid: Coordinate,
     val regionType: Int,
     override val nShops: Double,
     val nOffices: Double,

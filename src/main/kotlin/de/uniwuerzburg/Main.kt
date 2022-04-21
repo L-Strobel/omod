@@ -5,7 +5,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.system.measureTimeMillis
 
-
 /*
 fun runWeek(buildingPath: String, n: Int){
     val gamg = Gamg(buildingPath, 500.0)
