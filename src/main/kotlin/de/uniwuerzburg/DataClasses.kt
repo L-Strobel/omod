@@ -85,6 +85,7 @@ interface LocationOption {
  */
 data class Building  (
     val id: Int,
+    val osmID: Int,
     override val coord: Coordinate,
     val latlonCoord: Coordinate,
     val area: Double,
@@ -94,7 +95,7 @@ data class Building  (
     override val nShops: Double,
     val nOffices: Double,
     override val nSchools: Double,
-    override val nUnis: Double
+    override val nUnis: Double,
 ) : LocationOption {
     override val workWeight = nShops + nOffices + landuse.getWorkWeight()
 }

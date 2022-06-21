@@ -29,7 +29,7 @@ fun latlonToMercator(lat: Double, lon: Double) : Coordinate {
 
 fun mercatorToLatLon(x: Double, y: Double) : Coordinate {
     val radLon = x / earthMajorAxis
-    val radLat = (atan(y / earthMajorAxis) - PI / 4) * 2
+    val radLat = (atan(exp(y / earthMajorAxis)) - PI / 4) * 2
 
     val lon = radLon * 180.0 / PI
     val lat = radLat * 180.0 / PI

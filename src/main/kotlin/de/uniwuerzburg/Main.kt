@@ -35,6 +35,6 @@ fun runDay(buildingPath: String, n: Int) {
 }
 
 fun main() {
-    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings.csv"
+    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974.csv"
     runDay(buildingPath, 10000)
 }

@@ -58,7 +58,7 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
      */
     fun get(weekday: String, homogenousGroup: String, mobilityGroup: String, age: String, from: ActivityType,
             givenChain: List<ActivityType>? = null): ChainData {
-        require(from == ActivityType.HOME || from == ActivityType.OTHER )
+        require(from == ActivityType.HOME || from == ActivityType.OTHER ) { "Chain starts at $from. This is not allowed."}
 
         val key = Key(weekday, homogenousGroup, mobilityGroup, age)
         var groupData = nodes[key]

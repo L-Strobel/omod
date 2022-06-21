@@ -39,8 +39,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         reader.forEachLine {
             val line = it.split(",")
 
-            val lat = line[1].toDouble()
-            val lon = line[2].toDouble()
+            val lat = line[2].toDouble()
+            val lon = line[3].toDouble()
             val latlonCoord = Coordinate(lat, lon)
             // Transform the lat lons to cartesian coordinates
             val coord = latlonToMercator(lat, lon)
@@ -48,16 +48,17 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             buildings.add(
                 Building(
                     id = id,
+                    osmID = line[0].toInt(),
                     coord = coord,
                     latlonCoord = latlonCoord,
-                    area = line[0].toDouble(),
-                    population = line[3].toDouble(),
-                    landuse = Landuse.valueOf(line[4]),
-                    regionType = line[5].toInt(),
-                    nShops = line[6].toDouble(),
-                    nOffices = line[7].toDouble(),
-                    nSchools = line[8].toDouble(),
-                    nUnis = line[9].toDouble()
+                    area = line[1].toDouble(),
+                    population = line[4].toDouble(),
+                    landuse = Landuse.valueOf(line[5]),
+                    regionType = line[6].toInt(),
+                    nShops = line[7].toDouble(),
+                    nOffices = line[8].toDouble(),
+                    nSchools = line[9].toDouble(),
+                    nUnis = line[10].toDouble()
                 )
             )
             id += 1

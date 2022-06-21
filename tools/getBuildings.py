@@ -25,11 +25,11 @@ landuseMap = {
 
 outCrs = 4326
 
-def loadBuildingsData(city='München'):
+def loadBuildingsData(osm_ids):
     # OSM-Data
     with sqlalchemy.create_engine('postgresql://postgres:password@localhost/OSM_Ger').connect() as conn:
         # Considered area
-        sql = (f"SELECT * FROM planet_osm_polygon WHERE admin_level='6' AND name='{city}'")
+        sql = (f"SELECT * FROM planet_osm_polygon WHERE osm_id in ({osm_ids})")
         area = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         # Smiliar overpass:
@@ -37,8 +37,8 @@ def loadBuildingsData(city='München'):
         # area["name:en"="Munich"]["admin_level"="6"]->.munich;
         # way(area.munich)["building"];
         # out center;
-        sql = ("SELECT b.way, b.way_area FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, ST_Centroid(b.way))"
-              f" AND a.admin_level='6' AND a.name='{city}' AND b.building IS NOT NULL")
+        sql = ("SELECT b.way, b.way_area, b.osm_id FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, ST_Centroid(b.way))"
+              f" AND a.osm_id in ({osm_ids}) AND b.building IS NOT NULL")
         buildings = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         # Smiliar overpass:
@@ -47,29 +47,29 @@ def loadBuildingsData(city='München'):
         # way(area.by)["landuse"];
         # out geom;
         sql = ("SELECT b.landuse, b.way, b.way_area FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-              f" AND a.admin_level='6' AND a.name='{city}' AND b.landuse IS NOT NULL")
+              f" AND a.osm_id in ({osm_ids}) AND b.landuse IS NOT NULL")
         landuse = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         # Shops
         sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
+               f" AND a.osm_id in ({osm_ids}) AND b.shop IS NOT NULL")
         shopPolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
         shopPolygons["way"] = shopPolygons["way"].centroid
 
         sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.admin_level='6' AND a.name='{city}' AND b.shop IS NOT NULL")
+               f" AND a.osm_id in ({osm_ids}) AND b.shop IS NOT NULL")
         shopPoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         shops = pd.concat([shopPoints, shopPolygons], ignore_index=True)
 
         # Offices
         sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.admin_level='6' AND a.name='{city}' AND b.office IS NOT NULL")
+               f" AND a.osm_id in ({osm_ids}) AND b.office IS NOT NULL")
         officePolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
         officePolygons["way"] = officePolygons["way"].centroid
 
         sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-                    f" AND a.admin_level='6' AND a.name='{city}' AND b.office IS NOT NULL")
+                    f" AND a.osm_id in ({osm_ids}) AND b.office IS NOT NULL")
         officePoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         offices = pd.concat([officePoints, officePolygons], ignore_index=True)
@@ -77,12 +77,12 @@ def loadBuildingsData(city='München'):
         # Amenities. Currently only needed for schools and universities.
         # In the future: Restaurants, doctors, cinema, and more. I.e. OTHER stuff -> needs correlation analysis with MID
         sql = ("SELECT b.amenity, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-            " AND a.admin_level='6' AND a.name='München' AND b.amenity IS NOT NULL")
+               f" AND a.osm_id in ({osm_ids}) AND b.amenity IS NOT NULL")
         amenityPolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
         amenityPolygons["way"] = amenityPolygons["way"].centroid
 
         sql = ("SELECT b.amenity, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-           " AND a.admin_level='6' AND a.name='München' AND b.amenity IS NOT NULL")
+               f" AND a.osm_id in ({osm_ids}) AND b.amenity IS NOT NULL")
         amenityPoint = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         amenities = pd.concat([amenityPoint, amenityPolygons], ignore_index=True)
@@ -101,31 +101,31 @@ def loadBuildingsData(city='München'):
     inspire100['population'] = inspire100['population'].apply(lambda x: 0 if x < 0 else x)
 
     # Distribute cell population evenly to buildings
-    buildingsInCell = gpd.sjoin(inspire100, buildings, op='intersects')
+    buildingsInCell = gpd.sjoin(inspire100, buildings, predicate='intersects')
     grp = buildingsInCell.groupby(level=0)['population']
     buildingsInCell['Pop'] = grp.mean() / grp.count()
     buildings['population'] = buildingsInCell.groupby('index_right').Pop.sum()
 
     # Add landuse data
-    buildings['landuse'] = gpd.sjoin(landuse, buildings, op='intersects').groupby('index_right').landuse.first()
+    buildings['landuse'] = gpd.sjoin(landuse, buildings, predicate='intersects').groupby('index_right').landuse.first()
     buildings["landuse"] = buildings["landuse"].apply(lambda x: landuseMap.get(x, "NONE"))
 
     # Add shopping locations
-    buildings["number_shops"] = gpd.sjoin(buildings, shops, op='contains').groupby(level=0).index_right.count()
+    buildings["number_shops"] = gpd.sjoin(buildings, shops, predicate='contains').groupby(level=0).index_right.count()
     buildings["number_shops"] = buildings["number_shops"].fillna(0).astype(int)
 
     # Add office locations
-    buildings["number_offices"] = gpd.sjoin(buildings, offices, op='contains').groupby(level=0).index_right.count()
+    buildings["number_offices"] = gpd.sjoin(buildings, offices, predicate='contains').groupby(level=0).index_right.count()
     buildings["number_offices"] = buildings["number_offices"].fillna(0).astype(int)
 
     # Add school locations
     schools = amenities[amenities.amenity == "school"]
-    buildings["number_schools"] = gpd.sjoin(buildings, schools, op='contains').groupby(level=0).index_right.count()
+    buildings["number_schools"] = gpd.sjoin(buildings, schools, predicate='contains').groupby(level=0).index_right.count()
     buildings["number_schools"] = buildings["number_schools"].fillna(0).astype(int)
 
     # Add office locations
     universities = amenities[amenities.amenity == "university"]
-    buildings["number_universities"] = gpd.sjoin(buildings, universities, op='contains').groupby(level=0).index_right.count()
+    buildings["number_universities"] = gpd.sjoin(buildings, universities, predicate='contains').groupby(level=0).index_right.count()
     buildings["number_universities"] = buildings["number_universities"].fillna(0).astype(int)
 
     # Add region type
@@ -136,7 +136,7 @@ def loadBuildingsData(city='München'):
     gem["AGS"] = gem["AGS"].astype(int)
     gem = gem.set_index('AGS')
     gem["RegioStaR7"] = regioStaR["RegioStaR7"]
-    buildings = gpd.sjoin(buildings, gem, op='intersects').rename(columns={"index_right": "AGS"})
+    buildings = gpd.sjoin(buildings, gem, predicate='intersects').rename(columns={"index_right": "AGS"})
     buildings["RegioStaR7"] = buildings["RegioStaR7"].astype(int)
     buildings = buildings.rename(columns={"RegioStaR7": "region_type_RegioStaR7"})
 
@@ -150,6 +150,8 @@ def loadBuildingsData(city='München'):
     return buildings
 
 if __name__ == "__main__":
-    df = loadBuildingsData()
-    df[["area", "lat", "lon", "population", "landuse", "region_type_RegioStaR7", "number_shops",
-        "number_offices", "number_schools", "number_universities"]].to_csv("../Buildings.csv", index=False)
+    osm_ids = '-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974' # Bayreuth
+    # osm_ids = '-62428' # München
+    df = loadBuildingsData(osm_ids)
+    df[["osm_id", "area", "lat", "lon", "population", "landuse", "region_type_RegioStaR7", "number_shops",
+        "number_offices", "number_schools", "number_universities"]].to_csv(f"../Buildings{osm_ids}.csv", index=False)

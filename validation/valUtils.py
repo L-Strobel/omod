@@ -15,10 +15,10 @@ def gamgOutputAsDF(fn: str):
         iD = person['id']
         for activity in person['profile']:
             activityType = activity['type']
-            loc = Point(activity['x'], activity['y'])
+            loc = Point(activity['lon'], activity['lat'])
             activities.append(activityType)
             locations.append(loc)
             dwellTimes.append(activity["stayTime"])
             agentID.append(iD)
     df = pd.DataFrame({"AgentID": agentID, "StartLoc": activities, "location": locations, "dwellTimes": dwellTimes})
-    return gpd.GeoDataFrame(df, geometry="location", crs=3857)
+    return gpd.GeoDataFrame(df, geometry="location", crs=4326)
