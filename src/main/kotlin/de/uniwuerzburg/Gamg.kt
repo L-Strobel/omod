@@ -58,7 +58,8 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                     nShops = line[7].toDouble(),
                     nOffices = line[8].toDouble(),
                     nSchools = line[9].toDouble(),
-                    nUnis = line[10].toDouble()
+                    nUnis = line[10].toDouble(),
+                    inFocusArea = line[11].toBoolean(),
                 )
             )
             id += 1
@@ -85,6 +86,117 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         // Get distance distributions
         val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
         distanceDists = Json.decodeFromString(distrTxt)
+
+        // Calibrate
+        val calibrationMatrix = calibrateWithOD("C:/Users/strobel/Projekte/esmregio/gamg/OD_matrix.csv")
+        println("Test")
+    }
+
+    // TODO rename grid to tazs and change type to locationOption than add commute nodes
+
+    // Calibrate priors:
+    // Read OD-Prob _/
+    // Get prob gamg
+    // HOME -> Trivial
+    // Others -> Get prob for all homes -> Get prob for all homes -> Calc total prob
+    // Scale to OD-Prob
+
+    // TODO this process will work for commuting, if i want all activities i have to do IPA probably
+    fun calibrateWithOD(odPath: String) : Map<Pair<String, String>, Double> {
+        val calibrationMatrix = mutableMapOf<Pair<String, String>, Double>()
+
+        // Read OD-Matrix that is used for calibration
+        val odMatrix = ODMatrix(odPath, geometryFactory)
+
+        // Get buildings in every taz
+        val locationsInTaz = mutableMapOf<String, List<LocationOption>>()
+        for (odRow in odMatrix.rows.values) {
+            val envelope = odRow.geometry.envelopeInternal!! // TODO get buildings that are really in Geometry
+            val buildingIds = kdTree.query(envelope).map { ((it as KdNode).data as Int) }
+
+            if (buildingIds.isEmpty()) {
+                // Create Dummy node for TAZ
+                val taz = TAZ(
+                    coord = odRow.geometry.centroid.coordinate,
+                    population = 1.0,
+                    workWeight = 1.0,
+                    nShops = 1.0,
+                    nSchools = 1.0,
+                    nUnis = 1.0,
+                    inFocusArea = false
+                )
+                locationsInTaz[odRow.origin] = listOf(taz)
+                // TODO add to grid?
+
+            } else {
+                // Remember TAZ
+                val tazBuildings = buildings.slice(buildingIds)
+                for (building in tazBuildings) {
+                    building.taz = odRow.origin
+                }
+                locationsInTaz[odRow.origin] = buildings.slice(buildingIds)
+            }
+        }
+
+        //
+        val tazs = odMatrix.rows.values.map { it.origin }
+        for (origin in tazs) {
+            val gamgWeights = mutableMapOf<String, Double>()
+            for (destination in tazs) {
+                val originLocations = locationsInTaz[origin]!!
+                val destinationLocations = locationsInTaz[destination]!!
+
+                // Probability because of distance
+                val distObj = distanceDists.home_work[0]!!
+                val distr = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
+
+                var gamgWeight = 0.0
+                for (start in originLocations.sortedBy { it.population }.takeLast(100)) {
+                    for (stop in destinationLocations.sortedBy { it.workWeight }.takeLast(100)) {
+                        val distance = start.coord.distance(stop.coord) // TODO handle infinities that arise than taz node to taz node
+                        gamgWeight += start.population * stop.workWeight * distr.density(distance)
+                    }
+                }
+
+                /*
+                val originCentroid = geometryFactory.createMultiPointFromCoords(
+                    originLocations.map { it.coord }.toTypedArray()
+                ).centroid.coordinate
+
+                val destinationCentroid = geometryFactory.createMultiPointFromCoords(
+                    destinationLocations.map { it.coord }.toTypedArray()
+                ).centroid.coordinate
+
+                // TODO how to handle self distance?
+                val distance = originCentroid.distance(destinationCentroid)
+
+                // Prior probabilities
+                val priorWeight = destinationLocations.sumOf { it.workWeight }
+
+                // Probability because of distance
+                val distObj = distanceDists.home_work[0]!!
+                val distr = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
+                val distanceProb = distr.density(distance)
+
+                gamgWeights[destination] = priorWeight * distanceProb
+                */
+                gamgWeights[destination] = gamgWeight
+            }
+
+            val tripSumOD = odMatrix.rows[origin]!!.destinations.values.sum()
+            val weightSumGAMG = gamgWeights.values.sum()
+
+            for (destination in tazs) {
+                // Probability OD:
+                val odProb = odMatrix.rows[origin]!!.destinations[destination]!! / tripSumOD
+
+                // Probability GAMG:
+                val gamgProb = gamgWeights[destination]!! / weightSumGAMG
+
+                calibrationMatrix[Pair(origin, destination)] = odProb / gamgProb
+            }
+        }
+        return calibrationMatrix
     }
 
     /**
@@ -100,7 +212,6 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
             for (y in yMin..yMax step gridResolution) {
                 val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
                 val buildingIds = kdTree.query(envelope).map { ((it as KdNode).data as Int) }
-
                 if (buildingIds.isEmpty()) continue
 
                 val cellBuildings = buildings.slice(buildingIds)
@@ -117,14 +228,15 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 val regionType = cellBuildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
 
                 // Calculate aggregate features of cell
-                val population = cellBuildings.sumOf { it.population }
+                val population = cellBuildings.sumOf { it.population * it.inFocusArea.toInt()}
                 val priorWorkWeight = cellBuildings.sumOf { it.workWeight }
                 val nShops = cellBuildings.sumOf { it.nShops }
                 val nOffices = cellBuildings.sumOf { it.nOffices }
                 val nSchools = cellBuildings.sumOf { it.nSchools }
                 val nUnis = cellBuildings.sumOf { it.nUnis }
+                val inFocusArea = cellBuildings.map { it.inFocusArea }.any()
                 grid.add(Cell(population, priorWorkWeight, envelope, buildingIds, featureCentroid,
-                              latlonCentroid, regionType, nShops, nOffices, nSchools, nUnis))
+                              latlonCentroid, regionType, nShops, nOffices, nSchools, nUnis, inFocusArea))
             }
         }
         return grid.toList()
@@ -169,7 +281,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         }
 
         // Assign home and work
-        val homCumDist = StochasticBundle.createCumDist(grid.map { it.population }.toDoubleArray())
+        val homCumDist = StochasticBundle.createCumDist(grid.map { it.population * it.inFocusArea.toInt() }.toDoubleArray())
 
         // Generate population
         val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
@@ -186,7 +298,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
 
             // Get home building
             val homeCellBuildings = buildings.slice(homeCell.buildingIds)
-            val inHomeCellID = StochasticBundle.createAndSampleCumDist(homeCellBuildings.map { it.population }.toDoubleArray())
+            val inHomeCellID = StochasticBundle.createAndSampleCumDist(homeCellBuildings.map { it.population * it.inFocusArea.toInt() }.toDoubleArray())
             val home = homeCellBuildings[inHomeCellID]
 
             // Get work cell

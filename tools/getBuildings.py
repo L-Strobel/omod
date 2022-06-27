@@ -1,3 +1,4 @@
+from numpy import double
 import pandas as pd
 import geopandas as gpd
 import sqlalchemy
@@ -25,67 +26,72 @@ landuseMap = {
 
 outCrs = 4326
 
-def loadBuildingsData(osm_ids):
+def loadBuildingsData(area_osm_ids: str, buffer_radius: double):
     # OSM-Data
     with sqlalchemy.create_engine('postgresql://postgres:password@localhost/OSM_Ger').connect() as conn:
         # Considered area
-        sql = (f"SELECT * FROM planet_osm_polygon WHERE osm_id in ({osm_ids})")
-        area = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+        sql = (f"SELECT * FROM planet_osm_polygon WHERE osm_id in ({area_osm_ids})")
+        small_area = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+
+        # Buffer area
+        center_coords = str(small_area.unary_union.centroid.coords[:][0])
+        # Get maximum distance from center of area to boundary
+        area_max_radius = small_area.exterior.apply( 
+                lambda x: x.hausdorff_distance(small_area.unary_union.centroid)
+        ).max()
+        large_area_sql = f"ST_Buffer(ST_SetSRID(ST_MakePoint{center_coords}, 3857), {area_max_radius + buffer_radius})"
+        sql = (f"SELECT {large_area_sql}")
+        large_area = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="st_buffer")
+        print("Got areas")
 
         # Smiliar overpass:
         # [out:csv(::id, ::lat, ::lon, name)];
         # area["name:en"="Munich"]["admin_level"="6"]->.munich;
         # way(area.munich)["building"];
         # out center;
-        sql = ("SELECT b.way, b.way_area, b.osm_id FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, ST_Centroid(b.way))"
-              f" AND a.osm_id in ({osm_ids}) AND b.building IS NOT NULL")
+        sql = f"SELECT way, way_area, osm_id FROM planet_osm_polygon WHERE ST_Intersects(way, {large_area_sql}) AND building IS NOT NULL"
         buildings = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
+        print("Got buildings")
 
         # Smiliar overpass:
         # [out:json];
         # area["name:en"="Munich"]["admin_level"="6"]->.by;
         # way(area.by)["landuse"];
         # out geom;
-        sql = ("SELECT b.landuse, b.way, b.way_area FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-              f" AND a.osm_id in ({osm_ids}) AND b.landuse IS NOT NULL")
+        sql = f"SELECT landuse, way, way_area FROM planet_osm_polygon WHERE ST_Intersects(way, {large_area_sql}) AND landuse IS NOT NULL"
         landuse = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         # Shops
-        sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.osm_id in ({osm_ids}) AND b.shop IS NOT NULL")
+        sql = f"SELECT shop, way FROM planet_osm_polygon WHERE ST_Intersects(way, {large_area_sql}) AND shop IS NOT NULL"
         shopPolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
         shopPolygons["way"] = shopPolygons["way"].centroid
 
-        sql = ("SELECT b.shop, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.osm_id in ({osm_ids}) AND b.shop IS NOT NULL")
+        sql = f"SELECT shop, way FROM planet_osm_point WHERE ST_Intersects(way, {large_area_sql}) AND shop IS NOT NULL"
         shopPoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         shops = pd.concat([shopPoints, shopPolygons], ignore_index=True)
 
         # Offices
-        sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.osm_id in ({osm_ids}) AND b.office IS NOT NULL")
+        sql = f"SELECT office, way FROM planet_osm_polygon WHERE ST_Intersects(way, {large_area_sql}) AND office IS NOT NULL"
         officePolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
         officePolygons["way"] = officePolygons["way"].centroid
 
-        sql = ("SELECT b.office, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-                    f" AND a.osm_id in ({osm_ids}) AND b.office IS NOT NULL")
+        sql = f"SELECT office, way FROM planet_osm_point WHERE ST_Intersects(way, {large_area_sql}) AND office IS NOT NULL"
         officePoints = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         offices = pd.concat([officePoints, officePolygons], ignore_index=True)
 
         # Amenities. Currently only needed for schools and universities.
         # In the future: Restaurants, doctors, cinema, and more. I.e. OTHER stuff -> needs correlation analysis with MID
-        sql = ("SELECT b.amenity, b.way FROM planet_osm_polygon as a JOIN planet_osm_polygon as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.osm_id in ({osm_ids}) AND b.amenity IS NOT NULL")
+        sql = f"SELECT amenity, way FROM planet_osm_polygon WHERE ST_Intersects(way, {large_area_sql}) AND amenity IS NOT NULL"
         amenityPolygons = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
         amenityPolygons["way"] = amenityPolygons["way"].centroid
 
-        sql = ("SELECT b.amenity, b.way FROM planet_osm_polygon as a JOIN planet_osm_point as b ON ST_Intersects(a.way, b.way)"
-               f" AND a.osm_id in ({osm_ids}) AND b.amenity IS NOT NULL")
+        sql = f"SELECT amenity, way FROM planet_osm_point WHERE ST_Intersects(way, {large_area_sql}) AND amenity IS NOT NULL"
         amenityPoint = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col="way")
 
         amenities = pd.concat([amenityPoint, amenityPolygons], ignore_index=True)
+        print("Got points")
 
     # Add Zensus data
     path = "C:/Users/strobel/Projekte/esmregio/Daten/Zensus2011/Einwohner/Zensus_Bevoelkerung_100m-Gitter.csv"
@@ -94,7 +100,7 @@ def loadBuildingsData(osm_ids):
     # Add coordinates to zensus data (Uses INSPIRE Grid with 100mx100m resolution)
     usecols = ['OBJECTID', 'id', 'geometry']
     path = "C:/Users/strobel/Projekte/esmregio/Daten/INSPIRE_Grids/100m/geogitter/DE_Grid_ETRS89-LAEA_100m.gpkg"
-    inspire100 = gpd.read_file(path, mask=area).to_crs(epsg=3857)
+    inspire100 = gpd.read_file(path, mask=large_area).to_crs(epsg=3857)
     inspire100 = inspire100[usecols].set_index("id")
 
     inspire100['population'] = zensus['Einwohner']
@@ -140,6 +146,11 @@ def loadBuildingsData(osm_ids):
     buildings["RegioStaR7"] = buildings["RegioStaR7"].astype(int)
     buildings = buildings.rename(columns={"RegioStaR7": "region_type_RegioStaR7"})
 
+    # Mark which building is in smaller area
+    buildings["InFocusArea"] = False
+    idxs = buildings.clip(small_area, keep_geom_type=True).index
+    buildings.loc[idxs, "InFocusArea"] = True
+
     # Cosmetic and crs
     buildings = buildings.rename(columns={"way_area": "area"})
     buildings['center'] = buildings.way.centroid
@@ -149,9 +160,13 @@ def loadBuildingsData(osm_ids):
 
     return buildings
 
+
 if __name__ == "__main__":
-    osm_ids = '-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974' # Bayreuth
+    #large_area_osm_ids = '-2145268' # Bayern
+    # large_area_osm_ids = '-17592' # Oberfranken
+    #small_area_osm_ids = '-62640' # Bayreuth
+    area_osm_ids = '-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974' # EMS-Area
     # osm_ids = '-62428' # München
-    df = loadBuildingsData(osm_ids)
+    df = loadBuildingsData(area_osm_ids, 5000)
     df[["osm_id", "area", "lat", "lon", "population", "landuse", "region_type_RegioStaR7", "number_shops",
-        "number_offices", "number_schools", "number_universities"]].to_csv(f"../Buildings{osm_ids}.csv", index=False)
+        "number_offices", "number_schools", "number_universities", "InFocusArea"]].to_csv(f"../Buildings{area_osm_ids}.csv", index=False)

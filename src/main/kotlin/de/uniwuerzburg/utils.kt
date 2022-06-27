@@ -15,6 +15,8 @@ infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
     return sequence.asIterable()
 }
 
+fun Boolean.toInt() = if (this) 1 else 0
+
 // Earth radius according to WGS 84
 const val earthMajorAxis = 6378137.0
 
