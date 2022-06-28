@@ -1,7 +1,11 @@
 package de.uniwuerzburg
 
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 import java.io.File
 import kotlin.system.measureTimeMillis
 
@@ -26,15 +30,20 @@ fun runWeek(buildingPath: String, n: Int){
 }
 */
 fun runDay(buildingPath: String, n: Int) {
-    val gamg = Gamg(buildingPath, 500.0)
-    val elapsed = measureTimeMillis {
-        val agents = gamg.run(n)
-        File("validation/out/singleUndefined.json").writeText(Json.encodeToString(agents))
+    val gamg: Gamg
+    val creationElapsed = measureTimeMillis {
+         gamg = Gamg(buildingPath, 500.0)
     }
-    println(elapsed / 1000.0)
+    println("${creationElapsed / 1000.0}")
+
+    val runElapsed = measureTimeMillis {
+        val agents = gamg.run(n)
+        File("validation/out/singleUndefined.json").writeText(Json.encodeToString(agents.map { formatOutput(it) }))
+    }
+    println("${runElapsed / 1000.0}")
 }
 
 fun main() {
-    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974.csv"
-    runDay(buildingPath, 2000)
+    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings-62640.csv"
+    runDay(buildingPath, 20000)
 }

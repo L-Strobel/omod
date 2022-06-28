@@ -1,12 +1,19 @@
 package de.uniwuerzburg
 
-import kotlinx.serialization.*
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
+import java.awt.Taskbar.Feature
 import java.io.BufferedReader
 import java.io.FileReader
+import java.util.Properties
+
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import kotlinx.serialization.modules.*
+import org.locationtech.jts.geom.Geometry
+import java.io.File
 
 /**
  * Definition of the agent population in terms of sociodemographic features
@@ -72,12 +79,15 @@ enum class ActivityType {
  */
 interface LocationOption {
     val coord: Coordinate
+    val latlonCoord: Coordinate
     val population: Double
     val workWeight: Double
     val nShops: Double
     val nSchools: Double
     val nUnis: Double
+    val regionType: Int
     val inFocusArea:  Boolean
+    var taz: String?
 }
 
 /**
@@ -93,18 +103,18 @@ data class Building  (
     val id: Int,
     val osmID: Int,
     override val coord: Coordinate,
-    val latlonCoord: Coordinate,
+    override val latlonCoord: Coordinate,
     val area: Double,
     override val population: Double,
     val landuse: Landuse,
-    val regionType: Int,
+    override val regionType: Int,
     override val nShops: Double,
     val nOffices: Double,
     override val nSchools: Double,
     override val nUnis: Double,
     override val inFocusArea:  Boolean,
 ) : LocationOption {
-    var taz: String? = null
+    override var taz: String? = null
     override val workWeight: Double = nShops + nOffices + landuse.getWorkWeight()
 }
 
@@ -116,17 +126,19 @@ data class Cell (
     override val population: Double,
     override val workWeight: Double,
     val envelope: Envelope,
-    val buildingIds: List<Int>,
+    val buildings: List<Building>,
     val featureCentroid: Coordinate,
     val latlonCentroid: Coordinate,
-    val regionType: Int,
+    override val regionType: Int,
     override val nShops: Double,
     val nOffices: Double,
     override val nSchools: Double,
     override val nUnis: Double,
-    override val inFocusArea:  Boolean
+    override val inFocusArea:  Boolean,
+    override var taz: String?,
 ) : LocationOption {
     override val coord: Coordinate = featureCentroid
+    override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
 }
 
 data class TAZ (
@@ -136,35 +148,60 @@ data class TAZ (
     override val nShops: Double,
     override val nSchools: Double,
     override val nUnis: Double,
-    override val inFocusArea:  Boolean
-) : LocationOption
+    override val regionType: Int,
+    override val inFocusArea:  Boolean,
+    override var taz: String?
+) : LocationOption {
+    override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
+}
 
 /**
  * Agent
  */
-@Serializable
 data class MobiAgent (
     val id: Int,
     val homogenousGroup: String,
     val mobilityGroup: String,
     val age: String,
-    val homeID: Int,
-    val workID: Int,
-    val schoolID: Int,
+    val home: LocationOption,
+    val work: LocationOption,
+    val school: LocationOption,
     var profile: List<Activity>? = null
 )
 
 /**
- * Activity format in output.
+ * Activity
  */
-@Serializable
 data class Activity (
     val type: ActivityType,
     val stayTime: Double?,
-    val buildingID: Int,
+    val building: LocationOption,
     val lat: Double,
     val lon: Double
 )
+
+/**
+ * Output format
+ */
+@Serializable
+data class OutputActivity (
+    val type: ActivityType,
+    val stayTime: Double?,
+    val lat: Double,
+    val lon: Double
+)
+@Serializable
+data class OutputEntry (
+    val id: Int,
+    val homogenousGroup: String,
+    val mobilityGroup: String,
+    val age: String,
+    val profile: List<OutputActivity>?
+)
+fun formatOutput(agent: MobiAgent) : OutputEntry {
+    val profile = agent.profile?.map { OutputActivity(it.type, it.stayTime, it.lat, it.lon) }
+    return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, profile)
+}
 
 /**
  * Row in the OD-Matrix
@@ -172,38 +209,23 @@ data class Activity (
 data class ODRow (
     val origin: String,
     val destinations: Map<String, Double>,
-    val geometry: Polygon
+    val geometry: Geometry
 )
 
 class ODMatrix (odPath: String, factory: GeometryFactory) {
     val rows: Map<String, ODRow>
 
     init {
-        // Read OD
-        val reader = BufferedReader(FileReader(odPath))
-        // Header
-        val header = reader.readLine()
-        val tazs = header.split(";").dropLast(1).drop(1)
-
-        // Read body
         rows = mutableMapOf()
-        reader.forEachLine {
-            val line = it.split(";").toMutableList()
 
-            val origin = line.removeFirst()
+        // Read OD
+        val geoJson: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
+            .decodeFromString(File(odPath).readText(Charsets.UTF_8))
 
-            val geometryStr = line.removeLast().trim('[', ']', '(', ')')
-            val coordsStr = geometryStr.split("), (")
-            val shell = coordsStr.map { coordStr ->
-                val coordList = coordStr.split(", ")
-                val lat = coordList.last().toDouble()
-                val lon = coordList.first().toDouble() // TODO swap lat und lon in input csv
-                latlonToMercator(lat, lon) // Transform the lat lons to cartesian coordinates
-            }.toTypedArray()
-            val geometry = factory.createPolygon(shell)
-
-            val destinations = tazs.mapIndexed { i, taz -> taz to line[i].toDouble() }.toMap()
-
+        for (entry in geoJson.features) {
+            val origin = entry.properties.origin
+            val geometry = entry.geometry.toJTS(factory)
+            val destinations = entry.properties.destinations
             rows[origin] = ODRow(origin, destinations, geometry)
         }
     }

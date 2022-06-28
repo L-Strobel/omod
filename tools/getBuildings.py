@@ -164,8 +164,8 @@ def loadBuildingsData(area_osm_ids: str, buffer_radius: double):
 if __name__ == "__main__":
     #large_area_osm_ids = '-2145268' # Bayern
     # large_area_osm_ids = '-17592' # Oberfranken
-    #small_area_osm_ids = '-62640' # Bayreuth
-    area_osm_ids = '-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974' # EMS-Area
+    area_osm_ids = '-62640' # Bayreuth
+    #area_osm_ids = '-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974' # EMS-Area
     # osm_ids = '-62428' # München
     df = loadBuildingsData(area_osm_ids, 5000)
     df[["osm_id", "area", "lat", "lon", "population", "landuse", "region_type_RegioStaR7", "number_shops",
