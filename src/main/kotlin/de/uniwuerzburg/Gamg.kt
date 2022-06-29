@@ -11,7 +11,6 @@ import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
-import java.awt.PageAttributes
 import de.uniwuerzburg.StochasticBundle as SB
 
 /**
@@ -20,7 +19,7 @@ import de.uniwuerzburg.StochasticBundle as SB
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Gamg(buildingsPath: String, gridResolution: Double) {
+class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     val buildings: List<Building>
     val kdTree: KdTree
     private val zones: List<LocationOption>
@@ -88,7 +87,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         }
 
         // Get calibration factors based on OD-Matrix
-        val (resultCalMat, dummyZones) = calibrateWithOD("C:/Users/strobel/Projekte/esmregio/gamg/OD-matrix.geojson")
+        val (resultCalMat, dummyZones) = calibrateWithOD(odPath!!)
         calibrationMatrix = resultCalMat
 
         // Create grid (used for speed up)
@@ -98,16 +97,10 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         zones = grid + dummyZones
     }
 
-    // Calibrate priors:
-    // Read OD-Prob _/
-    // Get prob gamg
-    // HOME -> Trivial
-    // Others -> Get prob for all homes -> Get prob for all homes -> Calc total prob
-    // Scale to OD-Prob
-
     // TODO this process will work for commuting, if i want all activities i have to do IPA probably
     fun calibrateWithOD(odPath: String) : Pair<Map<Pair<String, String>, Double>, List<LocationOption>> {
         val calibrationMatrix = mutableMapOf<Pair<String, String>, Double>()
+
         val dummyZones = mutableListOf<LocationOption>()
 
         // Read OD-Matrix that is used for calibration
@@ -116,7 +109,7 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
         // Get buildings in every taz
         val locationsInTaz = mutableMapOf<String, List<LocationOption>>()
         for (odRow in odMatrix.rows.values) {
-            val envelope = odRow.geometry.envelopeInternal!! // TODO get buildings that are really in Geometry
+            val envelope = odRow.geometry.envelopeInternal!!
             val buildingIds = kdTree.query(envelope).map { ((it as KdNode).data as Int) }
 
             val tazBuildings = buildings.slice(buildingIds).filter { odRow.geometry.contains(geometryFactory.createPoint(it.coord)) }
@@ -153,40 +146,20 @@ class Gamg(buildingsPath: String, gridResolution: Double) {
                 val originLocations = locationsInTaz[origin]!!
                 val destinationLocations = locationsInTaz[destination]!!
 
-                // Probability because of distance
-                val distObj = distanceDists.home_work[0]!!
-                val distr = SB.LogNorm(distObj.shape, distObj.scale)
-
                 var gamgWeight = 0.0
-                for (start in originLocations.sortedBy { it.population }.takeLast(5000)) {
-                    for (stop in destinationLocations.sortedBy { it.workWeight }.takeLast(5000)) {
-                        val distance = start.coord.distance(stop.coord) // TODO handle infinities that arise than taz node to taz node
-                        gamgWeight += start.population * stop.workWeight * distr.density(distance)
+                for (start in originLocations) { // .sortedBy { it.population * it.inFocusArea.toInt()}.takeLast(1000) {
+                    if (start.population * start.inFocusArea.toInt() > 0) {
+                        val distObj = distanceDists.home_work[start.regionType]!!
+                        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+                        for (stop in destinationLocations) { //s.sortedBy { it.workWeight }.takeLast(1000)) {
+                            val distance =
+                                start.coord.distance(stop.coord) // TODO handle infinities that arise than taz node to taz node
+                            gamgWeight += start.population * start.inFocusArea.toInt() * stop.workWeight * distr.density(
+                                distance
+                            )
+                        }
                     }
                 }
-
-                /*
-                val originCentroid = geometryFactory.createMultiPointFromCoords(
-                    originLocations.map { it.coord }.toTypedArray()
-                ).centroid.coordinate
-
-                val destinationCentroid = geometryFactory.createMultiPointFromCoords(
-                    destinationLocations.map { it.coord }.toTypedArray()
-                ).centroid.coordinate
-
-                // TODO how to handle self distance?
-                val distance = originCentroid.distance(destinationCentroid)
-
-                // Prior probabilities
-                val priorWeight = destinationLocations.sumOf { it.workWeight }
-
-                // Probability because of distance
-                val distObj = distanceDists.home_work[0]!!
-                val distr = StochasticBundle.LogNorm(distObj.shape, distObj.scale)
-                val distanceProb = distr.density(distance)
-
-                gamgWeights[destination] = priorWeight * distanceProb
-                */
                 gamgWeights[destination] = gamgWeight
             }
 

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 internal class GamgTest {
 
-    private val testGamg = Gamg("src/test/resources/testBuildings.csv", 500.0)
+    private val testGamg = Gamg("src/test/resources/testBuildings.csv",  "C:/Users/strobel/Projekte/esmregio/gamg/OD-Matrix.geojson",500.0)
 
     @Suppress("USELESS_CAST")
     @Test

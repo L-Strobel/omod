@@ -1,11 +1,7 @@
 package de.uniwuerzburg
 
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
 import java.io.File
 import kotlin.system.measureTimeMillis
 
@@ -32,7 +28,7 @@ fun runWeek(buildingPath: String, n: Int){
 fun runDay(buildingPath: String, n: Int) {
     val gamg: Gamg
     val creationElapsed = measureTimeMillis {
-         gamg = Gamg(buildingPath, 500.0)
+         gamg = Gamg(buildingPath, "C:/Users/strobel/Projekte/esmregio/gamg/OD-Matrix.geojson", 500.0)
     }
     println("${creationElapsed / 1000.0}")
 
