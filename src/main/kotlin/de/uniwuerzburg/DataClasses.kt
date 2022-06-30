@@ -82,6 +82,7 @@ interface LocationOption {
     val otherWeight: Double
     val regionType: Int
     var taz: String?
+    val avgDistanceToSelf: Double
 }
 
 /**
@@ -117,6 +118,7 @@ data class Building  (
     override val schoolWeight = nSchools
     override val shoppingWeight = nShops
     override val otherWeight = 1.0
+    override val avgDistanceToSelf = 0.0
 }
 
 /**
@@ -125,18 +127,26 @@ data class Building  (
  */
 data class Cell (
     override val coord: Coordinate,
-    override val homeWeight: Double,
-    override val workWeight: Double,
-    override val schoolWeight: Double,
-    override val shoppingWeight: Double,
-    override val otherWeight: Double,
-    override val regionType: Int,
-    override var taz: String?,
 
     val envelope: Envelope,
     val buildings: List<Building>,
 ) : LocationOption {
+    override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
+
     override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
+
+    // Most common region type
+    override val regionType = buildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
+
+    // Most common taz (Normally null here)
+    override var taz = buildings.groupingBy { it.taz }.eachCount().maxByOrNull { it.value }!!.key
+
+    // Sum
+    override val homeWeight = buildings.sumOf { it.homeWeight }
+    override val workWeight = buildings.sumOf { it.workWeight }
+    override val schoolWeight = buildings.sumOf { it.schoolWeight }
+    override val shoppingWeight = buildings.sumOf { it.shoppingWeight }
+    override val otherWeight = buildings.sumOf { it.otherWeight }
 }
 
 /**
@@ -151,6 +161,7 @@ data class DummyLocation (
     override val otherWeight: Double,
     override val regionType: Int,
     override var taz: String?,
+    override val avgDistanceToSelf : Double
 ) : LocationOption {
     override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
 }
