@@ -3,16 +3,11 @@ package de.uniwuerzburg
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Polygon
-import java.awt.Taskbar.Feature
-import java.io.BufferedReader
-import java.io.FileReader
-import java.util.Properties
 
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import kotlinx.serialization.modules.*
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.Point
 import java.io.File
 
 /**
@@ -80,13 +75,12 @@ enum class ActivityType {
 interface LocationOption {
     val coord: Coordinate
     val latlonCoord: Coordinate
-    val population: Double
+    val homeWeight: Double
     val workWeight: Double
-    val nShops: Double
-    val nSchools: Double
-    val nUnis: Double
+    val schoolWeight: Double
+    val shoppingWeight: Double
+    val otherWeight: Double
     val regionType: Int
-    val inFocusArea:  Boolean
     var taz: String?
 }
 
@@ -100,22 +94,29 @@ interface LocationOption {
  * @param regionType RegioStar7 of the municipality
  */
 data class Building  (
-    val id: Int,
-    val osmID: Int,
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
-    val area: Double,
-    override val population: Double,
-    val landuse: Landuse,
     override val regionType: Int,
-    override val nShops: Double,
+    override var taz: String?,
+
+    val point: Point,
+
+    val id: Int,
+    val osmID: Int,
+    val area: Double,
+    val population: Double,
+    val landuse: Landuse,
+    val nShops: Double,
     val nOffices: Double,
-    override val nSchools: Double,
-    override val nUnis: Double,
-    override val inFocusArea:  Boolean,
+    val nSchools: Double,
+    val nUnis: Double,
+    val inFocusArea:  Boolean,
 ) : LocationOption {
-    override var taz: String? = null
-    override val workWeight: Double = nShops + nOffices + landuse.getWorkWeight()
+    override val workWeight = nShops + nOffices + landuse.getWorkWeight()
+    override val homeWeight = population * inFocusArea.toInt()
+    override val schoolWeight = nSchools
+    override val shoppingWeight = nShops
+    override val otherWeight = 1.0
 }
 
 /**
@@ -123,34 +124,33 @@ data class Building  (
  * Method: Sample from Cells -> Sample from buildings in cell
  */
 data class Cell (
-    override val population: Double,
+    override val coord: Coordinate,
+    override val homeWeight: Double,
     override val workWeight: Double,
+    override val schoolWeight: Double,
+    override val shoppingWeight: Double,
+    override val otherWeight: Double,
+    override val regionType: Int,
+    override var taz: String?,
+
     val envelope: Envelope,
     val buildings: List<Building>,
-    val featureCentroid: Coordinate,
-    val latlonCentroid: Coordinate,
-    override val regionType: Int,
-    override val nShops: Double,
-    val nOffices: Double,
-    override val nSchools: Double,
-    override val nUnis: Double,
-    override val inFocusArea:  Boolean,
-    override var taz: String?,
 ) : LocationOption {
-    override val coord: Coordinate = featureCentroid
     override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
 }
 
-data class TAZ (
+/**
+ * Dummy location for far away locations. Used for commuting flows.
+ */
+data class DummyLocation (
     override val coord: Coordinate,
-    override val population: Double,
+    override val homeWeight: Double,
     override val workWeight: Double,
-    override val nShops: Double,
-    override val nSchools: Double,
-    override val nUnis: Double,
+    override val schoolWeight: Double,
+    override val shoppingWeight: Double,
+    override val otherWeight: Double,
     override val regionType: Int,
-    override val inFocusArea:  Boolean,
-    override var taz: String?
+    override var taz: String?,
 ) : LocationOption {
     override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
 }
@@ -188,7 +188,8 @@ data class OutputActivity (
     val type: ActivityType,
     val stayTime: Double?,
     val lat: Double,
-    val lon: Double
+    val lon: Double,
+    val dummyLoc: Boolean
 )
 @Serializable
 data class OutputEntry (
@@ -199,7 +200,9 @@ data class OutputEntry (
     val profile: List<OutputActivity>?
 )
 fun formatOutput(agent: MobiAgent) : OutputEntry {
-    val profile = agent.profile?.map { OutputActivity(it.type, it.stayTime, it.lat, it.lon) }
+    val profile = agent.profile?.map {
+        OutputActivity(it.type, it.stayTime, it.lat, it.lon, it.building is DummyLocation)
+    }
     return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, profile)
 }
 

@@ -1,6 +1,9 @@
 package de.uniwuerzburg
 
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import kotlin.math.*
 
 infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
@@ -11,6 +14,17 @@ infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
         if (previous == Double.POSITIVE_INFINITY) return@generateSequence null
         val next = previous + step
         if (next > endInclusive) null else next
+    }
+    return sequence.asIterable()
+}
+fun semiOpenDoubleRange(start: Double, end: Double, step: Double): Iterable<Double> {
+    require(start.isFinite())
+    require(end.isFinite())
+    require(step > 0.0) { "Step must be positive, was: $step." }
+    val sequence = generateSequence(start) { previous ->
+        if (previous == Double.POSITIVE_INFINITY) return@generateSequence null
+        val next = previous + step
+        if (next >= end) null else next
     }
     return sequence.asIterable()
 }
@@ -37,3 +51,31 @@ fun mercatorToLatLon(x: Double, y: Double) : Coordinate {
     val lat = radLat * 180.0 / PI
     return Coordinate(lat, lon)
 }
+
+// Find envelops that are covered by a geometry quickly
+fun fastCovers(geometry: Geometry, resolutions: List<Double>, geometryFactory: GeometryFactory,
+               ifNot: (Envelope) -> Unit, ifDoes: (Envelope) -> Unit, ifUnsure: (Envelope) -> Unit) {
+    val envelope = geometry.envelopeInternal!!
+    val resolution = resolutions.first()
+    for (x in semiOpenDoubleRange(envelope.minX, envelope.maxX, resolution)) {
+        for (y in semiOpenDoubleRange(envelope.minY, envelope.maxY, resolution)) {
+            val smallEnvelope = Envelope(x, min(x + resolution, envelope.maxX), y, min(y + resolution, envelope.maxY))
+            val smallGeom = geometryFactory.toGeometry(smallEnvelope)
+
+            if (geometry.disjoint(smallGeom)) {
+                ifNot(smallEnvelope)
+            } else if (geometry.contains(smallGeom)) {
+                ifDoes(smallEnvelope)
+            } else {
+                val newResolutions = resolutions.drop(1)
+                if (newResolutions.isEmpty()) {
+                    ifUnsure(smallEnvelope)
+                } else {
+                    fastCovers(geometry.intersection(smallGeom), newResolutions, geometryFactory,
+                               ifNot = ifNot, ifDoes = ifDoes,  ifUnsure = ifUnsure)
+                }
+            }
+        }
+    }
+}
+

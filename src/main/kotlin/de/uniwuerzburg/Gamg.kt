@@ -11,6 +11,7 @@ import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
+import kotlin.system.measureTimeMillis
 import de.uniwuerzburg.StochasticBundle as SB
 
 /**
@@ -22,8 +23,9 @@ import de.uniwuerzburg.StochasticBundle as SB
 class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     val buildings: List<Building>
     val kdTree: KdTree
-    private val zones: List<LocationOption>
-    private val calibrationMatrix: Map<Pair<String, String>, Double>
+    private val grid: List<Cell>
+    private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
+    private val calibrationMatrix: Map<Pair<String, String>, Double>?
     private val populationDef: PopulationDef
     private val activityDataMap: ActivityDataMap
     private val distanceDists: DistanceDistributions
@@ -75,6 +77,8 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
                     nSchools = line[9].toDouble(),
                     nUnis = line[10].toDouble(),
                     inFocusArea = line[11].toBoolean(),
+                    taz = null,
+                    point = geometryFactory.createPoint(coord)
                 )
             )
             id += 1
@@ -83,100 +87,25 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         // Create KD-Tree for faster access
         kdTree = KdTree()
         buildings.forEach { building ->
-            kdTree.insert(building.coord, building.id)
+            kdTree.insert(building.coord, building)
         }
-
-        // Get calibration factors based on OD-Matrix
-        val (resultCalMat, dummyZones) = calibrateWithOD(odPath!!)
-        calibrationMatrix = resultCalMat
 
         // Create grid (used for speed up)
-        val grid = makeGrid(gridResolution)
+        grid = makeGrid(gridResolution)
 
-        // All the options a trip can go to. This with dummy entries for far away locations.
-        zones = grid + dummyZones
-    }
-
-    // TODO this process will work for commuting, if i want all activities i have to do IPA probably
-    fun calibrateWithOD(odPath: String) : Pair<Map<Pair<String, String>, Double>, List<LocationOption>> {
-        val calibrationMatrix = mutableMapOf<Pair<String, String>, Double>()
-
-        val dummyZones = mutableListOf<LocationOption>()
-
-        // Read OD-Matrix that is used for calibration
-        val odMatrix = ODMatrix(odPath, geometryFactory)
-
-        // Get buildings in every taz
-        val locationsInTaz = mutableMapOf<String, List<LocationOption>>()
-        for (odRow in odMatrix.rows.values) {
-            val envelope = odRow.geometry.envelopeInternal!!
-            val buildingIds = kdTree.query(envelope).map { ((it as KdNode).data as Int) }
-
-            val tazBuildings = buildings.slice(buildingIds).filter { odRow.geometry.contains(geometryFactory.createPoint(it.coord)) }
-
-            if (tazBuildings.isEmpty()) {
-                // Create Dummy node for TAZ
-                val taz = TAZ(
-                    coord = odRow.geometry.centroid.coordinate,
-                    population = 1.0,
-                    workWeight = 1.0,
-                    nShops = 1.0,
-                    nSchools = 1.0,
-                    nUnis = 1.0,
-                    regionType = 0,
-                    inFocusArea = false,
-                    taz = odRow.origin
-                )
-                locationsInTaz[odRow.origin] = listOf(taz)
-                dummyZones.add(taz)
-            } else {
-                // Remember TAZ
-                for (building in tazBuildings) {
-                    building.taz = odRow.origin
-                }
-                locationsInTaz[odRow.origin] = tazBuildings
-            }
+        // Calibration
+        if (odPath != null) {
+            // Read OD-Matrix that is used for calibration
+            val odMatrix = ODMatrix(odPath, geometryFactory)
+            // Add TAZ to buildings and cells
+            val dummyZones = addTAZInfo(odMatrix)
+            zones = grid + dummyZones
+            // Get calibration factors based on OD-Matrix
+            calibrationMatrix = calibrateWithOD(odMatrix)
+        } else {
+            calibrationMatrix = null
+            zones = grid
         }
-
-        //
-        val tazs = odMatrix.rows.values.map { it.origin }
-        for (origin in tazs) {
-            val gamgWeights = mutableMapOf<String, Double>()
-            for (destination in tazs) {
-                val originLocations = locationsInTaz[origin]!!
-                val destinationLocations = locationsInTaz[destination]!!
-
-                var gamgWeight = 0.0
-                for (start in originLocations) { // .sortedBy { it.population * it.inFocusArea.toInt()}.takeLast(1000) {
-                    if (start.population * start.inFocusArea.toInt() > 0) {
-                        val distObj = distanceDists.home_work[start.regionType]!!
-                        val distr = SB.LogNorm(distObj.shape, distObj.scale)
-                        for (stop in destinationLocations) { //s.sortedBy { it.workWeight }.takeLast(1000)) {
-                            val distance =
-                                start.coord.distance(stop.coord) // TODO handle infinities that arise than taz node to taz node
-                            gamgWeight += start.population * start.inFocusArea.toInt() * stop.workWeight * distr.density(
-                                distance
-                            )
-                        }
-                    }
-                }
-                gamgWeights[destination] = gamgWeight
-            }
-
-            val tripSumOD = odMatrix.rows[origin]!!.destinations.values.sum()
-            val weightSumGAMG = gamgWeights.values.sum()
-
-            for (destination in tazs) {
-                // Probability OD:
-                val odProb = odMatrix.rows[origin]!!.destinations[destination]!! / tripSumOD
-
-                // Probability GAMG:
-                val gamgProb = gamgWeights[destination]!! / weightSumGAMG
-
-                calibrationMatrix[Pair(origin, destination)] = odProb / gamgProb
-            }
-        }
-        return Pair(calibrationMatrix, dummyZones)
     }
 
     /**
@@ -188,41 +117,129 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
         val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
         val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
-        for (x in xMin..xMax step gridResolution) {
-            for (y in yMin..yMax step gridResolution) {
+        for (x in semiOpenDoubleRange(xMin, xMax, gridResolution)) {
+            for (y in semiOpenDoubleRange(yMin, yMax, gridResolution)) {
                 val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
-                val buildingIds = kdTree.query(envelope).map { ((it as KdNode).data as Int) }
-                if (buildingIds.isEmpty()) continue
-
-                val cellBuildings = buildings.slice(buildingIds)
+                val cellBuildings = kdTree.query(envelope).map { ((it as KdNode).data as Building) }
+                if (cellBuildings.isEmpty()) continue
 
                 // Centroid of all contained buildings
-                val featureCentroid = geometryFactory.createMultiPointFromCoords(
-                    cellBuildings.map { it.coord }.toTypedArray()
+                val featureCentroid = geometryFactory.createMultiPoint(
+                    cellBuildings.map { it.point }.toTypedArray()
                 ).centroid.coordinate
-
-                // Transform the lat lons to cartesian coordinates
-                val latlonCentroid = mercatorToLatLon(featureCentroid.x, featureCentroid.y)
 
                 // Most common region type
                 val regionType = cellBuildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
 
-                // Most common taz
+                // Most common taz (Normally null here)
                 val taz = cellBuildings.groupingBy { it.taz }.eachCount().maxByOrNull { it.value }!!.key
 
-                // Calculate aggregate features of cell
-                val population = cellBuildings.sumOf { it.population * it.inFocusArea.toInt()}
-                val priorWorkWeight = cellBuildings.sumOf { it.workWeight }
-                val nShops = cellBuildings.sumOf { it.nShops }
-                val nOffices = cellBuildings.sumOf { it.nOffices }
-                val nSchools = cellBuildings.sumOf { it.nSchools }
-                val nUnis = cellBuildings.sumOf { it.nUnis }
-                val inFocusArea = cellBuildings.map { it.inFocusArea }.any()
-                grid.add(Cell(population, priorWorkWeight, envelope, cellBuildings, featureCentroid,
-                              latlonCentroid, regionType, nShops, nOffices, nSchools, nUnis, inFocusArea, taz))
+                grid.add(
+                    Cell(
+                        coord = featureCentroid,
+                        homeWeight = cellBuildings.sumOf { it.homeWeight },
+                        workWeight = cellBuildings.sumOf { it.workWeight },
+                        schoolWeight = cellBuildings.sumOf { it.schoolWeight },
+                        shoppingWeight = cellBuildings.sumOf { it.shoppingWeight },
+                        otherWeight = cellBuildings.sumOf { it.otherWeight },
+                        regionType = regionType,
+                        taz = taz,
+                        envelope = envelope,
+                        buildings = cellBuildings,
+                    )
+                )
             }
         }
         return grid.toList()
+    }
+
+    fun addTAZInfo(odMatrix: ODMatrix) : List<LocationOption> {
+        val dummyZones = mutableListOf<LocationOption>()
+
+        // Get buildings in every TAZ and add the TAZ to that building
+        for (odRow in odMatrix.rows.values) {
+            val tazBuildings = mutableListOf<Building>()
+
+            fastCovers(odRow.geometry, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
+                ifNot = { },
+                ifDoes = { e ->
+                    tazBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) })
+                },
+                ifUnsure = { e ->
+                    tazBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) }
+                        .filter { odRow.geometry.contains(it.point) })
+                }
+            )
+
+            if (tazBuildings.isEmpty()) {
+                // Create dummy node for TAZ
+                // TODO: Weight should only be one for the activity the OD is from, currently work.
+                // TODO: Also for other and shopping (reason is flexible loc should also be possible at a dummy node, i.e. commuting location)
+                val dummyLoc = DummyLocation(
+                    coord = odRow.geometry.centroid.coordinate,
+                    homeWeight = 0.0,
+                    workWeight = 1.0,
+                    schoolWeight = 0.0,
+                    shoppingWeight = 1.0,
+                    otherWeight = 1.0,
+                    regionType = 0,
+                    taz = odRow.origin
+                )
+                dummyZones.add(dummyLoc)
+            } else {
+                // Remember TAZ
+                for (building in tazBuildings) {
+                    building.taz = odRow.origin
+                }
+            }
+        }
+
+        // Add TAZ to cell
+        for (cell in grid) {
+            cell.taz = cell.buildings.groupingBy { it.taz }.eachCount().maxByOrNull { it.value }!!.key
+        }
+
+        return dummyZones
+    }
+
+    // TODO this process will work for commuting, if i want all activities ... rethink
+    fun calibrateWithOD(odMatrix: ODMatrix) : Map<Pair<String, String>, Double> {
+        val calibrationMatrix = mutableMapOf<Pair<String, String>, Double>()
+
+        for (odRow in odMatrix.rows.values) {
+            // Calculate gamg transition probability. For speed only on zone level.
+            val gamgWeights = mutableMapOf<String, Double>()
+            val originLocations = zones.filter { it.taz == odRow.origin}
+
+            for (destination in odRow.destinations.keys) {
+                val destinationLocations = zones.filter { it.taz == destination}
+
+                var gamgWeight = 0.0
+                for (start in originLocations) {
+                    if (start.homeWeight > 0) {
+                        for (stop in destinationLocations) {
+                            gamgWeight += start.homeWeight * getWorkWeightPosterior(start, stop)
+                        }
+                    }
+                }
+                gamgWeights[destination] = gamgWeight
+            }
+
+            // Calculate calibration factors
+            val weightSumOD = odRow.destinations.values.sum()
+            val weightSumGAMG = gamgWeights.values.sum()
+
+            for (destination in odRow.destinations.keys) {
+                // Probability OD:
+                val odProb = odRow.destinations[destination]!! / weightSumOD
+
+                // Probability GAMG:
+                val gamgProb = gamgWeights[destination]!! / weightSumGAMG
+
+                calibrationMatrix[Pair(odRow.origin, destination)] = odProb / gamgProb
+            }
+        }
+        return calibrationMatrix
     }
 
     /**
@@ -265,7 +282,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         }
 
         // Assign home and work
-        val homCumDist = SB.createCumDist(zones.map { it.population * it.inFocusArea.toInt() }.toDoubleArray())
+        val homCumDist = SB.createCumDist(zones.map { it.homeWeight }.toDoubleArray())
 
         // Generate population
         val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
@@ -283,7 +300,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             // Get home location
             val home = if (homeZone is Cell) {
                 // IS building
-                val buildingsHomeProb = homeZone.buildings.map { it.population * it.inFocusArea.toInt() }.toDoubleArray()
+                val buildingsHomeProb = homeZone.buildings.map { it.homeWeight }.toDoubleArray()
                 homeZone.buildings[SB.createAndSampleCumDist(buildingsHomeProb)]
             } else {
                 // IS dummy location
@@ -292,13 +309,13 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
 
             // Get work zone (might be cell or dummy is node)
             val workZoneCumDist = workDistCache.getOrPut(homeZoneID) {
-                getWorkDistr(homeZone, zones, homeZone.regionType)
+                getWorkDistr(homeZone, zones)
             }
             val workZone = zones[SB.sampleCumDist(workZoneCumDist)]
 
             // Get work location
             val work = if (workZone is Cell) {
-                val workBuildingsCumDist = getWorkDistr(home, workZone.buildings, home.regionType)
+                val workBuildingsCumDist = getWorkDistr(home, workZone.buildings)
                 workZone.buildings[SB.sampleCumDist(workBuildingsCumDist)]
             } else {
                 workZone
@@ -306,13 +323,13 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
 
             // Get school cell
             val schoolZoneCumDist = schoolDistCache.getOrPut(homeZoneID) {
-                getSchoolDistr(homeZone.coord, zones,  homeZone.regionType)
+                getSchoolDistr(homeZone, zones)
             }
             val schoolZone = zones[SB.sampleCumDist(schoolZoneCumDist)]
 
             // Get school location
             val school = if (schoolZone is Cell) {
-                val schoolBuildingsCumDist = getSchoolDistr(home.coord, schoolZone.buildings, home.regionType)
+                val schoolBuildingsCumDist = getSchoolDistr(home, schoolZone.buildings)
                 schoolZone.buildings[SB.sampleCumDist(schoolBuildingsCumDist)]
             } else {
                 schoolZone
@@ -328,26 +345,25 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
      * Get the location of an activity with flexible location with a given current location
      * @param location Coordinates of current location
      * @param type Activity type
-     * @param regionType region type of current location according to RegioStar7. 0 indicates an undefined region type.
      */
-    fun findFlexibleLoc(location: Coordinate, type: ActivityType, regionType: Int = 0): LocationOption {
+    fun findFlexibleLoc(location: LocationOption, type: ActivityType): LocationOption {
         require(type != ActivityType.HOME) // Home not flexible
         require(type != ActivityType.WORK) // Work not flexible
 
         // Get cell
         val flexDist = if (type == ActivityType.SHOPPING) {
-            getShoppingDistr(location, zones, regionType)
+            getShoppingDistr(location, zones)
         } else {
-            getOtherDistr(location, zones, regionType)
+            getOtherDistr(location, zones)
         }
         val flexZone = zones[SB.sampleCumDist(flexDist)]
 
         // Get location
         return if (flexZone is Cell) {
             val flexBuildingCumDist = if (type == ActivityType.SHOPPING) {
-                getShoppingDistr(location, flexZone.buildings, regionType)
+                getShoppingDistr(location, flexZone.buildings)
             } else {
-                getOtherDistr(location, flexZone.buildings, regionType)
+                getOtherDistr(location, flexZone.buildings)
             }
             flexZone.buildings[SB.sampleCumDist(flexBuildingCumDist)]
         } else {
@@ -402,7 +418,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
                         ActivityType.HOME -> agent.home
                         ActivityType.WORK -> agent.work
                         ActivityType.SCHOOL -> agent.school
-                        else -> findFlexibleLoc(locations[i-1].coord, activity, locations[i-1].regionType)
+                        else -> findFlexibleLoc(locations[i-1], activity)
                     }
                 )
             }
@@ -450,70 +466,59 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     }
 
     /**
-     * Get that a discrete location is chosen based on the distance to an origin and pdf(distance)
-     * used for both cells and buildings
+     * Determine probabilities for the activities
      */
-    private fun getProbsByDistance(origin: Coordinate, targets: List<Coordinate>, baseDist: SB.LogNorm) : DoubleArray {
-        return DoubleArray (targets.size) { i ->
-            // Probability due to distance to home
-            val distance = origin.distance(targets[i])
-            baseDist.density(distance)
-        }
-    }
-
-    /**
-     * Determine coordinates of individual activities
-     */
-    fun getWorkDistr(home: LocationOption, options: List<LocationOption>, regionType: Int) : DoubleArray {
-        // Prior probabilities
-        val priorWeights = options.map { it.workWeight * calibrationMatrix[Pair(home.taz!!, it.taz!!)]!! }
+    private fun getWeightPosterior(origin: LocationOption, target: LocationOption, distr: SB.LogNorm,
+                                   priorWeight: Double) : Double {
         // Probability because of distance
-        val distObj = distanceDists.home_work[regionType]!!
-        val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        val targets = options.map { it.coord }
-        val distanceWeights = getProbsByDistance(home.coord, targets, distr)
-        // Total
-        val probabilities = DoubleArray(targets.size) { i ->
-            distanceWeights[i] * priorWeights[i]
-        }
-        return SB.createCumDist(probabilities)
+        // TODO handle the same cell shouldn't be impossible
+        val distance = origin.coord.distance(target.coord)
+        val distanceWeight = distr.density(distance)
+
+        return priorWeight * distanceWeight
     }
 
-    fun getSchoolDistr(homeCoords: Coordinate, options: List<LocationOption>, regionType: Int) : DoubleArray {
-        // Prior probabilities
-        val priorWeights = options.map { it.nSchools }
-        // Probability because of distance
-        val distObj = distanceDists.home_school[regionType]!!
+    fun getWorkWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+        // Calibration factor from OD-Matrix
+        val calibrationFactor = calibrationMatrix?.let { it[Pair(origin.taz!!, target.taz!!)] } ?: run { 1.0 }
+
+        val distObj = distanceDists.home_work[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        val targets = options.map { it.coord }
-        val distanceWeights = getProbsByDistance(homeCoords, targets, distr)
-        // Total
-        val probabilities = DoubleArray(targets.size) { i ->
-            distanceWeights[i] * priorWeights[i]
-        }
-        return SB.createCumDist(probabilities)
+        return  calibrationFactor * getWeightPosterior(origin, target, distr, target.workWeight)
     }
 
-    fun getShoppingDistr(location: Coordinate, options: List<LocationOption>, regionType: Int) : DoubleArray {
-        // Prior probabilities
-        val priorWeights = options.map { it.nShops }
-        // Probability because of distance
-        val distObj = distanceDists.any_shopping[regionType]!!
-        val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        val targets = options.map { it.coord }
-        val distanceWeights = getProbsByDistance(location, targets, distr)
-        // Total
-        val probabilities = DoubleArray(targets.size) { i ->
-            distanceWeights[i] * priorWeights[i]
-        }
-        return SB.createCumDist(probabilities)
+    fun getWorkDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(targets.map { getWorkWeightPosterior(origin, it) }.toDoubleArray())
     }
 
-    fun getOtherDistr(location: Coordinate, options: List<LocationOption>, regionType: Int) : DoubleArray {
-        val distObj = distanceDists.any_other[regionType]!!
+    fun getSchoolWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+        val distObj = distanceDists.home_school[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        val targets = options.map { it.coord }
-        val distanceWeights = getProbsByDistance(location, targets, distr)
-        return SB.createCumDist(distanceWeights)
+        return getWeightPosterior(origin, target, distr, target.schoolWeight)
     }
+
+    fun getSchoolDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(targets.map { getSchoolWeightPosterior(origin, it) }.toDoubleArray())
+    }
+
+    fun getShoppingWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+        val distObj = distanceDists.any_shopping[origin.regionType]!!
+        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+        return getWeightPosterior(origin, target, distr, target.shoppingWeight)
+    }
+
+    fun getShoppingDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(targets.map { getShoppingWeightPosterior(origin, it) }.toDoubleArray())
+    }
+
+    fun getOtherWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+        val distObj = distanceDists.any_other[origin.regionType]!!
+        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+        return getWeightPosterior(origin, target, distr, target.otherWeight)
+    }
+
+    fun getOtherDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(targets.map { getOtherWeightPosterior(origin, it) }.toDoubleArray())
+    }
+
 }
