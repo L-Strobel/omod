@@ -11,7 +11,6 @@ import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
-import kotlin.system.measureTimeMillis
 import de.uniwuerzburg.StochasticBundle as SB
 
 /**
@@ -128,22 +127,9 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
                     cellBuildings.map { it.point }.toTypedArray()
                 ).centroid.coordinate
 
-                // Most common region type
-                val regionType = cellBuildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
-
-                // Most common taz (Normally null here)
-                val taz = cellBuildings.groupingBy { it.taz }.eachCount().maxByOrNull { it.value }!!.key
-
                 grid.add(
                     Cell(
                         coord = featureCentroid,
-                        homeWeight = cellBuildings.sumOf { it.homeWeight },
-                        workWeight = cellBuildings.sumOf { it.workWeight },
-                        schoolWeight = cellBuildings.sumOf { it.schoolWeight },
-                        shoppingWeight = cellBuildings.sumOf { it.shoppingWeight },
-                        otherWeight = cellBuildings.sumOf { it.otherWeight },
-                        regionType = regionType,
-                        taz = taz,
                         envelope = envelope,
                         buildings = cellBuildings,
                     )
@@ -183,7 +169,8 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
                     shoppingWeight = 1.0,
                     otherWeight = 1.0,
                     regionType = 0,
-                    taz = odRow.origin
+                    taz = odRow.origin,
+                    avgDistanceToSelf = 1.0
                 )
                 dummyZones.add(dummyLoc)
             } else {
@@ -468,57 +455,60 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     /**
      * Determine probabilities for the activities
      */
-    private fun getWeightPosterior(origin: LocationOption, target: LocationOption, distr: SB.LogNorm,
+    private fun getWeightPosterior(origin: LocationOption, destination: LocationOption, distr: SB.LogNorm,
                                    priorWeight: Double) : Double {
         // Probability because of distance
-        // TODO handle the same cell shouldn't be impossible
-        val distance = origin.coord.distance(target.coord)
+        val distance = if (origin == destination) {
+            origin.avgDistanceToSelf // 0.0 for Buildings
+        } else {
+            origin.coord.distance(destination.coord)
+        }
         val distanceWeight = distr.density(distance)
 
         return priorWeight * distanceWeight
     }
 
-    fun getWorkWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+    fun getWorkWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         // Calibration factor from OD-Matrix
-        val calibrationFactor = calibrationMatrix?.let { it[Pair(origin.taz!!, target.taz!!)] } ?: run { 1.0 }
+        val calibrationFactor = calibrationMatrix?.let { it[Pair(origin.taz!!, destination.taz!!)] } ?: run { 1.0 }
 
         val distObj = distanceDists.home_work[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        return  calibrationFactor * getWeightPosterior(origin, target, distr, target.workWeight)
+        return  calibrationFactor * getWeightPosterior(origin, destination, distr, destination.workWeight)
     }
 
-    fun getWorkDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(targets.map { getWorkWeightPosterior(origin, it) }.toDoubleArray())
+    fun getWorkDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(destinations.map { getWorkWeightPosterior(origin, it) }.toDoubleArray())
     }
 
-    fun getSchoolWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+    fun getSchoolWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         val distObj = distanceDists.home_school[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        return getWeightPosterior(origin, target, distr, target.schoolWeight)
+        return getWeightPosterior(origin, destination, distr, destination.schoolWeight)
     }
 
-    fun getSchoolDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(targets.map { getSchoolWeightPosterior(origin, it) }.toDoubleArray())
+    fun getSchoolDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(destinations.map { getSchoolWeightPosterior(origin, it) }.toDoubleArray())
     }
 
-    fun getShoppingWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+    fun getShoppingWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         val distObj = distanceDists.any_shopping[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        return getWeightPosterior(origin, target, distr, target.shoppingWeight)
+        return getWeightPosterior(origin, destination, distr, destination.shoppingWeight)
     }
 
-    fun getShoppingDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(targets.map { getShoppingWeightPosterior(origin, it) }.toDoubleArray())
+    fun getShoppingDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(destinations.map { getShoppingWeightPosterior(origin, it) }.toDoubleArray())
     }
 
-    fun getOtherWeightPosterior(origin: LocationOption, target: LocationOption) : Double {
+    fun getOtherWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         val distObj = distanceDists.any_other[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
-        return getWeightPosterior(origin, target, distr, target.otherWeight)
+        return getWeightPosterior(origin, destination, distr, destination.otherWeight)
     }
 
-    fun getOtherDistr(origin: LocationOption, targets: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(targets.map { getOtherWeightPosterior(origin, it) }.toDoubleArray())
+    fun getOtherDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(destinations.map { getOtherWeightPosterior(origin, it) }.toDoubleArray())
     }
 
 }
