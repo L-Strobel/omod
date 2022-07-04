@@ -2,7 +2,6 @@ package de.uniwuerzburg
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 
@@ -45,6 +44,8 @@ data class GeoJsonMultiPoly(
 @Serializable
 data class GeoJsonProperties (
     val origin: String,
+    val originActivity: ActivityType,
+    val destinationActivity: ActivityType,
     val destinations: Map<String, Double>
 )
 @Serializable

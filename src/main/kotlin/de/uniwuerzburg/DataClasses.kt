@@ -83,6 +83,7 @@ interface LocationOption {
     val regionType: Int
     var taz: String?
     val avgDistanceToSelf: Double
+    val inFocusArea: Boolean
 }
 
 /**
@@ -99,6 +100,7 @@ data class Building  (
     override val latlonCoord: Coordinate,
     override val regionType: Int,
     override var taz: String?,
+    override val inFocusArea: Boolean,
 
     val point: Point,
 
@@ -111,10 +113,9 @@ data class Building  (
     val nOffices: Double,
     val nSchools: Double,
     val nUnis: Double,
-    val inFocusArea:  Boolean,
 ) : LocationOption {
     override val workWeight = nShops + nOffices + landuse.getWorkWeight()
-    override val homeWeight = population * inFocusArea.toInt()
+    override val homeWeight = population
     override val schoolWeight = nSchools
     override val shoppingWeight = nShops
     override val otherWeight = 1.0
@@ -147,6 +148,8 @@ data class Cell (
     override val schoolWeight = buildings.sumOf { it.schoolWeight }
     override val shoppingWeight = buildings.sumOf { it.shoppingWeight }
     override val otherWeight = buildings.sumOf { it.otherWeight }
+
+    override val inFocusArea = buildings.map { it.inFocusArea }.any()
 }
 
 /**
@@ -159,11 +162,12 @@ data class DummyLocation (
     override val schoolWeight: Double,
     override val shoppingWeight: Double,
     override val otherWeight: Double,
-    override val regionType: Int,
-    override var taz: String?,
-    override val avgDistanceToSelf : Double
+    override var taz: String?
 ) : LocationOption {
-    override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
+    override val regionType = 0 // 0 means undefined
+    override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
+    override val latlonCoord = mercatorToLatLon(coord.x, coord.y)
+    override val inFocusArea = false
 }
 
 /**
@@ -186,7 +190,7 @@ data class MobiAgent (
 data class Activity (
     val type: ActivityType,
     val stayTime: Double?,
-    val building: LocationOption,
+    val location: LocationOption,
     val lat: Double,
     val lon: Double
 )
@@ -200,7 +204,8 @@ data class OutputActivity (
     val stayTime: Double?,
     val lat: Double,
     val lon: Double,
-    val dummyLoc: Boolean
+    val dummyLoc: Boolean,
+    val inFocusArea: Boolean
 )
 @Serializable
 data class OutputEntry (
@@ -212,7 +217,7 @@ data class OutputEntry (
 )
 fun formatOutput(agent: MobiAgent) : OutputEntry {
     val profile = agent.profile?.map {
-        OutputActivity(it.type, it.stayTime, it.lat, it.lon, it.building is DummyLocation)
+        OutputActivity(it.type, it.stayTime, it.lat, it.lon, it.location is DummyLocation, it.location.inFocusArea)
     }
     return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, profile)
 }
@@ -222,6 +227,8 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
  */
 data class ODRow (
     val origin: String,
+    val originActivity: ActivityType,
+    val destinationActivity: ActivityType,
     val destinations: Map<String, Double>,
     val geometry: Geometry
 )
@@ -239,8 +246,11 @@ class ODMatrix (odPath: String, factory: GeometryFactory) {
         for (entry in geoJson.features) {
             val origin = entry.properties.origin
             val geometry = entry.geometry.toJTS(factory)
+            val originActivity = entry.properties.originActivity
+            val destinationActivity = entry.properties.destinationActivity
             val destinations = entry.properties.destinations
-            rows[origin] = ODRow(origin, destinations, geometry)
+
+            rows[origin] = ODRow(origin, originActivity, destinationActivity, destinations, geometry)
         }
     }
 }
