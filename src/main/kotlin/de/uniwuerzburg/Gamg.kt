@@ -24,7 +24,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     val kdTree: KdTree
     private val grid: List<Cell>
     private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
-    private val calibrationMatrix: Map<Pair<String, String>, Double>?
+    private val calibrationMatrix: MutableMap<ActivityType, Map<Pair<String?, String>, Double>?>
     private val populationDef: PopulationDef
     private val activityDataMap: ActivityDataMap
     private val distanceDists: DistanceDistributions
@@ -93,6 +93,11 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         grid = makeGrid(gridResolution)
 
         // Calibration
+        calibrationMatrix = mutableMapOf()
+        for (activityType in ActivityType.values()) {
+            calibrationMatrix[activityType] = null
+        }
+
         if (odPath != null) {
             // Read OD-Matrix that is used for calibration
             val odMatrix = ODMatrix(odPath, geometryFactory)
@@ -100,9 +105,8 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             val dummyZones = addTAZInfo(odMatrix)
             zones = grid + dummyZones
             // Get calibration factors based on OD-Matrix
-            calibrationMatrix = calibrateWithOD(odMatrix)
+            calibrateWithOD(odMatrix)
         } else {
-            calibrationMatrix = null
             zones = grid
         }
     }
@@ -157,76 +161,142 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
                 }
             )
 
+            val activities = setOf(odRow.originActivity, odRow.destinationActivity)
+
             if (tazBuildings.isEmpty()) {
                 // Create dummy node for TAZ
-                // TODO: Weight should only be one for the activity the OD is from, currently work.
-                // TODO: Also for other and shopping (reason is flexible loc should also be possible at a dummy node, i.e. commuting location)
                 val dummyLoc = DummyLocation(
                     coord = odRow.geometry.centroid.coordinate,
-                    homeWeight = 0.0,
-                    workWeight = 1.0,
-                    schoolWeight = 0.0,
-                    shoppingWeight = 1.0,
-                    otherWeight = 1.0,
-                    regionType = 0,
-                    taz = odRow.origin,
-                    avgDistanceToSelf = 1.0
+                    homeWeight = (ActivityType.HOME in activities).toDouble(),
+                    workWeight = (ActivityType.WORK in activities).toDouble(),
+                    schoolWeight = (ActivityType.SCHOOL in activities).toDouble(),
+                    shoppingWeight = (ActivityType.SHOPPING in activities).toDouble(),
+                    otherWeight = (ActivityType.OTHER in activities).toDouble(),
+                    taz = odRow.origin
                 )
                 dummyZones.add(dummyLoc)
             } else {
-                // Remember TAZ
                 for (building in tazBuildings) {
+                    // Remember TAZ
                     building.taz = odRow.origin
                 }
             }
         }
 
-        // Add TAZ to cell
         for (cell in grid) {
+            // Add TAZ to cell
             cell.taz = cell.buildings.groupingBy { it.taz }.eachCount().maxByOrNull { it.value }!!.key
         }
 
         return dummyZones
     }
 
-    // TODO this process will work for commuting, if i want all activities ... rethink
-    fun calibrateWithOD(odMatrix: ODMatrix) : Map<Pair<String, String>, Double> {
-        val calibrationMatrix = mutableMapOf<Pair<String, String>, Double>()
-
+    fun calibrateWithOD(odMatrix: ODMatrix, calibrateOrigins: Boolean = true){
+        // Check if OD has valid activities. Currently allowed: HOME->WORK, HOME->SCHOOL. Planed: ANY->ANY
+        val odActivities = Pair(odMatrix.rows.values.first().originActivity,
+                                odMatrix.rows.values.first().destinationActivity)
+        require(odActivities in setOf(Pair(ActivityType.HOME, ActivityType.WORK),
+                                      Pair(ActivityType.SCHOOL, ActivityType.WORK))) {
+            "Only OD-Matrices with Activities HOME->WORK and HOME->SCHOOL are currently supported"
+        }
         for (odRow in odMatrix.rows.values) {
-            // Calculate gamg transition probability. For speed only on zone level.
-            val gamgWeights = mutableMapOf<String, Double>()
-            val originLocations = zones.filter { it.taz == odRow.origin}
+            require(odRow.originActivity == odActivities.first) { "OD-Matrix activities not uniform" }
+            require(odRow.destinationActivity == odActivities.second) { "OD-Matrix activities not uniform" }
+        }
 
-            for (destination in odRow.destinations.keys) {
-                val destinationLocations = zones.filter { it.taz == destination}
+        val tazsInFocusArea = buildings.filter { it.inFocusArea }.map { it.taz!! }.distinct()
+
+        // Calibrate origins
+        if (calibrateOrigins) {
+            val activityCalibrationMatrix = mutableMapOf<Pair<String?, String>, Double>()
+            val gamgWeights = mutableMapOf<String, Double>()
+            val odWeights = mutableMapOf<String, Double>()
+
+            for (odRow in odMatrix.rows.values) {
+                // Calculate gamg origin probability. For speed only on zone level.
+                val originLocations = zones.filter { it.taz == odRow.origin }
 
                 var gamgWeight = 0.0
                 for (start in originLocations) {
-                    if (start.homeWeight > 0) {
-                        for (stop in destinationLocations) {
-                            gamgWeight += start.homeWeight * getWorkWeightPosterior(start, stop)
-                        }
-                    }
+                    gamgWeight += getHomeWeightPosterior(start)
                 }
-                gamgWeights[destination] = gamgWeight
+                gamgWeights[odRow.origin] = gamgWeight
+
+                // Calculate OD-Matrix origin probability.
+                var odWeight = 0.0
+                for (taz in tazsInFocusArea) {
+                    odWeight += odRow.destinations[taz]!!
+                }
+                odWeights[odRow.origin] = odWeight
             }
 
             // Calculate calibration factors
-            val weightSumOD = odRow.destinations.values.sum()
+            val weightSumOD = odWeights.values.sum()
             val weightSumGAMG = gamgWeights.values.sum()
 
-            for (destination in odRow.destinations.keys) {
+            for (odRow in odMatrix.rows.values) {
                 // Probability OD:
-                val odProb = odRow.destinations[destination]!! / weightSumOD
+                val odProb = odWeights[odRow.origin]!! / weightSumOD
 
                 // Probability GAMG:
-                val gamgProb = gamgWeights[destination]!! / weightSumGAMG
+                val gamgProb = gamgWeights[odRow.origin]!! / weightSumGAMG
 
-                calibrationMatrix[Pair(odRow.origin, destination)] = odProb / gamgProb
+                activityCalibrationMatrix[Pair(null, odRow.origin)] = odProb / gamgProb
             }
+            calibrationMatrix[odActivities.first] = activityCalibrationMatrix
         }
-        return calibrationMatrix
+
+        // Calibrate transitions. "run" ist just a block start in kotlin.
+        run {
+            val activityCalibrationMatrix = mutableMapOf<Pair<String?, String>, Double>()
+
+            for (odRow in odMatrix.rows.values) {
+                val gamgWeights = mutableMapOf<String, Double>()
+                val odWeights = mutableMapOf<String, Double>()
+
+                val originLocations = zones.filter { it.taz == odRow.origin }
+
+                val destinations = if (odRow.origin in tazsInFocusArea) {
+                    odRow.destinations.keys
+                } else {
+                    tazsInFocusArea
+                }
+
+                for (destination in destinations) {
+                    // Calculate gamg transition probability. For speed only on zone level.
+                    val destinationLocations = zones.filter { it.taz == destination }
+
+                    var gamgWeight = 0.0
+                    for (start in originLocations) {
+                        val homeProb = getHomeWeightPosterior(start)
+                        if (homeProb > 0) {
+                            for (stop in destinationLocations) {
+                                gamgWeight += homeProb * getWorkWeightPosterior(start, stop)
+                            }
+                        }
+                    }
+                    gamgWeights[destination] = gamgWeight
+
+                    // Calculate OD-Matrix origin probability.
+                    odWeights[destination] = odRow.destinations[destination]!!
+                }
+
+                // Calculate calibration factors
+                val weightSumOD = odWeights.values.sum()
+                val weightSumGAMG = gamgWeights.values.sum()
+
+                for (destination in destinations) {
+                    // Probability OD:
+                    val odProb = odWeights[destination]!! / weightSumOD
+
+                    // Probability GAMG:
+                    val gamgProb = gamgWeights[destination]!! / weightSumGAMG
+
+                    activityCalibrationMatrix[Pair(odRow.origin, destination)] = odProb / gamgProb
+                }
+            }
+            calibrationMatrix[odActivities.second] = activityCalibrationMatrix
+        }
     }
 
     /**
@@ -269,9 +339,9 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         }
 
         // Assign home and work
-        val homCumDist = SB.createCumDist(zones.map { it.homeWeight }.toDoubleArray())
+        val homCumDist = getHomeDistr(zones)
 
-        // Generate population
+        // Generate population TODO: enable fixed number in focus area, maybe by just stopping after i have enough?
         val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
         val schoolDistCache = mutableMapOf<Int, DoubleArray>()
         val agents = List(n) { i ->
@@ -287,8 +357,8 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             // Get home location
             val home = if (homeZone is Cell) {
                 // IS building
-                val buildingsHomeProb = homeZone.buildings.map { it.homeWeight }.toDoubleArray()
-                homeZone.buildings[SB.createAndSampleCumDist(buildingsHomeProb)]
+                val buildingsHomeDist = getHomeDistr(homeZone.buildings)
+                homeZone.buildings[SB.sampleCumDist(buildingsHomeDist)]
             } else {
                 // IS dummy location
                 homeZone
@@ -334,8 +404,10 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
      * @param type Activity type
      */
     fun findFlexibleLoc(location: LocationOption, type: ActivityType): LocationOption {
-        require(type != ActivityType.HOME) // Home not flexible
-        require(type != ActivityType.WORK) // Work not flexible
+        // Home, Work, School are not flexible
+        require(type != ActivityType.HOME)
+        require(type != ActivityType.WORK)
+        require(type != ActivityType.SCHOOL)
 
         // Get cell
         val flexDist = if (type == ActivityType.SHOPPING) {
@@ -468,9 +540,23 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         return priorWeight * distanceWeight
     }
 
+    fun getHomeWeightPosterior(destination: LocationOption) : Double {
+        // Calibration factor from OD-Matrix
+        val calibrationFactor = calibrationMatrix[ActivityType.HOME]?.let {
+            it[Pair(null, destination.taz!!)]
+        } ?: run { 1.0 }
+        return  calibrationFactor * destination.homeWeight
+    }
+
+    fun getHomeDistr(destinations: List<LocationOption>) : DoubleArray {
+        return SB.createCumDist(destinations.map { getHomeWeightPosterior(it) }.toDoubleArray())
+    }
+
     fun getWorkWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         // Calibration factor from OD-Matrix
-        val calibrationFactor = calibrationMatrix?.let { it[Pair(origin.taz!!, destination.taz!!)] } ?: run { 1.0 }
+        val calibrationFactor = calibrationMatrix[ActivityType.WORK]?.let {
+            it[Pair(origin.taz!!, destination.taz!!)]
+        } ?: run { 1.0 }
 
         val distObj = distanceDists.home_work[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
@@ -492,6 +578,15 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     }
 
     fun getShoppingWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
+        // Flexible activities don't leave dummy location except OD-Matrix defines it
+        if ((origin is DummyLocation) && (origin.shoppingWeight == 0.0) ) {
+            return if (origin == destination) {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        // Normal case
         val distObj = distanceDists.any_shopping[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
         return getWeightPosterior(origin, destination, distr, destination.shoppingWeight)
@@ -502,6 +597,15 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     }
 
     fun getOtherWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
+        // Flexible activities don't leave dummy location except OD-Matrix defines it
+        if ((origin is DummyLocation) && (origin.otherWeight == 0.0) ) {
+            return if (origin == destination) {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        // Normal case
         val distObj = distanceDists.any_other[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
         return getWeightPosterior(origin, destination, distr, destination.otherWeight)

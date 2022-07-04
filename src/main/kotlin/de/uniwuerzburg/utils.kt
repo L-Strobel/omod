@@ -6,6 +6,7 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import kotlin.math.*
 
+@Suppress("unused")
 infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
     require(start.isFinite())
     require(endInclusive.isFinite())
@@ -28,8 +29,9 @@ fun semiOpenDoubleRange(start: Double, end: Double, step: Double): Iterable<Doub
     }
     return sequence.asIterable()
 }
-
+@Suppress("unused")
 fun Boolean.toInt() = if (this) 1 else 0
+fun Boolean.toDouble() = if (this) 1.0 else 0.0
 
 // Earth radius according to WGS 84
 const val earthMajorAxis = 6378137.0
