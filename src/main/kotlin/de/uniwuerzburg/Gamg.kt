@@ -256,13 +256,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
 
                 val originLocations = zones.filter { it.taz == odRow.origin }
 
-                val destinations = if (odRow.origin in tazsInFocusArea) {
-                    odRow.destinations.keys
-                } else {
-                    tazsInFocusArea
-                }
-
-                for (destination in destinations) {
+                for (destination in odRow.destinations.keys) {
                     // Calculate gamg transition probability. For speed only on zone level.
                     val destinationLocations = zones.filter { it.taz == destination }
 
@@ -278,14 +272,18 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
                     gamgWeights[destination] = gamgWeight
 
                     // Calculate OD-Matrix origin probability.
-                    odWeights[destination] = odRow.destinations[destination]!!
+                    odWeights[destination] = if ((destination in tazsInFocusArea) || (odRow.origin in tazsInFocusArea) ){
+                        odRow.destinations[destination]!!
+                    } else {
+                        0.0
+                    }
                 }
 
                 // Calculate calibration factors
                 val weightSumOD = odWeights.values.sum()
                 val weightSumGAMG = gamgWeights.values.sum()
 
-                for (destination in destinations) {
+                for (destination in odRow.destinations.keys) {
                     // Probability OD:
                     val odProb = odWeights[destination]!! / weightSumOD
 
@@ -542,9 +540,11 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
 
     fun getHomeWeightPosterior(destination: LocationOption) : Double {
         // Calibration factor from OD-Matrix
-        val calibrationFactor = calibrationMatrix[ActivityType.HOME]?.let {
-            it[Pair(null, destination.taz!!)]
-        } ?: run { 1.0 }
+        val calibrationFactor = if (calibrationMatrix[ActivityType.HOME] != null) {
+            calibrationMatrix[ActivityType.HOME]!![Pair(null, destination.taz!!)]!!
+        } else {
+            1.0
+        }
         return  calibrationFactor * destination.homeWeight
     }
 
@@ -554,9 +554,11 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
 
     fun getWorkWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         // Calibration factor from OD-Matrix
-        val calibrationFactor = calibrationMatrix[ActivityType.WORK]?.let {
-            it[Pair(origin.taz!!, destination.taz!!)]
-        } ?: run { 1.0 }
+        val calibrationFactor = if (calibrationMatrix[ActivityType.WORK] != null) {
+            calibrationMatrix[ActivityType.WORK]!![Pair(origin.taz!!, destination.taz!!)]!!
+        } else {
+            1.0
+        }
 
         val distObj = distanceDists.home_work[origin.regionType]!!
         val distr = SB.LogNorm(distObj.shape, distObj.scale)
