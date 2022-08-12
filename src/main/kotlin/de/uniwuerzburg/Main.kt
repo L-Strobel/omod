@@ -28,7 +28,7 @@ fun runWeek(buildingPath: String, n: Int){
 fun runDay(buildingPath: String, n: Int) {
     val gamg: Gamg
     val creationElapsed = measureTimeMillis {
-         gamg = Gamg(buildingPath, "C:/Users/strobel/Projekte/esmregio/gamg/OD-Matrix.geojson", 500.0)
+         gamg = Gamg(buildingPath, "C:/Users/strobel/Projekte/esmregio/gamg/OD-Matrix.geojson", 500.0, 1)
     }
     println("${creationElapsed / 1000.0}")
 
@@ -40,6 +40,6 @@ fun runDay(buildingPath: String, n: Int) {
 }
 
 fun main() {
-    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings-62640.csv"
-    runDay(buildingPath, 20000)
+    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974.csv"
+    runDay(buildingPath, 1000)
 }

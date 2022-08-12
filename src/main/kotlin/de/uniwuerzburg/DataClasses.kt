@@ -149,7 +149,7 @@ data class Cell (
     override val shoppingWeight = buildings.sumOf { it.shoppingWeight }
     override val otherWeight = buildings.sumOf { it.otherWeight }
 
-    override val inFocusArea = buildings.map { it.inFocusArea }.any()
+    override val inFocusArea = buildings.any { it.inFocusArea }
 }
 
 /**

@@ -112,14 +112,14 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
 
         init {
             chains = activityChains.map { it.chain }
-            distr = StochasticBundle.createCumDist(activityChains.map { it.weight }.toDoubleArray())
+            distr = createCumDist(activityChains.map { it.weight }.toDoubleArray())
             mixtures = activityChains.associateBy(
                 { i -> i.chain},
                 { i ->
                     val g = i.gaussianMixture
                     if (g != null) {
                         Mixture(
-                            StochasticBundle.createCumDist(g.weights.toDoubleArray()),
+                            createCumDist(g.weights.toDoubleArray()),
                             g.means.map { j -> j.toDoubleArray() },
                             g.covariances.map { j ->  (j.map { k -> k.toDoubleArray() }).toTypedArray()}
                         )

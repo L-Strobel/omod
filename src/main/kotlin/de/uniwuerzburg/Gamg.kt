@@ -11,7 +11,7 @@ import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
-import de.uniwuerzburg.StochasticBundle as SB
+import java.util.*
 
 /**
  * General purpose mobility demand generator (gamg)
@@ -19,7 +19,7 @@ import de.uniwuerzburg.StochasticBundle as SB
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
+class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed: Long?) {
     val buildings: List<Building>
     val kdTree: KdTree
     private val grid: List<Cell>
@@ -29,6 +29,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     private val activityDataMap: ActivityDataMap
     private val distanceDists: DistanceDistributions
     private val geometryFactory = GeometryFactory()
+    private val rng: Random = if (seed != null) Random(seed) else Random()
 
     init {
         // Get population distribution
@@ -204,7 +205,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             require(odRow.destinationActivity == odActivities.second) { "OD-Matrix activities not uniform" }
         }
 
-        val tazsInFocusArea = buildings.filter { it.inFocusArea }.map { it.taz!! }.distinct()
+        val tazsInFocusArea = buildings.filter { it.inFocusArea }.mapNotNull { it.taz }.distinct()
 
         // Calibrate origins
         if (calibrateOrigins) {
@@ -324,8 +325,8 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         }
         val agentFeatures: List<Int> // List of indices that map an agent to a features set
         if (randomFeatures) {
-            val distr = SB.createCumDist(jointProbability.toDoubleArray())
-            agentFeatures = List(n) {SB.sampleCumDist(distr)}
+            val distr = createCumDist(jointProbability.toDoubleArray())
+            agentFeatures = List(n) {sampleCumDist(distr, rng)}
         } else {
             // Assign the features deterministically
             val expectedObservations = jointProbability.map { it * n }.toDoubleArray()
@@ -349,14 +350,14 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             val age = features[agentFeatures[i]].third
 
             // Get home zone (might be cell or dummy is node)
-            val homeZoneID = SB.sampleCumDist(homCumDist)
+            val homeZoneID = sampleCumDist(homCumDist, rng)
             val homeZone = zones[homeZoneID]
 
             // Get home location
             val home = if (homeZone is Cell) {
                 // IS building
                 val buildingsHomeDist = getHomeDistr(homeZone.buildings)
-                homeZone.buildings[SB.sampleCumDist(buildingsHomeDist)]
+                homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
             } else {
                 // IS dummy location
                 homeZone
@@ -366,12 +367,12 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             val workZoneCumDist = workDistCache.getOrPut(homeZoneID) {
                 getWorkDistr(homeZone, zones)
             }
-            val workZone = zones[SB.sampleCumDist(workZoneCumDist)]
+            val workZone = zones[sampleCumDist(workZoneCumDist, rng)]
 
             // Get work location
             val work = if (workZone is Cell) {
                 val workBuildingsCumDist = getWorkDistr(home, workZone.buildings)
-                workZone.buildings[SB.sampleCumDist(workBuildingsCumDist)]
+                workZone.buildings[sampleCumDist(workBuildingsCumDist, rng)]
             } else {
                 workZone
             }
@@ -380,12 +381,12 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             val schoolZoneCumDist = schoolDistCache.getOrPut(homeZoneID) {
                 getSchoolDistr(homeZone, zones)
             }
-            val schoolZone = zones[SB.sampleCumDist(schoolZoneCumDist)]
+            val schoolZone = zones[sampleCumDist(schoolZoneCumDist, rng)]
 
             // Get school location
             val school = if (schoolZone is Cell) {
                 val schoolBuildingsCumDist = getSchoolDistr(home, schoolZone.buildings)
-                schoolZone.buildings[SB.sampleCumDist(schoolBuildingsCumDist)]
+                schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
             } else {
                 schoolZone
             }
@@ -413,7 +414,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         } else {
             getOtherDistr(location, zones)
         }
-        val flexZone = zones[SB.sampleCumDist(flexDist)]
+        val flexZone = zones[sampleCumDist(flexDist, rng)]
 
         // Get location
         return if (flexZone is Cell) {
@@ -422,7 +423,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             } else {
                 getOtherDistr(location, flexZone.buildings)
             }
-            flexZone.buildings[SB.sampleCumDist(flexBuildingCumDist)]
+            flexZone.buildings[sampleCumDist(flexBuildingCumDist, rng)]
         } else {
             flexZone
         }
@@ -433,7 +434,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
      */
     fun getActivityChain(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME) : List<ActivityType> {
         val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
-        val i = SB.sampleCumDist(data.distr)
+        val i = sampleCumDist(data.distr, rng)
         return data.chains[i]
     }
 
@@ -450,8 +451,8 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
             val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from,
                                            givenChain = activityChain)
             val mixture = data.mixtures[activityChain]!! // non-null is ensured in get()
-            val i = SB.sampleCumDist(mixture.distr)
-            val stayTimes = SB.sampleNDGaussian(mixture.means[i], mixture.covariances[i]).toList()
+            val i = sampleCumDist(mixture.distr, rng)
+            val stayTimes = sampleNDGaussian(mixture.means[i], mixture.covariances[i], rng).toList()
             // Handle negative values. Last stay is always until the end of the day, marked by null
             stayTimes.map { if (it < 0 ) 0.0 else it } + null
         }
@@ -525,7 +526,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     /**
      * Determine probabilities for the activities
      */
-    private fun getWeightPosterior(origin: LocationOption, destination: LocationOption, distr: SB.LogNorm,
+    private fun getWeightPosterior(origin: LocationOption, destination: LocationOption, distr: LogNorm,
                                    priorWeight: Double) : Double {
         // Probability because of distance
         val distance = if (origin == destination) {
@@ -549,7 +550,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
     }
 
     fun getHomeDistr(destinations: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(destinations.map { getHomeWeightPosterior(it) }.toDoubleArray())
+        return createCumDist(destinations.map { getHomeWeightPosterior(it) }.toDoubleArray())
     }
 
     fun getWorkWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
@@ -561,22 +562,22 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         }
 
         val distObj = distanceDists.home_work[origin.regionType]!!
-        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+        val distr = LogNorm(distObj.shape, distObj.scale)
         return  calibrationFactor * getWeightPosterior(origin, destination, distr, destination.workWeight)
     }
 
     fun getWorkDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(destinations.map { getWorkWeightPosterior(origin, it) }.toDoubleArray())
+        return createCumDist(destinations.map { getWorkWeightPosterior(origin, it) }.toDoubleArray())
     }
 
     fun getSchoolWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
         val distObj = distanceDists.home_school[origin.regionType]!!
-        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+        val distr = LogNorm(distObj.shape, distObj.scale)
         return getWeightPosterior(origin, destination, distr, destination.schoolWeight)
     }
 
     fun getSchoolDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(destinations.map { getSchoolWeightPosterior(origin, it) }.toDoubleArray())
+        return createCumDist(destinations.map { getSchoolWeightPosterior(origin, it) }.toDoubleArray())
     }
 
     fun getShoppingWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
@@ -590,12 +591,12 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         }
         // Normal case
         val distObj = distanceDists.any_shopping[origin.regionType]!!
-        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+        val distr = LogNorm(distObj.shape, distObj.scale)
         return getWeightPosterior(origin, destination, distr, destination.shoppingWeight)
     }
 
     fun getShoppingDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(destinations.map { getShoppingWeightPosterior(origin, it) }.toDoubleArray())
+        return createCumDist(destinations.map { getShoppingWeightPosterior(origin, it) }.toDoubleArray())
     }
 
     fun getOtherWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
@@ -609,12 +610,12 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double) {
         }
         // Normal case
         val distObj = distanceDists.any_other[origin.regionType]!!
-        val distr = SB.LogNorm(distObj.shape, distObj.scale)
+        val distr = LogNorm(distObj.shape, distObj.scale)
         return getWeightPosterior(origin, destination, distr, destination.otherWeight)
     }
 
     fun getOtherDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return SB.createCumDist(destinations.map { getOtherWeightPosterior(origin, it) }.toDoubleArray())
+        return createCumDist(destinations.map { getOtherWeightPosterior(origin, it) }.toDoubleArray())
     }
 
 }
