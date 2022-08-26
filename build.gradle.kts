@@ -17,6 +17,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("org.locationtech.jts:jts-core:1.18.2")
     implementation("org.apache.commons:commons-math3:3.6.1")
+    implementation("org.postgresql:postgresql:42.2.9")
+    implementation("com.github.ajalt.clikt:clikt:3.5.0")
     testImplementation(kotlin("test"))
 }
 

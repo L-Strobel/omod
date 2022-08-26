@@ -104,10 +104,9 @@ data class Building  (
 
     val point: Point,
 
-    val id: Int,
     val osmID: Int,
     val area: Double,
-    val population: Double,
+    val population: Double?,
     val landuse: Landuse,
     val nShops: Double,
     val nOffices: Double,
@@ -115,12 +114,43 @@ data class Building  (
     val nUnis: Double,
 ) : LocationOption {
     override val workWeight = nShops + nOffices + landuse.getWorkWeight()
-    override val homeWeight = population
+    override val homeWeight = population ?: 1.0
     override val schoolWeight = nSchools
     override val shoppingWeight = nShops
     override val otherWeight = 1.0
     override val avgDistanceToSelf = 0.0
+
+    companion object {
+        fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory): List<Building> {
+            return collection.features.map {
+                require(it.properties is GeoJsonBuildingProperties) {
+                    "Geo json contains features that are not buildings!"
+                }
+
+                val properties = it.properties
+                val point = it.geometry.toJTS(geometryFactory).centroid
+
+                Building(
+                    osmID = properties.osm_id,
+                    coord = point.coordinate,
+                    latlonCoord = mercatorToLatLon(point.coordinate.x, point.coordinate.y),
+                    area = properties.area,
+                    population = properties.population,
+                    landuse = Landuse.valueOf(properties.landuse),
+                    regionType = properties.region_type,
+                    nShops = properties.number_shops,
+                    nOffices = properties.number_offices,
+                    nSchools = properties.number_schools,
+                    nUnis = properties.number_universities,
+                    inFocusArea = properties.in_focus_area,
+                    taz = null,
+                    point = point
+                )
+            }
+        }
+    }
 }
+
 
 /**
  * Group of buildings. For faster 2D distribution sampling.
@@ -233,7 +263,7 @@ data class ODRow (
     val geometry: Geometry
 )
 
-class ODMatrix (odPath: String, factory: GeometryFactory) {
+class ODMatrix (odFile: File, factory: GeometryFactory) {
     val rows: Map<String, ODRow>
 
     init {
@@ -241,14 +271,15 @@ class ODMatrix (odPath: String, factory: GeometryFactory) {
 
         // Read OD
         val geoJson: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
-            .decodeFromString(File(odPath).readText(Charsets.UTF_8))
+            .decodeFromString(odFile.readText(Charsets.UTF_8))
 
         for (entry in geoJson.features) {
-            val origin = entry.properties.origin
+            val properties = entry.properties as GeoJsonODProperties
+            val origin = properties.origin
             val geometry = entry.geometry.toJTS(factory)
-            val originActivity = entry.properties.originActivity
-            val destinationActivity = entry.properties.destinationActivity
-            val destinations = entry.properties.destinations
+            val originActivity = properties.origin_activity
+            val destinationActivity = properties.destination_activity
+            val destinations = properties.destinations
 
             rows[origin] = ODRow(origin, originActivity, destinationActivity, destinations, geometry)
         }

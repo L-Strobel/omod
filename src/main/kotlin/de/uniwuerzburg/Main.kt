@@ -1,45 +1,92 @@
 package de.uniwuerzburg
 
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.check
+import com.github.ajalt.clikt.parameters.arguments.convert
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import kotlin.system.measureTimeMillis
+import java.nio.file.Paths
 
-/*
-fun runWeek(buildingPath: String, n: Int){
-    val gamg = Gamg(buildingPath, 500.0)
-    val agents = gamg.createAgents(n)
-    for (weekday in listOf("mo", "tu", "we", "th", "fr", "sa", "so")) {
-        for (agent in agents) {
-            if (agent.profile == null){
-                agent.profile = gamg.getMobilityProfile(agent, weekday)
-            } else {
-                val lastActivity = agent.profile!!.last()
-                agent.profile = when (lastActivity.type) {
-                    ActivityType.HOME, ActivityType.WORK, ActivityType.SCHOOL -> gamg.getMobilityProfile(agent, weekday, lastActivity.type)
-                    else -> gamg.getMobilityProfile(agent, weekday, from = lastActivity.type, fromCoords = Coordinate(lastActivity.x, lastActivity.y))
+val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
+
+@Suppress("PrivatePropertyName")
+class Run : CliktCommand() {
+    // Arguments
+    private val db_url by argument()
+    private val db_user by argument()
+    private val db_password by argument()
+    private val area_osm_ids by argument()
+        .convert { input -> input.trim().splitToSequence(',').map { it.toInt() }.toList() }
+        .check("Reading osm ids failed! Expected format \"name1,name2,name3\".") { it.isNotEmpty() }
+    // Options
+    private val n_agents by option(
+        help="Number of agents to simulate"
+    ).int().default(1000)
+    private val n_days by option(
+        help="Number of days to simulate"
+    ).int().default(1)
+    private val start_wd by option(
+        help="First weekday to simulate"
+    ).choice(*weekdays.toTypedArray()).default("mo")
+    private val out by option (
+        help="Output file, must end on .json"
+    ).file().default(File("output.json"))
+    private val od by option(
+        help="Path to an OD-Matrix in geojson format that will be used for calibration"
+    ).file(mustExist = true, mustBeReadable = true)
+    private val census by option(
+        help="Path to population census in geojson format. For example see regional_inputs/." +
+              "Should cover the entire area, but can cover more"
+    ).file(mustExist = true, mustBeReadable = true)
+    private val region_types by option(
+        help="Path to region type information in geojson format. For example see regional_inputs/." +
+             "Can only cover parts of the area."
+    ).file(mustExist = true, mustBeReadable = true)
+    private val grid_res by option(
+        help="Size of the grid cells used for quicker sampling. The 500m default is suitable in most cases. Unit: meters"
+    ).double().default(500.0)
+    private val buffer by option(
+        help="Size of the buffer area that is simulated in addition to the specified focus area" +
+              " to allow for short distance commutes. Unit: meters"
+    ).double().default(0.0)
+    private val seed by option(help = "Random seed to use. Like java.util.Random()").long()
+    private val cache by option(help = "Defines if the program caches the model area.")
+        .choice("true" to true, "false" to false).default(true)
+    private val cache_path by option(help = "Location of cache.")
+        .path().default(Paths.get("omod_cache/buildings.geojson"))
+
+    override fun run() {
+        val gamg = Gamg.fromPG(
+            db_url, db_user, db_password, area_osm_ids,
+            odFile = od, censusFile = census, regionTypeFile = region_types,
+            gridResolution = grid_res, bufferRadius = buffer, seed = seed,
+            cache = cache, cachePath = cache_path
+        )
+        val agents = gamg.createAgents(n_agents)
+        val offset = weekdays.indexOf(start_wd)
+        for (i in 0..n_days) {
+            val weekday = weekdays[(i + offset) % weekdays.size]
+            for (agent in agents) {
+                if (agent.profile == null) {
+                    agent.profile = gamg.getMobilityProfile(agent, weekday)
+                } else {
+                    val lastActivity = agent.profile!!.last()
+                    agent.profile = gamg.getMobilityProfile(
+                            agent,
+                            weekday,
+                            from = lastActivity.type,
+                            start = lastActivity.location
+                    )
                 }
             }
         }
-        File("validation/out/$weekday.json").writeText(Json.encodeToString(agents))
+        out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
     }
-}
-*/
-fun runDay(buildingPath: String, n: Int) {
-    val gamg: Gamg
-    val creationElapsed = measureTimeMillis {
-         gamg = Gamg(buildingPath, "C:/Users/strobel/Projekte/esmregio/gamg/OD-Matrix.geojson", 500.0, 1)
-    }
-    println("${creationElapsed / 1000.0}")
-
-    val runElapsed = measureTimeMillis {
-        val agents = gamg.run(n)
-        File("validation/out/singleUndefined.json").writeText(Json.encodeToString(agents.map { formatOutput(it) }))
-    }
-    println("${runElapsed / 1000.0}")
 }
 
-fun main() {
-    val buildingPath = "C:/Users/strobel/Projekte/esmregio/gamg/Buildings-62640,-1070986,-1070976,-1070979,-1071007,-1070996,-1071000,-1070985,-1070974.csv"
-    runDay(buildingPath, 1000)
-}
+fun main(args: Array<String>) = Run().main(args)
