@@ -4,30 +4,32 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 import kotlin.math.abs
+import java.util.Random
 
 internal class StochasticBundleTest {
 
     private val testWeights = doubleArrayOf(0.0, 2.2, 3.5, 1.0, 9.0, 12.2)
-    private val testLogNorm = StochasticBundle.LogNorm(1.3, 8.0)
+    private val testLogNorm = LogNorm(1.3, 8.0)
+    private val rng = Random()
 
     @Test
     fun createCumDist() {
         val expected = 1.0
-        assertEquals(expected, StochasticBundle.createCumDist(testWeights).last())
+        assertEquals(expected, createCumDist(testWeights).last())
     }
 
     @Test
     fun sampleCumDist() {
-        val distr = StochasticBundle.createCumDist(testWeights)
-        val samples = IntArray(100) { StochasticBundle.sampleCumDist(distr) }
+        val distr = createCumDist(testWeights)
+        val samples = IntArray(100) { sampleCumDist(distr, rng) }
         assert(0 <= samples.minOrNull()!!)
         assert(testWeights.size > samples.maxOrNull()!!)
     }
 
     @Test
     fun sampleCumDistTestZeroWeight() {
-        val distr = StochasticBundle.createCumDist(testWeights)
-        val samples = IntArray(100) { StochasticBundle.sampleCumDist(distr) }
+        val distr = createCumDist(testWeights)
+        val samples = IntArray(100) { sampleCumDist(distr, rng) }
         assert(!samples.contains(0))
     }
 

@@ -2,15 +2,15 @@ package de.uniwuerzburg
 
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import java.io.BufferedReader
-import java.io.FileReader
 import org.locationtech.jts.index.kdtree.KdTree
-import org.locationtech.jts.geom.Coordinate
 import kotlinx.serialization.json.*
 import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
 
 /**
@@ -19,8 +19,8 @@ import java.util.*
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed: Long?) {
-    val buildings: List<Building>
+class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?, seed: Long?,
+           private val geometryFactory: GeometryFactory = GeometryFactory()) {
     val kdTree: KdTree
     private val grid: List<Cell>
     private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
@@ -28,7 +28,6 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed:
     private val populationDef: PopulationDef
     private val activityDataMap: ActivityDataMap
     private val distanceDists: DistanceDistributions
-    private val geometryFactory = GeometryFactory()
     private val rng: Random = if (seed != null) Random(seed) else Random()
 
     init {
@@ -45,45 +44,6 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed:
         val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
         distanceDists = Json.decodeFromString(distrTxt)
 
-        // Read buildings data
-        val reader = BufferedReader(FileReader(buildingsPath))
-
-        // Skip header
-        reader.readLine()
-        // Read body
-        var id = 0
-        buildings = mutableListOf()
-        reader.forEachLine {
-            val line = it.split(",")
-
-            val lat = line[2].toDouble()
-            val lon = line[3].toDouble()
-            val latlonCoord = Coordinate(lat, lon)
-            // Transform the lat lons to cartesian coordinates
-            val coord = latlonToMercator(lat, lon)
-
-            buildings.add(
-                Building(
-                    id = id,
-                    osmID = line[0].toInt(),
-                    coord = coord,
-                    latlonCoord = latlonCoord,
-                    area = line[1].toDouble(),
-                    population = line[4].toDouble(),
-                    landuse = Landuse.valueOf(line[5]),
-                    regionType = line[6].toInt(),
-                    nShops = line[7].toDouble(),
-                    nOffices = line[8].toDouble(),
-                    nSchools = line[9].toDouble(),
-                    nUnis = line[10].toDouble(),
-                    inFocusArea = line[11].toBoolean(),
-                    taz = null,
-                    point = geometryFactory.createPoint(coord)
-                )
-            )
-            id += 1
-        }
-
         // Create KD-Tree for faster access
         kdTree = KdTree()
         buildings.forEach { building ->
@@ -91,7 +51,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed:
         }
 
         // Create grid (used for speed up)
-        grid = makeGrid(gridResolution)
+        grid = makeGrid(gridResolution ?: 500.0)
 
         // Calibration
         calibrationMatrix = mutableMapOf()
@@ -99,9 +59,9 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed:
             calibrationMatrix[activityType] = null
         }
 
-        if (odPath != null) {
+        if (odFile != null) {
             // Read OD-Matrix that is used for calibration
-            val odMatrix = ODMatrix(odPath, geometryFactory)
+            val odMatrix = ODMatrix(odFile, geometryFactory)
             // Add TAZ to buildings and cells
             val dummyZones = addTAZInfo(odMatrix)
             zones = grid + dummyZones
@@ -109,6 +69,88 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed:
             calibrateWithOD(odMatrix)
         } else {
             zones = grid
+        }
+    }
+
+    // Factories
+    companion object {
+        @Suppress("unused")
+        fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>): Gamg {
+            return fromPG(dbUrl, dbUser, dbPassword, areaOsmIds,
+                          cache = true, cachePath = Paths.get("omod_cache/buildings.geojson"),
+                          odFile = null, gridResolution = null, seed = null,
+                          bufferRadius = 0.0,
+                          censusFile = null, regionTypeFile = null
+            )
+        }
+        fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
+                   odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
+                   censusFile: File? = null, regionTypeFile: File? = null,
+                   bufferRadius: Double = 0.0,
+                   cache: Boolean = true, cachePath: Path = Paths.get("omod_cache/buildings.geojson"),
+                   ): Gamg {
+            // Check cache
+            val buildingsCollection: GeoJsonFeatureCollection
+            if (cache and cachePath.toFile().exists()) {
+                buildingsCollection = Json{ ignoreUnknownKeys = true }
+                    .decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
+            } else {
+                // Load data from geojson files and PostgreSQL database with OSM data
+                buildingsCollection = createModelArea(
+                    dbUrl = dbUrl,
+                    dbUser = dbUser,
+                    dbPassword = dbPassword,
+                    areaOsmIds = areaOsmIds,
+                    bufferRadius = bufferRadius,
+                    censusFile = censusFile,
+                    regionTypeFile = regionTypeFile
+                )
+                if (cache) {
+                    Files.createDirectories(cachePath.parent)
+                    cachePath.toFile().writeText(Json.encodeToString(buildingsCollection))
+                }
+            }
+            val geometryFactory = GeometryFactory()
+            return Gamg(
+                Building.fromGeoJson(buildingsCollection, geometryFactory),
+                odFile,
+                gridResolution,
+                seed,
+                geometryFactory
+            )
+        }
+        @Suppress("unused")
+        fun fromFile(file: File, odFile: File?= null, gridResolution: Double? = null,
+                     seed: Long? = null): Gamg {
+            val buildingsCollection: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
+                .decodeFromString(file.readText(Charsets.UTF_8))
+
+            val geometryFactory = GeometryFactory()
+            return Gamg(
+                Building.fromGeoJson(buildingsCollection, geometryFactory),
+                odFile,
+                gridResolution,
+                seed,
+                geometryFactory
+            )
+        }
+        @Suppress("unused")
+        fun makeFileFromPG(file: File, dbUrl: String, dbUser: String, dbPassword: String,
+                           areaOsmIds: List<Int>,
+                           censusFile: File? = null, regionTypeFile: File? = null,
+                           bufferRadius: Double = 0.0
+        ) {
+            // Load data from geojson files and PostgreSQL database with OSM data
+            val buildingsCollection = createModelArea(
+                dbUrl = dbUrl,
+                dbUser = dbUser,
+                dbPassword = dbPassword,
+                areaOsmIds = areaOsmIds,
+                bufferRadius = bufferRadius,
+                censusFile = censusFile,
+                regionTypeFile = regionTypeFile
+            )
+            file.writeText(Json.encodeToString(buildingsCollection))
         }
     }
 
@@ -247,7 +289,7 @@ class Gamg(buildingsPath: String, odPath: String?, gridResolution: Double, seed:
             calibrationMatrix[odActivities.first] = activityCalibrationMatrix
         }
 
-        // Calibrate transitions. "run" ist just a block start in kotlin.
+        // Calibrate transitions. "run" is just a block start in kotlin.
         run {
             val activityCalibrationMatrix = mutableMapOf<Pair<String?, String>, Double>()
 
