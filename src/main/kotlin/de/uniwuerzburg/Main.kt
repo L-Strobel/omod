@@ -61,22 +61,22 @@ class Run : CliktCommand() {
         .path().default(Paths.get("omod_cache/buildings.geojson"))
 
     override fun run() {
-        val gamg = Gamg.fromPG(
+        val omod = Omod.fromPG(
             db_url, db_user, db_password, area_osm_ids,
             odFile = od, censusFile = census, regionTypeFile = region_types,
             gridResolution = grid_res, bufferRadius = buffer, seed = seed,
             cache = cache, cachePath = cache_path
         )
-        val agents = gamg.createAgents(n_agents)
+        val agents = omod.createAgents(n_agents)
         val offset = weekdays.indexOf(start_wd)
         for (i in 0..n_days) {
             val weekday = weekdays[(i + offset) % weekdays.size]
             for (agent in agents) {
                 if (agent.profile == null) {
-                    agent.profile = gamg.getMobilityProfile(agent, weekday)
+                    agent.profile = omod.getMobilityProfile(agent, weekday)
                 } else {
                     val lastActivity = agent.profile!!.last()
-                    agent.profile = gamg.getMobilityProfile(
+                    agent.profile = omod.getMobilityProfile(
                             agent,
                             weekday,
                             from = lastActivity.type,
