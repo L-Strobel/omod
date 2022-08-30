@@ -14,12 +14,12 @@ import java.nio.file.Paths
 import java.util.*
 
 /**
- * General purpose mobility demand generator (gamg)
+ * Open-Street-Maps MObility Demand generator (OMOD)
  *
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?, seed: Long?,
+class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?, seed: Long?,
            private val geometryFactory: GeometryFactory = GeometryFactory()) {
     val kdTree: KdTree
     private val grid: List<Cell>
@@ -32,16 +32,16 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
     init {
         // Get population distribution
-        val popTxt = Gamg::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
+        val popTxt = Omod::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
         populationDef = Json.decodeFromString(popTxt)
 
         // Get activity chain data
-        val actTxt = Gamg::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
+        val actTxt = Omod::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
         val activityGroups: List<ActivityGroup> = Json.decodeFromString(actTxt)
         activityDataMap = ActivityDataMap(activityGroups)
 
         // Get distance distributions
-        val distrTxt = Gamg::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
+        val distrTxt = Omod::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
         distanceDists = Json.decodeFromString(distrTxt)
 
         // Create KD-Tree for faster access
@@ -75,7 +75,7 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
     // Factories
     companion object {
         @Suppress("unused")
-        fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>): Gamg {
+        fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>): Omod {
             return fromPG(dbUrl, dbUser, dbPassword, areaOsmIds,
                           cache = true, cachePath = Paths.get("omod_cache/buildings.geojson"),
                           odFile = null, gridResolution = null, seed = null,
@@ -88,7 +88,7 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                    censusFile: File? = null, regionTypeFile: File? = null,
                    bufferRadius: Double = 0.0,
                    cache: Boolean = true, cachePath: Path = Paths.get("omod_cache/buildings.geojson"),
-                   ): Gamg {
+                   ): Omod {
             // Check cache
             val buildingsCollection: GeoJsonFeatureCollection
             if (cache and cachePath.toFile().exists()) {
@@ -111,7 +111,7 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 }
             }
             val geometryFactory = GeometryFactory()
-            return Gamg(
+            return Omod(
                 Building.fromGeoJson(buildingsCollection, geometryFactory),
                 odFile,
                 gridResolution,
@@ -121,12 +121,12 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         }
         @Suppress("unused")
         fun fromFile(file: File, odFile: File?= null, gridResolution: Double? = null,
-                     seed: Long? = null): Gamg {
+                     seed: Long? = null): Omod {
             val buildingsCollection: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
                 .decodeFromString(file.readText(Charsets.UTF_8))
 
             val geometryFactory = GeometryFactory()
-            return Gamg(
+            return Omod(
                 Building.fromGeoJson(buildingsCollection, geometryFactory),
                 odFile,
                 gridResolution,
@@ -252,18 +252,18 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         // Calibrate origins
         if (calibrateOrigins) {
             val activityCalibrationMatrix = mutableMapOf<Pair<String?, String>, Double>()
-            val gamgWeights = mutableMapOf<String, Double>()
+            val omodWeights = mutableMapOf<String, Double>()
             val odWeights = mutableMapOf<String, Double>()
 
             for (odRow in odMatrix.rows.values) {
-                // Calculate gamg origin probability. For speed only on zone level.
+                // Calculate omod origin probability. For speed only on zone level.
                 val originLocations = zones.filter { it.taz == odRow.origin }
 
-                var gamgWeight = 0.0
+                var omodWeight = 0.0
                 for (start in originLocations) {
-                    gamgWeight += getHomeWeightPosterior(start)
+                    omodWeight += getHomeWeightPosterior(start)
                 }
-                gamgWeights[odRow.origin] = gamgWeight
+                omodWeights[odRow.origin] = omodWeight
 
                 // Calculate OD-Matrix origin probability.
                 var odWeight = 0.0
@@ -275,16 +275,16 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
             // Calculate calibration factors
             val weightSumOD = odWeights.values.sum()
-            val weightSumGAMG = gamgWeights.values.sum()
+            val weightSumOMOD = omodWeights.values.sum()
 
             for (odRow in odMatrix.rows.values) {
                 // Probability OD:
                 val odProb = odWeights[odRow.origin]!! / weightSumOD
 
-                // Probability GAMG:
-                val gamgProb = gamgWeights[odRow.origin]!! / weightSumGAMG
+                // Probability OMOD:
+                val omodProb = omodWeights[odRow.origin]!! / weightSumOMOD
 
-                activityCalibrationMatrix[Pair(null, odRow.origin)] = odProb / gamgProb
+                activityCalibrationMatrix[Pair(null, odRow.origin)] = odProb / omodProb
             }
             calibrationMatrix[odActivities.first] = activityCalibrationMatrix
         }
@@ -294,25 +294,25 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             val activityCalibrationMatrix = mutableMapOf<Pair<String?, String>, Double>()
 
             for (odRow in odMatrix.rows.values) {
-                val gamgWeights = mutableMapOf<String, Double>()
+                val omodWeights = mutableMapOf<String, Double>()
                 val odWeights = mutableMapOf<String, Double>()
 
                 val originLocations = zones.filter { it.taz == odRow.origin }
 
                 for (destination in odRow.destinations.keys) {
-                    // Calculate gamg transition probability. For speed only on zone level.
+                    // Calculate omod transition probability. For speed only on zone level.
                     val destinationLocations = zones.filter { it.taz == destination }
 
-                    var gamgWeight = 0.0
+                    var omodWeight = 0.0
                     for (start in originLocations) {
                         val homeProb = getHomeWeightPosterior(start)
                         if (homeProb > 0) {
                             for (stop in destinationLocations) {
-                                gamgWeight += homeProb * getWorkWeightPosterior(start, stop)
+                                omodWeight += homeProb * getWorkWeightPosterior(start, stop)
                             }
                         }
                     }
-                    gamgWeights[destination] = gamgWeight
+                    omodWeights[destination] = omodWeight
 
                     // Calculate OD-Matrix origin probability.
                     odWeights[destination] = if ((destination in tazsInFocusArea) || (odRow.origin in tazsInFocusArea) ){
@@ -324,14 +324,14 @@ class Gamg(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
                 // Calculate calibration factors
                 val weightSumOD = odWeights.values.sum()
-                val weightSumGAMG = gamgWeights.values.sum()
+                val weightSumOMOD = omodWeights.values.sum()
 
                 for (destination in odRow.destinations.keys) {
                     // Probability OD:
                     val odProb = odWeights[destination]!! / weightSumOD
 
-                    // Probability GAMG:
-                    val gamgProb = gamgWeights[destination]!! / weightSumGAMG
+                    // Probability OMOD:
+                    val gamgProb = omodWeights[destination]!! / weightSumOMOD
 
                     activityCalibrationMatrix[Pair(odRow.origin, destination)] = odProb / gamgProb
                 }

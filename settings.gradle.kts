@@ -1,3 +1,3 @@
 
-rootProject.name = "gamg"
+rootProject.name = "omod"
 

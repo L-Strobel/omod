@@ -1,0 +1,114 @@
+{
+    "features": [
+        {
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.642961300310391,
+                    49.855095699630226
+                ]
+            },
+            "properties": {
+                "type": "BuildingEntree",
+                "osm_id": 466857887,
+                "region_type": 77,
+                "in_focus_area": false,
+                "area": 240.80025695740355,
+                "population": 0.0,
+                "landuse": "AGRICULTURE",
+                "number_shops": 0.0,
+                "number_offices": 0.0,
+                "number_schools": 0.0,
+                "number_universities": 0.0
+            }
+        },
+        {
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.643324233881064,
+                    49.85508022197548
+                ]
+            },
+            "properties": {
+                "type": "BuildingEntree",
+                "osm_id": 466857883,
+                "region_type": 77,
+                "in_focus_area": false,
+                "area": 508.49424373912626,
+                "population": 0.0,
+                "landuse": "AGRICULTURE",
+                "number_shops": 0.0,
+                "number_offices": 0.0,
+                "number_schools": 0.0,
+                "number_universities": 0.0
+            }
+        },
+        {
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.639709396654803,
+                    49.854058040727914
+                ]
+            },
+            "properties": {
+                "type": "BuildingEntree",
+                "osm_id": 466857895,
+                "region_type": 77,
+                "in_focus_area": false,
+                "area": 97.4782103774111,
+                "population": 0.5,
+                "landuse": "AGRICULTURE",
+                "number_shops": 0.0,
+                "number_offices": 0.0,
+                "number_schools": 0.0,
+                "number_universities": 0.0
+            }
+        },
+        {
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.630883577905143,
+                    49.844214145155306
+                ]
+            },
+            "properties": {
+                "type": "BuildingEntree",
+                "osm_id": 454202426,
+                "region_type": 77,
+                "in_focus_area": false,
+                "area": 77.77838663202289,
+                "population": 0.8,
+                "landuse": "RESIDENTIAL",
+                "number_shops": 0.0,
+                "number_offices": 0.0,
+                "number_schools": 0.0,
+                "number_universities": 0.0
+            }
+        },
+        {
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    11.631357761953682,
+                    49.84422074632469
+                ]
+            },
+            "properties": {
+                "type": "BuildingEntree",
+                "osm_id": 454204163,
+                "region_type": 77,
+                "in_focus_area": false,
+                "area": 83.20712071110864,
+                "population": 0.8,
+                "landuse": "RESIDENTIAL",
+                "number_shops": 0.0,
+                "number_offices": 0.0,
+                "number_schools": 0.0,
+                "number_universities": 0.0
+            }
+        }
+    ]
+}
