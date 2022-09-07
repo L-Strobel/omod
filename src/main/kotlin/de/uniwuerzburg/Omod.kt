@@ -13,6 +13,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
+val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
+
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
  *
@@ -553,14 +555,24 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
      * Determine the demand of the area for n agents at one day.
      * Optionally safe to json.
      */
-    fun run(n: Int, weekday: String = "undefined", safeToJson: Boolean = false) : List<MobiAgent> {
-        val agents = createAgents(n)
-        for (agent in agents) {
-            agent.profile = getMobilityProfile(agent, weekday)
-        }
-        if (safeToJson) {
-            val output = agents.map { formatOutput(it) }
-            File("out.json").writeText(Json.encodeToString(output))
+    fun run(n_agents: Int, start_wd: String = "mo", n_days: Int = 1) : List<MobiAgent> {
+        val agents = createAgents(n_agents)
+        val offset = weekdays.indexOf(start_wd)
+        for (i in 0..n_days) {
+            val weekday = weekdays[(i + offset) % weekdays.size]
+            for (agent in agents) {
+                if (agent.profile == null) {
+                    agent.profile = getMobilityProfile(agent, weekday)
+                } else {
+                    val lastActivity = agent.profile!!.last()
+                    agent.profile = getMobilityProfile(
+                        agent,
+                        weekday,
+                        from = lastActivity.type,
+                        start = lastActivity.location
+                    )
+                }
+            }
         }
         return agents
     }
