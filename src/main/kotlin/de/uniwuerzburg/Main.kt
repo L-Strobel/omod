@@ -12,8 +12,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.file.Paths
 
-val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
-
 @Suppress("PrivatePropertyName")
 class Run : CliktCommand() {
     // Arguments
@@ -67,24 +65,7 @@ class Run : CliktCommand() {
             gridResolution = grid_res, bufferRadius = buffer, seed = seed,
             cache = cache, cachePath = cache_path
         )
-        val agents = omod.createAgents(n_agents)
-        val offset = weekdays.indexOf(start_wd)
-        for (i in 0..n_days) {
-            val weekday = weekdays[(i + offset) % weekdays.size]
-            for (agent in agents) {
-                if (agent.profile == null) {
-                    agent.profile = omod.getMobilityProfile(agent, weekday)
-                } else {
-                    val lastActivity = agent.profile!!.last()
-                    agent.profile = omod.getMobilityProfile(
-                            agent,
-                            weekday,
-                            from = lastActivity.type,
-                            start = lastActivity.location
-                    )
-                }
-            }
-        }
+        val agents = omod.run(n_agents, start_wd, n_days)
         out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
     }
 }
