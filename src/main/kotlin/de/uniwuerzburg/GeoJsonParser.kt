@@ -2,10 +2,8 @@ package de.uniwuerzburg
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Point
 
 // Expected geometries
 @Serializable
@@ -26,6 +24,7 @@ data class GeoJsonPoint(
 
 @Serializable
 @SerialName("Polygon")
+@Suppress("unused")
 data class GeoJsonPoly(
     val coordinates: List<List<List<Double>>>
 ) : GeoJsonGeom () {
@@ -40,6 +39,7 @@ data class GeoJsonPoly(
 
 @Serializable
 @SerialName("MultiPolygon")
+@Suppress("unused")
 data class GeoJsonMultiPoly(
     val coordinates: List<List<List<List<Double>>>>
 ) : GeoJsonGeom () {
@@ -87,21 +87,24 @@ data class GeoJsonODProperties (
 @SerialName("CensusEntry")
 data class GeoJsonCensusProperties (
     val population: Double
-) : GeoJsonProperties ()
+) : GeoJsonProperties()
 
 @Serializable
 @SerialName("RegionTypeEntry")
 data class GeoJsonRTProperties (
     val region_type: Int
-) : GeoJsonProperties ()
+) : GeoJsonProperties()
 
 // Basic structure
 @Serializable
 data class GeoJsonFeature (
+    val type: String = "Feature",
     val geometry: GeoJsonGeom,
     val properties: GeoJsonProperties
 )
+
 @Serializable
 data class GeoJsonFeatureCollection (
+    val type: String = "FeatureCollection",
     val features: List<GeoJsonFeature>
 )

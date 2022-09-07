@@ -3,8 +3,9 @@ package de.uniwuerzburg
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryCollection
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.MultiPolygon
+import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.index.hprtree.HPRtree
 import org.locationtech.jts.io.WKBReader
 import org.locationtech.jts.io.WKTWriter
@@ -138,10 +139,8 @@ fun readOSMDataFromPG (db_url: String, db_user: String, db_password: String,
         """
     val areaLst = executeQuery(focusAreaQuery, stmt) { WKBReader(geometryFactory).read( it.getBytes("way")) }
     val areaSRID = areaLst.first().srid
-    val focusArea = GeometryCollection(areaLst.toTypedArray(), geometryFactory)
-    val fullAreaWKT = WKTWriter().write(
-        focusArea.buffer(buffer_radius).convexHull()
-    )
+    val focusArea = MultiPolygon(areaLst.map { it as Polygon }.toTypedArray(), geometryFactory)
+    val fullAreaWKT = WKTWriter().write(focusArea.buffer(buffer_radius).convexHull())
 
     // Get buildings
     val buildingsQuery =
@@ -209,17 +208,36 @@ fun readOSMDataFromPG (db_url: String, db_user: String, db_password: String,
             .map { it as OSMpoi }
             .filter { it.geometry.intersects(building.geometry) }
         for (poi in poiOptions) {
-            when(poi.type) {
-                POIType.SHOP -> building.nShops +=1
-                POIType.OFFICE -> building.nOffices +=1
-                POIType.SCHOOL -> building.nSchools +=1
-                POIType.UNIVERSITY -> building.nUnis +=1
+            when (poi.type) {
+                POIType.SHOP -> building.nShops += 1
+                POIType.OFFICE -> building.nOffices += 1
+                POIType.SCHOOL -> building.nSchools += 1
+                POIType.UNIVERSITY -> building.nUnis += 1
             }
         }
-
-        // Focus area
-        building.inFocusArea = building.geometry.intersects(focusArea)
     }
+
+    // Is building in focus area?
+    val buildingsTree = HPRtree()
+    for (building in buildings) {
+        buildingsTree.insert(building.geometry.envelopeInternal, building)
+    }
+
+    fastCovers(focusArea, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
+        ifNot = { },
+        ifDoes = { e ->
+            buildingsTree.query(e)
+                .map { (it as OSMBuilding) }
+                .forEach { it.inFocusArea = true }
+        },
+        ifUnsure = { e ->
+            buildingsTree.query(e)
+                .map { (it as OSMBuilding) }
+                .filter { focusArea.intersects(it.geometry) }
+                .forEach { it.inFocusArea = true }
+        }
+    )
+
     connection.close()
     return buildings
 }
@@ -274,8 +292,9 @@ fun createModelArea(dbUrl: String, dbUser: String, dbPassword: String,
             }
         }
     }
+
     val outBuildings = GeoJsonFeatureCollection(
-        osmBuildings.map {
+        features = osmBuildings.map {
             val center = it.geometry.centroid
             val coords = mercatorToLatLon(center.x, center.y)
             val geometry = GeoJsonPoint(listOf(coords.y, coords.x))
@@ -292,7 +311,7 @@ fun createModelArea(dbUrl: String, dbUser: String, dbPassword: String,
                 number_schools = it.nSchools,
                 number_universities = it.nUnis,
             )
-            GeoJsonFeature(geometry, properties)
+            GeoJsonFeature(geometry = geometry, properties = properties)
         }
     )
     return outBuildings
