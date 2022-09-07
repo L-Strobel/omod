@@ -107,7 +107,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 )
                 if (cache) {
                     Files.createDirectories(cachePath.parent)
-                    cachePath.toFile().writeText(Json.encodeToString(buildingsCollection))
+                    cachePath.toFile().writeText(Json{ encodeDefaults = true }.encodeToString(buildingsCollection))
                 }
             }
             val geometryFactory = GeometryFactory()
@@ -150,7 +150,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 censusFile = censusFile,
                 regionTypeFile = regionTypeFile
             )
-            file.writeText(Json.encodeToString(buildingsCollection))
+            file.writeText(Json{ encodeDefaults = true }.encodeToString(buildingsCollection))
         }
     }
 

@@ -89,4 +89,20 @@ class Run : CliktCommand() {
     }
 }
 
+/* Speed test of OSM reading
+fun main() {
+    val elapsed = measureTimeMillis {
+        Omod.makeFileFromPG(
+            File("omod_cache/bav.geojson"),
+            "jdbc:postgresql://localhost:5432/OSM_Ger",
+            "postgres",
+            "password",
+            listOf(62428),
+            regionTypeFile = File("C:/Users/strobel/Projekte/esmregio/Daten/InputOMOD/region_types.geojson"),
+            bufferRadius = 5000.0,
+        )
+    }
+    println(elapsed / 1000)
+}*/
+
 fun main(args: Array<String>) = Run().main(args)
