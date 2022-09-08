@@ -58,6 +58,7 @@ class Run : CliktCommand() {
     private val cache_path by option(help = "Location of cache.")
         .path().default(Paths.get("omod_cache/buildings.geojson"))
 
+    //@OptIn(ExperimentalTime::class)
     override fun run() {
         val omod = Omod.fromPG(
             db_url, db_user, db_password, area_osm_ids,
@@ -66,6 +67,22 @@ class Run : CliktCommand() {
             cache = cache, cachePath = cache_path
         )
         val agents = omod.run(n_agents, start_wd, n_days)
+        /*
+        val (omod, timeRead) = measureTimedValue {
+            Omod.fromPG(
+                db_url, db_user, db_password, area_osm_ids,
+                odFile = od, censusFile = census, regionTypeFile = region_types,
+                gridResolution = grid_res, bufferRadius = buffer, seed = seed,
+                cache = cache, cachePath = cache_path
+            )
+        }
+        println("Loading data took: ${timeRead.inWholeSeconds} secs")
+
+        val (agents, timeSim) = measureTimedValue {
+            omod.run(n_agents, start_wd, n_days)
+        }
+        println("Simulation took: ${timeSim.inWholeSeconds} secs")
+         */
         out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
     }
 }
