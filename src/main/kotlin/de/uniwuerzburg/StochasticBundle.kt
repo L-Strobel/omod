@@ -11,14 +11,14 @@ fun createCumDist(weights: IntArray): DoubleArray {
 }
 fun createCumDist(weights: DoubleArray): DoubleArray {
     require(weights.all { it >= 0 })
-    val total = weights.sum()
-
     val cumDist = DoubleArray(weights.size)
     var cumSum = 0.0
     for (i in weights.indices) {
         cumSum += weights[i]
-        cumDist[i] = cumSum / total
+        cumDist[i] = cumSum
     }
+    // Normalize
+    cumDist.forEach { it / cumSum }
     return cumDist
 }
 
