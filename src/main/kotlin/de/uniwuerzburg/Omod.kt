@@ -113,6 +113,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 }
             }
             val geometryFactory = GeometryFactory()
+
             return Omod(
                 Building.fromGeoJson(buildingsCollection, geometryFactory),
                 odFile,
