@@ -11,6 +11,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.file.Paths
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 @Suppress("PrivatePropertyName")
 class Run : CliktCommand() {
@@ -59,7 +61,9 @@ class Run : CliktCommand() {
         .path().default(Paths.get("omod_cache/buildings.geojson"))
 
     //@OptIn(ExperimentalTime::class)
+    @OptIn(ExperimentalTime::class)
     override fun run() {
+        /*
         val omod = Omod.fromPG(
             db_url, db_user, db_password, area_osm_ids,
             odFile = od, censusFile = census, regionTypeFile = region_types,
@@ -67,7 +71,7 @@ class Run : CliktCommand() {
             cache = cache, cachePath = cache_path
         )
         val agents = omod.run(n_agents, start_wd, n_days)
-        /*
+        */
         val (omod, timeRead) = measureTimedValue {
             Omod.fromPG(
                 db_url, db_user, db_password, area_osm_ids,
@@ -76,13 +80,12 @@ class Run : CliktCommand() {
                 cache = cache, cachePath = cache_path
             )
         }
-        println("Loading data took: ${timeRead.inWholeSeconds} secs")
+        println("Loading data took: $timeRead")
 
         val (agents, timeSim) = measureTimedValue {
             omod.run(n_agents, start_wd, n_days)
         }
-        println("Simulation took: ${timeSim.inWholeSeconds} secs")
-         */
+        println("Simulation took: $timeSim")
         out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
     }
 }

@@ -86,6 +86,13 @@ interface LocationOption {
     val inFocusArea: Boolean
 }
 
+/*
+Object is snapable to GraphHopper Graph
+*/
+interface SnapableLoc : LocationOption {
+    var snapIdx: Int?
+}
+
 /**
  * Model for a building
  *
@@ -112,13 +119,14 @@ data class Building  (
     val nOffices: Double,
     val nSchools: Double,
     val nUnis: Double,
-) : LocationOption {
+) : SnapableLoc {
     override val workWeight = nShops + nOffices + landuse.getWorkWeight()
     override val homeWeight = population ?: 1.0
     override val schoolWeight = nSchools
     override val shoppingWeight = nShops
     override val otherWeight = 1.0
     override val avgDistanceToSelf = 0.0
+    override var snapIdx: Int? = null
 
     companion object {
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory): List<Building> {
@@ -151,7 +159,6 @@ data class Building  (
     }
 }
 
-
 /**
  * Group of buildings. For faster 2D distribution sampling.
  * Method: Sample from Cells -> Sample from buildings in cell
@@ -161,7 +168,8 @@ data class Cell (
 
     val envelope: Envelope,
     val buildings: List<Building>,
-) : LocationOption {
+) : SnapableLoc {
+    // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
     override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
@@ -180,6 +188,8 @@ data class Cell (
     override val otherWeight = buildings.sumOf { it.otherWeight }
 
     override val inFocusArea = buildings.any { it.inFocusArea }
+
+    override var snapIdx: Int? = null
 }
 
 /**
@@ -286,4 +296,7 @@ class ODMatrix (odFile: File, factory: GeometryFactory) {
     }
 }
 
+enum class RoutingMode {
+    GRAPHHOPPER, BEELINE
+}
 

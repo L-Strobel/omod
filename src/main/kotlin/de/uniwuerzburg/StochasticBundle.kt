@@ -10,7 +10,7 @@ fun createCumDist(weights: IntArray): DoubleArray {
     return createCumDist(weights.map { it.toDouble() }.toDoubleArray())
 }
 fun createCumDist(weights: DoubleArray): DoubleArray {
-    require(weights.all { it >= 0 })
+    assert(weights.all { it >= 0 })
     val cumDist = DoubleArray(weights.size)
     var cumSum = 0.0
     for (i in weights.indices) {
@@ -18,7 +18,9 @@ fun createCumDist(weights: DoubleArray): DoubleArray {
         cumDist[i] = cumSum
     }
     // Normalize
-    cumDist.forEach { it / cumSum }
+    for (i in cumDist.indices) {
+        cumDist[i] /= cumSum
+    }
     return cumDist
 }
 
