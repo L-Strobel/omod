@@ -1,13 +1,17 @@
 package de.uniwuerzburg
 
+import com.graphhopper.GHRequest
+import com.graphhopper.GraphHopper
+import com.graphhopper.config.CHProfile
+import com.graphhopper.config.Profile
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import org.locationtech.jts.index.kdtree.KdTree
 import kotlinx.serialization.json.*
-import java.io.File
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
+import org.locationtech.jts.index.kdtree.KdTree
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -31,6 +35,9 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
     private val activityDataMap: ActivityDataMap
     private val distanceDists: DistanceDistributions
     private val rng: Random = if (seed != null) Random(seed) else Random()
+    private val hopper: GraphHopper
+    private val mode: RoutingMode = RoutingMode.BEELINE
+    private val routingTable: Map<LocationOption, Map<LocationOption, Double>>
 
     init {
         // Get population distribution
@@ -52,8 +59,17 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             kdTree.insert(building.coord, building)
         }
 
+        // Create graphhopper
+        hopper = createGraphHopper(
+            "C:/Users/strobel/Projekte/esmregio/graphhopperServer/oberbayern-latest.osm.pbf",
+            "omod_cache/routing-graph-cache"
+        )
+
         // Create grid (used for speed up)
         grid = makeGrid(gridResolution ?: 500.0)
+
+        // Create routing table
+        routingTable = createRoutingTable(grid)
 
         // Calibration
         calibrationMatrix = mutableMapOf()
@@ -85,12 +101,13 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                           censusFile = null, regionTypeFile = null
             )
         }
-        fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
-                   odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
-                   censusFile: File? = null, regionTypeFile: File? = null,
-                   bufferRadius: Double = 0.0,
-                   cache: Boolean = true, cachePath: Path = Paths.get("omod_cache/buildings.geojson"),
-                   ): Omod {
+        fun fromPG(
+            dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
+            odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
+            censusFile: File? = null, regionTypeFile: File? = null,
+            bufferRadius: Double = 0.0,
+            cache: Boolean = true, cachePath: Path = Paths.get("omod_cache/buildings.geojson"),
+        ): Omod {
             // Check cache
             val buildingsCollection: GeoJsonFeatureCollection
             if (cache and cachePath.toFile().exists()) {
@@ -189,6 +206,24 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         return grid.toList()
     }
 
+    fun createGraphHopper(osmLoc: String, cacheLoc: String) : GraphHopper {
+        val hopper = GraphHopper()
+        hopper.osmFile = osmLoc
+        hopper.graphHopperLocation = cacheLoc
+        hopper.setProfiles(Profile("car").setVehicle("car").setWeighting("fastest").setTurnCosts(false))
+        hopper.chPreparationHandler.setCHProfiles(CHProfile("car"))
+        hopper.importOrLoad()
+        return hopper
+    }
+
+    fun createRoutingTable(locations: List<LocationOption>) : Map<LocationOption, Map<LocationOption, Double>> {
+        val table = mutableMapOf<LocationOption, Map<LocationOption, Double>>()
+        for (origin in locations) {
+            table[origin] = locations.associateWith { calcDistance(origin, it, mode) }
+        }
+        return table
+    }
+
     fun addTAZInfo(odMatrix: ODMatrix) : List<LocationOption> {
         val dummyZones = mutableListOf<LocationOption>()
 
@@ -264,7 +299,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
                 var omodWeight = 0.0
                 for (start in originLocations) {
-                    omodWeight += getHomeWeightPosterior(start)
+                    omodWeight += getWeightsNoOrigin(listOf(start), ActivityType.HOME).sum()
                 }
                 omodWeights[odRow.origin] = omodWeight
 
@@ -308,11 +343,9 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
                     var omodWeight = 0.0
                     for (start in originLocations) {
-                        val homeProb = getHomeWeightPosterior(start)
-                        if (homeProb > 0) {
-                            for (stop in destinationLocations) {
-                                omodWeight += homeProb * getWorkWeightPosterior(start, stop)
-                            }
+                        val homeWeight = getWeightsNoOrigin(listOf(start), ActivityType.HOME).sum()
+                        if (homeWeight > 0) {
+                            omodWeight += homeWeight * getWeights(start, destinationLocations, ActivityType.WORK).sum()
                         }
                     }
                     omodWeights[destination] = omodWeight
@@ -383,7 +416,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         }
 
         // Assign home and work
-        val homCumDist = getHomeDistr(zones)
+        val homCumDist = getDistrNoOrigin(zones, ActivityType.HOME)
 
         // Generate population TODO: enable fixed number in focus area, maybe by just stopping after i have enough?
         val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
@@ -401,7 +434,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             // Get home location
             val home = if (homeZone is Cell) {
                 // IS building
-                val buildingsHomeDist = getHomeDistr(homeZone.buildings)
+                val buildingsHomeDist = getDistrNoOrigin(homeZone.buildings, ActivityType.HOME)
                 homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
             } else {
                 // IS dummy location
@@ -410,13 +443,13 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
             // Get work zone (might be cell or dummy is node)
             val workZoneCumDist = workDistCache.getOrPut(homeZoneID) {
-                getWorkDistr(homeZone, zones)
+                getDistr(homeZone, zones, ActivityType.WORK)
             }
             val workZone = zones[sampleCumDist(workZoneCumDist, rng)]
 
             // Get work location
             val work = if (workZone is Cell) {
-                val workBuildingsCumDist = getWorkDistr(home, workZone.buildings)
+                val workBuildingsCumDist = getDistr(home, workZone.buildings, ActivityType.WORK)
                 workZone.buildings[sampleCumDist(workBuildingsCumDist, rng)]
             } else {
                 workZone
@@ -424,13 +457,13 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
             // Get school cell
             val schoolZoneCumDist = schoolDistCache.getOrPut(homeZoneID) {
-                getSchoolDistr(homeZone, zones)
+                getDistr(homeZone, zones, ActivityType.SCHOOL)
             }
             val schoolZone = zones[sampleCumDist(schoolZoneCumDist, rng)]
 
             // Get school location
             val school = if (schoolZone is Cell) {
-                val schoolBuildingsCumDist = getSchoolDistr(home, schoolZone.buildings)
+                val schoolBuildingsCumDist = getDistr(home, schoolZone.buildings, ActivityType.SCHOOL)
                 schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
             } else {
                 schoolZone
@@ -455,18 +488,18 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
         // Get cell
         val flexDist = if (type == ActivityType.SHOPPING) {
-            getShoppingDistr(location, zones)
+            getDistr(location, zones, ActivityType.SHOPPING)
         } else {
-            getOtherDistr(location, zones)
+            getDistr(location, zones, ActivityType.OTHER)
         }
         val flexZone = zones[sampleCumDist(flexDist, rng)]
 
         // Get location
         return if (flexZone is Cell) {
             val flexBuildingCumDist = if (type == ActivityType.SHOPPING) {
-                getShoppingDistr(location, flexZone.buildings)
+                getDistr(location, flexZone.buildings, ActivityType.SHOPPING)
             } else {
-                getOtherDistr(location, flexZone.buildings)
+                getDistr(location, flexZone.buildings, ActivityType.OTHER)
             }
             flexZone.buildings[sampleCumDist(flexBuildingCumDist, rng)]
         } else {
@@ -581,96 +614,136 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
     /**
      * Determine probabilities for the activities
      */
-    private fun getWeightPosterior(origin: LocationOption, destination: LocationOption, distr: LogNorm,
-                                   priorWeight: Double) : Double {
-        // Probability because of distance
-        val distance = if (origin == destination) {
-            origin.avgDistanceToSelf // 0.0 for Buildings
-        } else {
-            origin.coord.distance(destination.coord)
+    fun getDistr(origin: LocationOption, destinations: List<LocationOption>,
+                 activityType: ActivityType) : DoubleArray {
+        val weights = getWeights(origin, destinations, activityType)
+        return createCumDist(weights.toDoubleArray())
+    }
+    fun getDistrNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : DoubleArray {
+        val weights = getWeightsNoOrigin(destinations, activityType)
+        return createCumDist(weights.toDoubleArray())
+    }
+    fun getWeights(origin: LocationOption, destinations: List<LocationOption>,
+                   activityType: ActivityType): List<Double> {
+        return when(activityType) {
+            ActivityType.HOME -> getWeightsNoOrigin(destinations, ActivityType.HOME)
+            ActivityType.WORK -> {
+                val priors = getWeightsNoOrigin(destinations, ActivityType.WORK)
+                val distances = calcDistances(origin, destinations)
+                val distObj = distanceDists.home_work[origin.regionType]!!
+                val distr = LogNorm(distObj.shape, distObj.scale)
+                destinations.mapIndexed { i, destination ->
+                    val kFactor = getKFactor(activityType, origin, destination)
+                    kFactor * priors[i] * distr.density(distances[i])
+                }
+            }
+            ActivityType.SCHOOL -> {
+                val priors = getWeightsNoOrigin(destinations, ActivityType.SCHOOL)
+                val distances = calcDistances(origin, destinations)
+                val distObj = distanceDists.home_school[origin.regionType]!!
+                val distr = LogNorm(distObj.shape, distObj.scale)
+                List (destinations.size){ i ->
+                    priors[i] * distr.density(distances[i])
+                }
+            }
+            ActivityType.SHOPPING -> {
+                // Flexible activities don't leave dummy location except OD-Matrix defines it
+                if ((origin is DummyLocation) && (origin.shoppingWeight == 0.0) ) {
+                    destinations.map { if (origin == it)  1.0 else 0.0 }
+                    // Normal case
+                } else {
+                    val priors = getWeightsNoOrigin(destinations, ActivityType.SHOPPING)
+                    val distances = calcDistances(origin, destinations)
+                    val distObj = distanceDists.any_shopping[origin.regionType]!!
+                    val distr = LogNorm(distObj.shape, distObj.scale)
+                    List(destinations.size) { i ->
+                        priors[i] * distr.density(distances[i])
+                    }
+                }
+            }
+            else -> {
+                // Flexible activities don't leave dummy location except OD-Matrix defines it
+                if ((origin is DummyLocation) && (origin.otherWeight == 0.0) ) {
+                    destinations.map { if (origin == it)  1.0 else 0.0 }
+                    // Normal case
+                } else {
+                    val priors = getWeightsNoOrigin(destinations, ActivityType.OTHER)
+                    val distances = calcDistances(origin, destinations)
+                    val distObj = distanceDists.any_other[origin.regionType]!!
+                    val distr = LogNorm(distObj.shape, distObj.scale)
+                    List(destinations.size) { i ->
+                        priors[i] * distr.density(distances[i])
+                    }
+                }
+            }
         }
-        val distanceWeight = distr.density(distance)
-
-        return priorWeight * distanceWeight
+    }
+    fun getWeightsNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : List<Double> {
+        return when(activityType) {
+            ActivityType.HOME -> {
+                destinations.map { destination ->
+                    val kFactor = getKFactor(activityType, null, destination)
+                    kFactor * destination.homeWeight
+                }
+            }
+            ActivityType.WORK -> destinations.map { it.workWeight }
+            ActivityType.SCHOOL -> destinations.map { it.schoolWeight }
+            ActivityType.SHOPPING -> destinations.map { it.shoppingWeight }
+            else -> destinations.map { it.otherWeight }
+        }
     }
 
-    fun getHomeWeightPosterior(destination: LocationOption) : Double {
-        // Calibration factor from OD-Matrix
-        val calibrationFactor = if (calibrationMatrix[ActivityType.HOME] != null) {
-            calibrationMatrix[ActivityType.HOME]!![Pair(null, destination.taz!!)]!!
+    fun calcDistances(origin: LocationOption, destinations: List<LocationOption>) : List<Double> {
+        return if (routingTable.containsKey(origin)) {
+            val table = routingTable[origin]!!
+            destinations.map { table[it] ?: calcDistance(origin, it, RoutingMode.BEELINE) }
+        } else {
+            destinations.map { calcDistance(origin, it, RoutingMode.BEELINE) } // TODO fix these beelines and decide on routing issue
+        }
+    }
+    fun calcDistance(origin: LocationOption, destination: LocationOption, mode: RoutingMode) : Double {
+        return when (mode) {
+            RoutingMode.BEELINE -> calcDistanceBeeline(origin, destination)
+            RoutingMode.GRAPHHOPPER -> calcDistanceGH(origin, destination)
+        }
+    }
+    fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : Double {
+        return origin.coord.distance(destination.coord)
+    }
+    fun calcDistanceGH (origin: LocationOption, destination: LocationOption) : Double {
+        // Dummy locations are not inside the GraphHopper graph -> fall back to beeline
+        return if ((origin is DummyLocation) || (destination is DummyLocation)) {
+            calcDistanceBeeline(origin, destination)
+        } else {
+            val req = GHRequest(
+                origin.latlonCoord.x,
+                origin.latlonCoord.y,
+                destination.latlonCoord.x,
+                destination.latlonCoord.y
+            )
+            val rsp = hopper.route(req)
+
+            // If routing didn't work fall back to beeline
+            if (rsp.hasErrors()) {
+                origin.coord.distance(destination.coord)
+            } else {
+                rsp.best.distance
+            }
+        }
+    }
+
+    fun getKFactor(activityType: ActivityType, origin: LocationOption?, destination: LocationOption) : Double {
+        val originTAZ = if (origin == null) {
+            null
+        } else {
+            origin.taz!!
+        }
+        // K-factor from OD-Matrix
+        val kFactor = if (calibrationMatrix[activityType] != null) {
+            calibrationMatrix[activityType]!![Pair(originTAZ, destination.taz!!)]!!
         } else {
             1.0
         }
-        return  calibrationFactor * destination.homeWeight
+        return kFactor
     }
-
-    fun getHomeDistr(destinations: List<LocationOption>) : DoubleArray {
-        return createCumDist(destinations.map { getHomeWeightPosterior(it) }.toDoubleArray())
-    }
-
-    fun getWorkWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
-        // Calibration factor from OD-Matrix
-        val calibrationFactor = if (calibrationMatrix[ActivityType.WORK] != null) {
-            calibrationMatrix[ActivityType.WORK]!![Pair(origin.taz!!, destination.taz!!)]!!
-        } else {
-            1.0
-        }
-
-        val distObj = distanceDists.home_work[origin.regionType]!!
-        val distr = LogNorm(distObj.shape, distObj.scale)
-        return  calibrationFactor * getWeightPosterior(origin, destination, distr, destination.workWeight)
-    }
-
-    fun getWorkDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return createCumDist(destinations.map { getWorkWeightPosterior(origin, it) }.toDoubleArray())
-    }
-
-    fun getSchoolWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
-        val distObj = distanceDists.home_school[origin.regionType]!!
-        val distr = LogNorm(distObj.shape, distObj.scale)
-        return getWeightPosterior(origin, destination, distr, destination.schoolWeight)
-    }
-
-    fun getSchoolDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return createCumDist(destinations.map { getSchoolWeightPosterior(origin, it) }.toDoubleArray())
-    }
-
-    fun getShoppingWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
-        // Flexible activities don't leave dummy location except OD-Matrix defines it
-        if ((origin is DummyLocation) && (origin.shoppingWeight == 0.0) ) {
-            return if (origin == destination) {
-                1.0
-            } else {
-                0.0
-            }
-        }
-        // Normal case
-        val distObj = distanceDists.any_shopping[origin.regionType]!!
-        val distr = LogNorm(distObj.shape, distObj.scale)
-        return getWeightPosterior(origin, destination, distr, destination.shoppingWeight)
-    }
-
-    fun getShoppingDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return createCumDist(destinations.map { getShoppingWeightPosterior(origin, it) }.toDoubleArray())
-    }
-
-    fun getOtherWeightPosterior(origin: LocationOption, destination: LocationOption) : Double {
-        // Flexible activities don't leave dummy location except OD-Matrix defines it
-        if ((origin is DummyLocation) && (origin.otherWeight == 0.0) ) {
-            return if (origin == destination) {
-                1.0
-            } else {
-                0.0
-            }
-        }
-        // Normal case
-        val distObj = distanceDists.any_other[origin.regionType]!!
-        val distr = LogNorm(distObj.shape, distObj.scale)
-        return getWeightPosterior(origin, destination, distr, destination.otherWeight)
-    }
-
-    fun getOtherDistr(origin: LocationOption, destinations: List<LocationOption>) : DoubleArray {
-        return createCumDist(destinations.map { getOtherWeightPosterior(origin, it) }.toDoubleArray())
-    }
-
 }
