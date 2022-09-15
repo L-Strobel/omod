@@ -1,10 +1,7 @@
 package de.uniwuerzburg
 
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
-import kotlin.math.*
+import com.graphhopper.GraphHopper
+
 
 @Suppress("unused")
 infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
@@ -33,51 +30,56 @@ fun semiOpenDoubleRange(start: Double, end: Double, step: Double): Iterable<Doub
 fun Boolean.toInt() = if (this) 1 else 0
 fun Boolean.toDouble() = if (this) 1.0 else 0.0
 
-// Earth radius according to WGS 84
-const val earthMajorAxis = 6378137.0
+/**
+ * Stores routing information
+ */
+class RoutingCache(
+    private val mode: RoutingMode,
+    private val hopper: GraphHopper?
+) {
+    private val sizeLimit = 20_000 // This value caps the memory consumption roughly at 5 GB
+    private val table: HashMap<LocationOption, HashMap<LocationOption, Float>> = MaxSizeHashMap(sizeLimit)
 
-fun latlonToMercator(lat: Double, lon: Double) : Coordinate {
-    val radLat = lat * PI / 180.0
-    val radLon = lon * PI / 180.0
-
-    val x = earthMajorAxis * (radLon)
-    val y = earthMajorAxis * ln(tan(radLat / 2 + PI / 4))
-    return Coordinate(x, y)
-}
-
-fun mercatorToLatLon(x: Double, y: Double) : Coordinate {
-    val radLon = x / earthMajorAxis
-    val radLat = (atan(exp(y / earthMajorAxis)) - PI / 4) * 2
-
-    val lon = radLon * 180.0 / PI
-    val lat = radLat * 180.0 / PI
-    return Coordinate(lat, lon)
-}
-
-// Find envelops that are covered by a geometry quickly
-fun fastCovers(geometry: Geometry, resolutions: List<Double>, geometryFactory: GeometryFactory,
-               ifNot: (Envelope) -> Unit, ifDoes: (Envelope) -> Unit, ifUnsure: (Envelope) -> Unit) {
-    val envelope = geometry.envelopeInternal!!
-    val resolution = resolutions.first()
-    for (x in semiOpenDoubleRange(envelope.minX, envelope.maxX, resolution)) {
-        for (y in semiOpenDoubleRange(envelope.minY, envelope.maxY, resolution)) {
-            val smallEnvelope = Envelope(x, min(x + resolution, envelope.maxX), y, min(y + resolution, envelope.maxY))
-            val smallGeom = geometryFactory.toGeometry(smallEnvelope)
-
-            if (geometry.disjoint(smallGeom)) {
-                ifNot(smallEnvelope)
-            } else if (geometry.contains(smallGeom)) {
-                ifDoes(smallEnvelope)
+    fun getDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
+        if (origin is DummyLocation) {
+            return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
+        }
+        val oTable  = if (!table.containsKey(origin)) {
+            table[origin] = MaxSizeHashMap(sizeLimit * 3)
+            table[origin]!!
+        } else {
+            table[origin]!!
+        }
+        return FloatArray(destinations.size) {
+            val destination = destinations[it]
+            if (destination is DummyLocation) {
+                calcDistanceBeeline(origin, destination).toFloat()
             } else {
-                val newResolutions = resolutions.drop(1)
-                if (newResolutions.isEmpty()) {
-                    ifUnsure(smallEnvelope)
+                val entry = oTable[destination]
+                if (entry == null) {
+                    val distance = calcDistance(origin, destination).toFloat()
+                    oTable[destination] = distance
+                    distance
                 } else {
-                    fastCovers(geometry.intersection(smallGeom), newResolutions, geometryFactory,
-                               ifNot = ifNot, ifDoes = ifDoes,  ifUnsure = ifUnsure)
+                    oTable[destination]!!
                 }
             }
         }
     }
+    private fun calcDistance(origin: LocationOption, destination: LocationOption) : Double {
+        return when (mode) {
+            RoutingMode.BEELINE -> calcDistanceBeeline(origin, destination)
+            RoutingMode.GRAPHHOPPER -> calcDistanceGH(origin as RealLocation, destination as RealLocation, hopper!!)
+        }
+    }
 }
 
+/**
+ * HashMap with fixed size. If the collection is full and a entry is put in the oldest entry is removed.
+ * See: https://stackoverflow.com/questions/5601333/limiting-the-max-size-of-a-hashmap-in-java
+ */
+class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
+    override fun removeEldestEntry(eldest: Map.Entry<K, V>): Boolean {
+        return size > maxSize
+    }
+}
