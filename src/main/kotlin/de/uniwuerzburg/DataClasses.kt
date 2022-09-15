@@ -3,12 +3,9 @@ package de.uniwuerzburg
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
-
 import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Point
-import java.io.File
+
 
 /**
  * Definition of the agent population in terms of sociodemographic features
@@ -81,7 +78,7 @@ interface LocationOption {
     val shoppingWeight: Double
     val otherWeight: Double
     val regionType: Int
-    var taz: String?
+    var odZone: ODZone?
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
 }
@@ -104,7 +101,7 @@ class Building  (
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
     override val regionType: Int,
-    override var taz: String?,
+    override var odZone: ODZone?,
     override val inFocusArea: Boolean,
 
     val point: Point,
@@ -147,7 +144,7 @@ class Building  (
                     nSchools = properties.number_schools,
                     // nUnis = properties.number_universities,
                     inFocusArea = properties.in_focus_area,
-                    taz = null,
+                    odZone = null,
                     point = point
                 )
             }
@@ -175,7 +172,7 @@ data class Cell (
     override val regionType = buildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
 
     // Most common taz (Normally null here)
-    override var taz = buildings.groupingBy { it.taz }.eachCount().maxByOrNull { it.value }!!.key
+    override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
 
     // Sum
     override val homeWeight = buildings.sumOf { it.homeWeight }
@@ -206,7 +203,7 @@ data class Cell (
         if (avgDistanceToSelf != other.avgDistanceToSelf) return false
         if (latlonCoord != other.latlonCoord) return false
         if (regionType != other.regionType) return false
-        if (taz != other.taz) return false
+        if (odZone != other.odZone) return false
         if (homeWeight != other.homeWeight) return false
         if (workWeight != other.workWeight) return false
         if (schoolWeight != other.schoolWeight) return false
@@ -228,7 +225,7 @@ data class DummyLocation (
     override val schoolWeight: Double,
     override val shoppingWeight: Double,
     override val otherWeight: Double,
-    override var taz: String?
+    override var odZone: ODZone?
 ) : LocationOption {
     override val regionType = 0 // 0 means undefined
     override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
@@ -288,41 +285,10 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
     return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, profile)
 }
 
-/**
- * Row in the OD-Matrix
- */
-data class ODRow (
-    val origin: String,
-    val originActivity: ActivityType,
-    val destinationActivity: ActivityType,
-    val destinations: Map<String, Double>,
-    val geometry: Geometry
-)
-
-class ODMatrix (odFile: File, factory: GeometryFactory) {
-    val rows: Map<String, ODRow>
-
-    init {
-        rows = mutableMapOf()
-
-        // Read OD
-        val geoJson: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
-            .decodeFromString(odFile.readText(Charsets.UTF_8))
-
-        for (entry in geoJson.features) {
-            val properties = entry.properties as GeoJsonODProperties
-            val origin = properties.origin
-            val geometry = entry.geometry.toJTS(factory)
-            val originActivity = properties.origin_activity
-            val destinationActivity = properties.destination_activity
-            val destinations = properties.destinations
-
-            rows[origin] = ODRow(origin, originActivity, destinationActivity, destinations, geometry)
-        }
-    }
-}
-
 enum class RoutingMode {
     GRAPHHOPPER, BEELINE
 }
 
+data class ODZone (
+    val name: String
+)
