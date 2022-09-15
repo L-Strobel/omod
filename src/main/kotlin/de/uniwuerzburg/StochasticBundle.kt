@@ -6,6 +6,7 @@ import java.util.*
 import kotlin.math.*
 
 // Create cumulative distribution from weights
+@Suppress("unused")
 fun createCumDist(weights: IntArray): DoubleArray {
     return createCumDist(weights.map { it.toDouble() }.toDoubleArray())
 }
@@ -36,6 +37,7 @@ fun sampleCumDist(cumDist: DoubleArray, rng: Random): Int {
 }
 
 // Create and immediately sample cumulative distribution
+@Suppress("unused")
 fun createAndSampleCumDist(weights: DoubleArray, rng: Random) : Int {
     return sampleCumDist(createCumDist(weights), rng)
 }
@@ -67,10 +69,11 @@ fun sampleNDGaussian(means: DoubleArray, covariances: Array<DoubleArray>, rng: R
  */
 @Suppress("MemberVisibilityCanBePrivate")
 class LogNorm(val shape: Double, val scale: Double) {
+    @Suppress("unused")
     fun sample(rng: Random): Double {
         return exp(rng.nextGaussian() * shape) * scale
     }
-    fun density(x:Double): Double{
+    fun density(x: Double): Double{
         require(x >= 0) { "x must be positive! Given value for x: $x"}
         return if (x == 0.0) {
             0.0 // Lognormal distribution converges to zero at zero

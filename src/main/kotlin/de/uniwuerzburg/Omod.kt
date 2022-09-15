@@ -1,6 +1,5 @@
 package de.uniwuerzburg
 
-import com.graphhopper.GHRequest
 import com.graphhopper.GraphHopper
 import com.graphhopper.config.CHProfile
 import com.graphhopper.config.Profile
@@ -16,6 +15,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+
 
 val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
 
@@ -36,8 +36,8 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
     private val distanceDists: DistanceDistributions
     private val rng: Random = if (seed != null) Random(seed) else Random()
     private val hopper: GraphHopper
-    private val mode: RoutingMode = RoutingMode.BEELINE
-    private val routingTable: Map<LocationOption, Map<LocationOption, Double>>
+    private val mode: RoutingMode = RoutingMode.GRAPHHOPPER
+    private val routingCache: RoutingCache
 
     init {
         // Get population distribution
@@ -68,8 +68,9 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         // Create grid (used for speed up)
         grid = makeGrid(gridResolution ?: 500.0)
 
-        // Create routing table
-        routingTable = createRoutingTable(grid)
+        // Create routing cache
+        //routingCache = RoutingCache(grid, mode, hopper)
+        routingCache = RoutingCache(mode, hopper)
 
         // Calibration
         calibrationMatrix = mutableMapOf()
@@ -183,6 +184,8 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
         val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
         val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
+
+        var id = 0
         for (x in semiOpenDoubleRange(xMin, xMax, gridResolution)) {
             for (y in semiOpenDoubleRange(yMin, yMax, gridResolution)) {
                 val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
@@ -194,13 +197,17 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                     cellBuildings.map { it.point }.toTypedArray()
                 ).centroid.coordinate
 
-                grid.add(
-                    Cell(
-                        coord = featureCentroid,
-                        envelope = envelope,
-                        buildings = cellBuildings,
-                    )
+                val cell = Cell(
+                    id = id,
+                    coord = featureCentroid,
+                    envelope = envelope,
+                    buildings = cellBuildings,
                 )
+
+                cellBuildings.forEach { it.cell = cell }
+
+                grid.add(cell)
+                id += 1
             }
         }
         return grid.toList()
@@ -214,14 +221,6 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         hopper.chPreparationHandler.setCHProfiles(CHProfile("car"))
         hopper.importOrLoad()
         return hopper
-    }
-
-    fun createRoutingTable(locations: List<LocationOption>) : Map<LocationOption, Map<LocationOption, Double>> {
-        val table = mutableMapOf<LocationOption, Map<LocationOption, Double>>()
-        for (origin in locations) {
-            table[origin] = locations.associateWith { calcDistance(origin, it, mode) }
-        }
-        return table
     }
 
     fun addTAZInfo(odMatrix: ODMatrix) : List<LocationOption> {
@@ -345,7 +344,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                     for (start in originLocations) {
                         val homeWeight = getWeightsNoOrigin(listOf(start), ActivityType.HOME).sum()
                         if (homeWeight > 0) {
-                            omodWeight += homeWeight * getWeights(start, destinationLocations, ActivityType.WORK).sum()
+                            omodWeight += homeWeight * getWeights(start, destinationLocations, ActivityType.WORK).sum() // TODO fix getWeights usage here
                         }
                     }
                     omodWeights[destination] = omodWeight
@@ -449,7 +448,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
             // Get work location
             val work = if (workZone is Cell) {
-                val workBuildingsCumDist = getDistr(home, workZone.buildings, ActivityType.WORK)
+                val workBuildingsCumDist = getDistrNoOrigin(workZone.buildings, ActivityType.WORK)
                 workZone.buildings[sampleCumDist(workBuildingsCumDist, rng)]
             } else {
                 workZone
@@ -463,7 +462,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
             // Get school location
             val school = if (schoolZone is Cell) {
-                val schoolBuildingsCumDist = getDistr(home, schoolZone.buildings, ActivityType.SCHOOL)
+                val schoolBuildingsCumDist = getDistrNoOrigin(schoolZone.buildings, ActivityType.SCHOOL)
                 schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
             } else {
                 schoolZone
@@ -486,20 +485,26 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         require(type != ActivityType.WORK)
         require(type != ActivityType.SCHOOL)
 
+        val zone = if (location is Building) {
+            location.cell!!
+        } else {
+            location
+        }
+
         // Get cell
         val flexDist = if (type == ActivityType.SHOPPING) {
-            getDistr(location, zones, ActivityType.SHOPPING)
+            getDistr(zone, zones, ActivityType.SHOPPING)
         } else {
-            getDistr(location, zones, ActivityType.OTHER)
+            getDistr(zone, zones, ActivityType.OTHER)
         }
         val flexZone = zones[sampleCumDist(flexDist, rng)]
 
         // Get location
         return if (flexZone is Cell) {
             val flexBuildingCumDist = if (type == ActivityType.SHOPPING) {
-                getDistr(location, flexZone.buildings, ActivityType.SHOPPING)
+                getDistrNoOrigin(flexZone.buildings, ActivityType.SHOPPING)
             } else {
-                getDistr(location, flexZone.buildings, ActivityType.OTHER)
+                getDistrNoOrigin(flexZone.buildings, ActivityType.OTHER)
             }
             flexZone.buildings[sampleCumDist(flexBuildingCumDist, rng)]
         } else {
@@ -634,7 +639,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 val distr = LogNorm(distObj.shape, distObj.scale)
                 destinations.mapIndexed { i, destination ->
                     val kFactor = getKFactor(activityType, origin, destination)
-                    kFactor * priors[i] * distr.density(distances[i])
+                    kFactor * priors[i] * distr.density(distances[i].toDouble())
                 }
             }
             ActivityType.SCHOOL -> {
@@ -643,7 +648,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 val distObj = distanceDists.home_school[origin.regionType]!!
                 val distr = LogNorm(distObj.shape, distObj.scale)
                 List (destinations.size){ i ->
-                    priors[i] * distr.density(distances[i])
+                    priors[i] * distr.density(distances[i].toDouble())
                 }
             }
             ActivityType.SHOPPING -> {
@@ -657,7 +662,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                     val distObj = distanceDists.any_shopping[origin.regionType]!!
                     val distr = LogNorm(distObj.shape, distObj.scale)
                     List(destinations.size) { i ->
-                        priors[i] * distr.density(distances[i])
+                        priors[i] * distr.density(distances[i].toDouble())
                     }
                 }
             }
@@ -672,7 +677,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                     val distObj = distanceDists.any_other[origin.regionType]!!
                     val distr = LogNorm(distObj.shape, distObj.scale)
                     List(destinations.size) { i ->
-                        priors[i] * distr.density(distances[i])
+                        priors[i] * distr.density(distances[i].toDouble())
                     }
                 }
             }
@@ -693,53 +698,18 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         }
     }
 
-    fun calcDistances(origin: LocationOption, destinations: List<LocationOption>) : List<Double> {
-        return if (routingTable.containsKey(origin)) {
-            val table = routingTable[origin]!!
-            destinations.map { table[it] ?: calcDistance(origin, it, RoutingMode.BEELINE) }
-        } else {
-            destinations.map { calcDistance(origin, it, RoutingMode.BEELINE) } // TODO fix these beelines and decide on routing issue
-        }
-    }
-    fun calcDistance(origin: LocationOption, destination: LocationOption, mode: RoutingMode) : Double {
-        return when (mode) {
-            RoutingMode.BEELINE -> calcDistanceBeeline(origin, destination)
-            RoutingMode.GRAPHHOPPER -> calcDistanceGH(origin, destination)
-        }
-    }
-    fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : Double {
-        return origin.coord.distance(destination.coord)
-    }
-    fun calcDistanceGH (origin: LocationOption, destination: LocationOption) : Double {
-        // Dummy locations are not inside the GraphHopper graph -> fall back to beeline
-        return if ((origin is DummyLocation) || (destination is DummyLocation)) {
-            calcDistanceBeeline(origin, destination)
-        } else {
-            val req = GHRequest(
-                origin.latlonCoord.x,
-                origin.latlonCoord.y,
-                destination.latlonCoord.x,
-                destination.latlonCoord.y
-            )
-            val rsp = hopper.route(req)
-
-            // If routing didn't work fall back to beeline
-            if (rsp.hasErrors()) {
-                origin.coord.distance(destination.coord)
-            } else {
-                rsp.best.distance
-            }
-        }
+    fun calcDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
+        return routingCache.getDistances(origin, destinations)
     }
 
     fun getKFactor(activityType: ActivityType, origin: LocationOption?, destination: LocationOption) : Double {
-        val originTAZ = if (origin == null) {
-            null
-        } else {
-            origin.taz!!
-        }
         // K-factor from OD-Matrix
         val kFactor = if (calibrationMatrix[activityType] != null) {
+            val originTAZ = if (origin == null) {
+                null
+            } else {
+                origin.taz!!
+            }
             calibrationMatrix[activityType]!![Pair(originTAZ, destination.taz!!)]!!
         } else {
             1.0
