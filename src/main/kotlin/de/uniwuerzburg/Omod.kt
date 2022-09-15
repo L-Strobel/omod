@@ -60,7 +60,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             kdTree.insert(building.coord, building)
         }
 
-        // Create graphhopper
+        // Create graphhopper TODO add to CLI
         hopper = createGraphHopper(
             "C:/Users/strobel/Projekte/esmregio/graphhopperServer/oberbayern-latest.osm.pbf",
             "omod_cache/routing-graph-cache"
@@ -124,7 +124,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                     censusFile = censusFile,
                     regionTypeFile = regionTypeFile
                 )
-                if (cache) {
+                if (cache) { // TODO better cache path. Include the area
                     Files.createDirectories(cachePath.parent)
                     cachePath.toFile().writeText(Json{ encodeDefaults = true }.encodeToString(buildingsCollection))
                 }
