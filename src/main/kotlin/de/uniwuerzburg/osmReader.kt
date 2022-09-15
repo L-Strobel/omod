@@ -139,7 +139,7 @@ fun readOSMDataFromPG (db_url: String, db_user: String, db_password: String,
         """
     val areaLst = executeQuery(focusAreaQuery, stmt) { WKBReader(geometryFactory).read( it.getBytes("way")) }
     val areaSRID = areaLst.first().srid
-    val focusArea = MultiPolygon(areaLst.map { it as Polygon }.toTypedArray(), geometryFactory)
+    val focusArea = MultiPolygon(areaLst.map { it as Polygon }.toTypedArray(), geometryFactory).union()
     val fullAreaWKT = WKTWriter().write(focusArea.buffer(buffer_radius).convexHull())
 
     // Get buildings
