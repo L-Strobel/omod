@@ -86,12 +86,10 @@ interface LocationOption {
     val inFocusArea: Boolean
 }
 
-/*
-Object is snapable to GraphHopper Graph
+/**
+    A location that is inside the area with OSM data, i.e. not a dummy location
 */
-interface SnapableLoc : LocationOption {
-    var snapIdx: Int?
-}
+interface RealLocation : LocationOption
 
 /**
  * Model for a building
@@ -102,7 +100,7 @@ interface SnapableLoc : LocationOption {
  * @param landuse OSM-Landuse of the building
  * @param regionType RegioStar7 of the municipality
  */
-data class Building  (
+class Building  (
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
     override val regionType: Int,
@@ -111,22 +109,20 @@ data class Building  (
 
     val point: Point,
 
-    val osmID: Int,
     val area: Double,
     val population: Double?,
     val landuse: Landuse,
     val nShops: Double,
     val nOffices: Double,
     val nSchools: Double,
-    val nUnis: Double,
-) : SnapableLoc {
+    var cell: Cell? = null
+) : RealLocation {
     override val workWeight = nShops + nOffices + landuse.getWorkWeight()
     override val homeWeight = population ?: 1.0
     override val schoolWeight = nSchools
     override val shoppingWeight = nShops
     override val otherWeight = 1.0
     override val avgDistanceToSelf = 0.0
-    override var snapIdx: Int? = null
 
     companion object {
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory): List<Building> {
@@ -139,7 +135,7 @@ data class Building  (
                 val point = it.geometry.toJTS(geometryFactory).centroid
 
                 Building(
-                    osmID = properties.osm_id,
+                    // osmID = properties.osm_id,
                     coord = point.coordinate,
                     latlonCoord = mercatorToLatLon(point.coordinate.x, point.coordinate.y),
                     area = properties.area,
@@ -149,7 +145,7 @@ data class Building  (
                     nShops = properties.number_shops,
                     nOffices = properties.number_offices,
                     nSchools = properties.number_schools,
-                    nUnis = properties.number_universities,
+                    // nUnis = properties.number_universities,
                     inFocusArea = properties.in_focus_area,
                     taz = null,
                     point = point
@@ -164,11 +160,12 @@ data class Building  (
  * Method: Sample from Cells -> Sample from buildings in cell
  */
 data class Cell (
+    val id: Int,
     override val coord: Coordinate,
 
     val envelope: Envelope,
     val buildings: List<Building>,
-) : SnapableLoc {
+) : RealLocation {
     // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
@@ -189,7 +186,36 @@ data class Cell (
 
     override val inFocusArea = buildings.any { it.inFocusArea }
 
-    override var snapIdx: Int? = null
+    override fun hashCode(): Int {
+        return id
+    }
+
+    /**
+     * Auto generated equals
+     */
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Cell
+
+        if (id != other.id) return false
+        if (coord != other.coord) return false
+        if (envelope != other.envelope) return false
+        if (buildings != other.buildings) return false
+        if (avgDistanceToSelf != other.avgDistanceToSelf) return false
+        if (latlonCoord != other.latlonCoord) return false
+        if (regionType != other.regionType) return false
+        if (taz != other.taz) return false
+        if (homeWeight != other.homeWeight) return false
+        if (workWeight != other.workWeight) return false
+        if (schoolWeight != other.schoolWeight) return false
+        if (shoppingWeight != other.shoppingWeight) return false
+        if (otherWeight != other.otherWeight) return false
+        if (inFocusArea != other.inFocusArea) return false
+
+        return true
+    }
 }
 
 /**
