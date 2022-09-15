@@ -17,6 +17,10 @@ data class ODRow (
     val geometry: Geometry
 )
 
+data class ODZone (
+    val name: String
+)
+
 class ODMatrix (odFile: File, factory: GeometryFactory) {
     val rows: Map<ODZone, ODRow>
 
@@ -46,8 +50,10 @@ class ODMatrix (odFile: File, factory: GeometryFactory) {
 
         // Valid activities? Currently, only HOME->WORK are allowed
         require(rows.values.all { it.originActivity == ActivityType.HOME })
-            { "Only OD-Matrices with Activities HOME->WORK are currently supported!" }
+            { "Only calibration with commuting data is currently supported! " +
+              "This means OD-Matrices with Activities HOME->WORK." }
         require(rows.values.all { it.destinationActivity == ActivityType.WORK })
-            { "Only OD-Matrices with Activities HOME->WORK are currently supported!" }
+            { "Only calibration with commuting data is currently supported! " +
+              "This means OD-Matrices with Activities HOME->WORK." }
     }
 }
