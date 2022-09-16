@@ -25,7 +25,8 @@ class Run : CliktCommand() {
         .check("Reading osm ids failed! Expected format \"name1,name2,name3\".") { it.isNotEmpty() }
     // Options
     private val n_agents by option(
-        help="Number of agents to simulate"
+        help="Number of agents in focus area to simulate." +
+             "The buffer area and in-commuting sources are populated proportionally."
     ).int().default(1000)
     private val n_days by option(
         help="Number of days to simulate"
