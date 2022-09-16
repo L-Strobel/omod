@@ -36,6 +36,12 @@ class Run : CliktCommand() {
     private val out by option (
         help="Output file, must end on .json"
     ).file().default(File("output.json"))
+    private val routing_mode by option(
+        help = "Method of distance calculation. Either with euclidean distance (BEELINE) or routed using a car (GRAPHHOPPER)"
+    ).enum<RoutingMode>().default(RoutingMode.BEELINE)
+    private val osm_file by option(
+        help = "Path to osm.pbf file of the area. Only used then routing_mode == GRAPHHOPPER"
+    ).file(mustExist = true, mustBeReadable = true)
     private val od by option(
         help="Path to an OD-Matrix in geojson format that will be used for calibration"
     ).file(mustExist = true, mustBeReadable = true)
@@ -75,6 +81,7 @@ class Run : CliktCommand() {
         val (omod, timeRead) = measureTimedValue {
             Omod.fromPG(
                 db_url, db_user, db_password, area_osm_ids,
+                mode = routing_mode, osmFile = osm_file,
                 odFile = od, censusFile = census, regionTypeFile = region_types,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
                 cache = cache, cacheDir = cache_dir
