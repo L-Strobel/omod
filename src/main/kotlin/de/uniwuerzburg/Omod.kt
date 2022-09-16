@@ -420,12 +420,10 @@ class Omod(
 
     /**
      * Initialize population by assigning home and work locations
-     * @param n number of agents
-     * @param randomFeatures determines whether the population be randomly chosen or as close as possible to the given distributions.
-     *                       In the random case, the sampling is still done based on said distribution. Mostly important for small agent numbers.
+     * @param n number of agents in focus area
      * @param inputPopDef sociodemographic distribution of the agents. If null the distributions in Population.json are used.
      */
-    fun createAgents(n: Int, randomFeatures: Boolean = false, inputPopDef: Map<String, Map<String,
+    fun createAgents(n: Int, inputPopDef: Map<String, Map<String,
                      Double>>? = null): List<MobiAgent> {
         // Get sociodemographic features
         val usedPopDef = if (inputPopDef == null) {
@@ -443,19 +441,7 @@ class Omod(
                 }
             }
         }
-        val agentFeatures: List<Int> // List of indices that map an agent to a features set
-        if (randomFeatures) {
-            val distr = createCumDist(jointProbability.toDoubleArray())
-            agentFeatures = List(n) {sampleCumDist(distr, rng)}
-        } else {
-            // Assign the features deterministically
-            val expectedObservations = jointProbability.map { it * n }.toDoubleArray()
-            agentFeatures = List(n) { _ ->
-                val j = expectedObservations.withIndex().maxByOrNull { it.value }!!.index // Assign agent to feature with highest E(f)
-                expectedObservations[j] -= 1.0 // Reduce E(f) by one
-                j
-            }
-        }
+        val featureDistribution =  createCumDist(jointProbability.toDoubleArray())
 
         // Assign home and work
         val homCumDist = getDistrNoOrigin(zones, ActivityType.HOME)
@@ -465,9 +451,10 @@ class Omod(
         val schoolDistCache = mutableMapOf<Int, DoubleArray>()
         val agents = List(n) { i ->
             // Sociodemographic features
-            val homogenousGroup = features[agentFeatures[i]].first
-            val mobilityGroup = features[agentFeatures[i]].second
-            val age = features[agentFeatures[i]].third
+            val agentFeatures = sampleCumDist(featureDistribution, rng)
+            val homogenousGroup = features[agentFeatures].first
+            val mobilityGroup = features[agentFeatures].second
+            val age = features[agentFeatures].third
 
             // Get home zone (might be cell or dummy is node)
             val homeZoneID = sampleCumDist(homCumDist, rng)
