@@ -78,7 +78,7 @@
                 "type": "BuildingEntree",
                 "osm_id": 454202426,
                 "region_type": 77,
-                "in_focus_area": false,
+                "in_focus_area": true,
                 "area": 77.77838663202289,
                 "population": 0.8,
                 "landuse": "RESIDENTIAL",
