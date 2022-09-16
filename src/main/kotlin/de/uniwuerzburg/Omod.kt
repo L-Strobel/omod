@@ -95,7 +95,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         @Suppress("unused")
         fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>): Omod {
             return fromPG(dbUrl, dbUser, dbPassword, areaOsmIds,
-                          cache = true, cachePath = Paths.get("omod_cache/buildings.geojson"),
+                          cache = true, cacheDir = Paths.get("omod_cache/"),
                           odFile = null, gridResolution = null, seed = null,
                           bufferRadius = 0.0,
                           censusFile = null, regionTypeFile = null
@@ -106,8 +106,13 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
             censusFile: File? = null, regionTypeFile: File? = null,
             bufferRadius: Double = 0.0,
-            cache: Boolean = true, cachePath: Path = Paths.get("omod_cache/buildings.geojson"),
+            cache: Boolean = true, cacheDir: Path = Paths.get("omod_cache/"),
         ): Omod {
+            val cachePath = Paths.get(cacheDir.toString(),
+                "osmBuildingsFor${areaOsmIds}Buffer${bufferRadius}" +
+                       "WithRegionTypes${regionTypeFile!=null}WithRegionTypes${regionTypeFile!=null}" +
+                       "WithCensus${censusFile != null}.geojson"
+            )
             // Check cache
             val buildingsCollection: GeoJsonFeatureCollection
             if (cache and cachePath.toFile().exists()) {
