@@ -23,9 +23,14 @@ interface LocationOption {
 }
 
 /**
-A location that is inside the area with OSM data, i.e. not a dummy location
+ * A location that is inside the area with OSM data, i.e. not a dummy location
  */
 interface RealLocation : LocationOption
+
+/**
+ * A location that is not a just a building, i.e. dummy location or cell
+ */
+interface AggregateLocation : LocationOption
 
 /**
  * Model for a building
@@ -52,7 +57,7 @@ class Building  (
     val nOffices: Double,
     val nSchools: Double,
     var cell: Cell? = null
-) : RealLocation {
+) : LocationOption, RealLocation {
     override val workWeight = nShops + nOffices + landuse.getWorkWeight()
     override val homeWeight = population ?: 1.0
     override val schoolWeight = nSchools
@@ -101,7 +106,7 @@ data class Cell (
 
     val envelope: Envelope,
     val buildings: List<Building>,
-) : RealLocation {
+) : LocationOption, RealLocation, AggregateLocation {
     // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
@@ -165,7 +170,7 @@ data class DummyLocation (
     override val shoppingWeight: Double,
     override val otherWeight: Double,
     override var odZone: ODZone?
-) : LocationOption {
+) : LocationOption, AggregateLocation {
     override val regionType = 0 // 0 means undefined
     override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
     override val latlonCoord = mercatorToLatLon(coord.x, coord.y)

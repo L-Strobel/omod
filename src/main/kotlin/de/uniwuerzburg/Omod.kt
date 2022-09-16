@@ -15,8 +15,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 
 val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
@@ -39,7 +37,7 @@ class Omod(
 ) {
     val kdTree: KdTree
     private val grid: List<Cell>
-    private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
+    private val zones: List<AggregateLocation> // Grid + DummyLocations for commuting locations
     private val firstOrderCFactors = mutableMapOf<ActivityType, Map<ODZone, Double>>()
     private val secondOrderCFactors = mutableMapOf<Pair<ActivityType, ActivityType>, Map<Pair<ODZone, ODZone>, Double>>()
     private val populationDef: PopulationDef
@@ -110,14 +108,14 @@ class Omod(
         // Calibration
         if (odFile != null) {
             // Read OD-Matrix that is used for calibration
-            val odMatrix = ODMatrix(odFile, geometryFactory)
+            val odZones = ODZone.readODMatrix(odFile, geometryFactory)
             // Add TAZ to buildings and cells
-            val dummyZones = addODZoneInfo(odMatrix)
+            val dummyZones = addODZoneInfo(odZones)
             zones = grid + dummyZones
             // Get calibration factors based on OD-Matrix
-            val (kfo, vfo) = calcFirstOrderScaling(odMatrix)
+            val (kfo, vfo) = calcFirstOrderScaling(odZones)
             firstOrderCFactors[kfo] = vfo
-            val (kso, vso) =  calcSecondOrderScaling(odMatrix)
+            val (kso, vso) =  calcSecondOrderScaling(odZones)
             secondOrderCFactors[kso] = vso
         } else {
             zones = grid
@@ -266,7 +264,7 @@ class Omod(
         return grid.toList()
     }
 
-    fun createGraphHopper(osmLoc: String, cacheLoc: String) : GraphHopper {
+    private fun createGraphHopper(osmLoc: String, cacheLoc: String) : GraphHopper {
         val hopper = GraphHopper()
         hopper.osmFile = osmLoc
         hopper.graphHopperLocation = cacheLoc
@@ -276,95 +274,103 @@ class Omod(
         return hopper
     }
 
-    fun addODZoneInfo(odMatrix: ODMatrix) : List<LocationOption> {
-        val dummyZones = mutableListOf<LocationOption>()
+    private fun addODZoneInfo(odZones: List<ODZone>) : List<DummyLocation> {
+        val dummyZones = mutableListOf<DummyLocation>()
 
         // Get buildings in every TAZ and add the TAZ to that building
-        for (odRow in odMatrix.rows.values) {
+        for (odZone in odZones) {
             val zoneBuildings = mutableListOf<Building>()
 
-            fastCovers(odRow.geometry, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
+            fastCovers(odZone.geometry, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
                 ifNot = { },
                 ifDoes = { e ->
                     zoneBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) })
                 },
                 ifUnsure = { e ->
                     zoneBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) }
-                        .filter { odRow.geometry.contains(it.point) })
+                        .filter { odZone.geometry.contains(it.point) })
                 }
             )
 
-            val activities = setOf(odRow.originActivity, odRow.destinationActivity)
+            val activities = setOf(odZone.originActivity, odZone.destinationActivity)
 
             if (zoneBuildings.isEmpty()) {
                 // Create dummy node for TAZ
                 val dummyLoc = DummyLocation(
-                    coord = odRow.geometry.centroid.coordinate,
+                    coord = odZone.geometry.centroid.coordinate,
                     homeWeight = (ActivityType.HOME in activities).toDouble(),
                     workWeight = (ActivityType.WORK in activities).toDouble(),
                     schoolWeight = (ActivityType.SCHOOL in activities).toDouble(),
                     shoppingWeight = (ActivityType.SHOPPING in activities).toDouble(),
                     otherWeight = (ActivityType.OTHER in activities).toDouble(),
-                    odZone = odRow.origin
+                    odZone = odZone
                 )
                 dummyZones.add(dummyLoc)
+                odZone.aggLocs.add(dummyLoc)
             } else {
                 for (building in zoneBuildings) {
                     // Remember ODZone
-                    building.odZone = odRow.origin
+                    building.odZone = odZone
                 }
                 // Is zone in focus area?
-                odRow.origin.inFocusArea = zoneBuildings.any{ it.inFocusArea }
+                odZone.inFocusArea = zoneBuildings.any{ it.inFocusArea }
             }
         }
 
+        // Add OD-Zones to cells and vice versa
         for (cell in grid) {
-            // Add TAZ to cell
-            cell.odZone = cell.buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
+            // OD-Zone most buildings in cell belong to
+            val odZone = cell.buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
+
+            cell.odZone = odZone
+            odZone?.aggLocs?.add(cell)
         }
 
         return dummyZones
     }
 
-    fun calcFirstOrderScaling(odMatrix: ODMatrix) : Pair<ActivityType, Map<ODZone, Double>> {
-        val activity = odMatrix.rows.values.first().originActivity
+    private fun calcFirstOrderScaling(odZones: List<ODZone>) : Pair<ActivityType, Map<ODZone, Double>> {
+        val activity = odZones.first().originActivity
         require(activity in listOf(ActivityType.HOME, ActivityType.WORK, ActivityType.SCHOOL))
             {"Scaling origins is only implemented for fixed locations"}
-
-        val odZonesInFocusArea = odMatrix.rows.keys.filter { it.inFocusArea }
 
         val factors = mutableMapOf<ODZone, Double>()
         val omodProbs = calcOMODProbsAsMap(activity)
         val omodWeights = mutableMapOf<ODZone, Double>()
         val odWeights = mutableMapOf<ODZone, Double>()
 
-        for (odRow in odMatrix.rows.values) {
+        for (odZone in odZones) {
             // Calculate omod origin probability. For speed only on zone level.
-            omodWeights[odRow.origin] = omodProbs.filter { it.key.odZone == odRow.origin }.values.sum()
+            omodWeights[odZone] = odZone.aggLocs.sumOf { omodProbs[it]!! }
             // Calculate OD-Matrix origin probability.
-            var odWeight = 0.0
-            for (odZone in odZonesInFocusArea) {
-                odWeight += odRow.destinations[odZone]!!
-            }
-            odWeights[odRow.origin] = odWeight
+            odWeights[odZone] = odZone.destinations.filter { it.first.inFocusArea }.sumOf { it.second }
         }
 
         val weightSumOMOD = omodWeights.values.sum()
         val weightSumOD = odWeights.values.sum()
-        for (odRow in odMatrix.rows.values) {
+
+        // Calibration failed!
+        if ((weightSumOMOD <= 0) || (weightSumOD <= 0)){
+            throw Exception("Calculation of first order calibration factors failed! " +
+                            "Possible causes: OD-Matrix has negative values, " +
+                            "OD-Matrix does not intersect focus area, ... \n" +
+                            "If code was changed make sure that calcFirstOrderScaling is called after " +
+                            "addODZoneInfo().")
+        }
+
+        for (odZone in odZones) {
             // Normalize
-            val omodProb = omodWeights[odRow.origin]!! / weightSumOMOD
-            val odProb = odWeights[odRow.origin]!! / weightSumOD
-            factors[odRow.origin] = odProb / omodProb
+            val omodProb = omodWeights[odZone]!! / weightSumOMOD
+            val odProb = odWeights[odZone]!! / weightSumOD
+            factors[odZone] = odProb / omodProb
         }
        return Pair(activity, factors)
     }
     
     // Aka k factors
-    fun calcSecondOrderScaling(odMatrix: ODMatrix)
+    private fun calcSecondOrderScaling(odZones: List<ODZone>)
     : Pair<Pair<ActivityType, ActivityType> ,Map<Pair<ODZone, ODZone> , Double>> {
-        val activities = Pair(odMatrix.rows.values.first().originActivity,
-            odMatrix.rows.values.first().destinationActivity)
+        val activities = Pair(odZones.first().originActivity, odZones.first().destinationActivity)
 
         // Check if OD has valid activities. Currently allowed: HOME->WORK
         require(activities in setOf(Pair(ActivityType.HOME, ActivityType.WORK))) {
@@ -372,39 +378,41 @@ class Omod(
         }
         
         val factors = mutableMapOf<Pair<ODZone, ODZone>, Double>()
-        val priorProbs = calcOMODProbs(activities.first)
+        val priorProbs = calcOMODProbsAsMap(activities.first)
 
-        for (odRow in odMatrix.rows.values) {
-            // Calculate omod transition probability. For speed only on zone level.
+        for (originOdZone in odZones) {
             val omodWeights = mutableMapOf<ODZone, Double>()
-            val originLocations = zones.filter { it.odZone == odRow.origin }
-            for (origin in originLocations) {
-                val workWeights = getWeights(origin, zones, activities.second)
-                for ((i, zone) in zones.withIndex()) {
-                    val wNew = priorProbs[i] * workWeights[i]
-                    var wOld = omodWeights.getOrPut(zone.odZone!! ) { 0.0 }
-                    wOld += wNew
-                }
-            }
-
-            // Calculate OD-Matrix origin probability.
             val odWeights = mutableMapOf<ODZone, Double>()
-            for (destination in odRow.destinations.keys) {
-                odWeights[destination] = if ((destination.inFocusArea) || (odRow.origin.inFocusArea) ){
-                    odRow.destinations[destination]!!
-                } else {
-                    0.0
-                }
+            for ((destOdZone, transitions) in originOdZone.destinations) {
+                // Calculate omod transition probability. For speed only on zone level.
+                var omodWeight = 0.0
+                for (origin in originOdZone.aggLocs) {
+                    val prior = priorProbs[origin]!!
+                    if (prior == 0.0) { continue }
+                    omodWeight +=  prior * getWeights(origin, destOdZone.aggLocs, activities.second).sum()
+                 }
+                omodWeights[destOdZone] = omodWeight
+
+                // Calculate OD-Matrix origin probability.
+                odWeights[destOdZone] = if (destOdZone.inFocusArea || originOdZone.inFocusArea) transitions else 0.0
             }
 
             val weightSumOMOD = omodWeights.values.sum()
             val weightSumOD = odWeights.values.sum()
-            for (destination in odRow.destinations.keys) {
-                // Normalize
-                val gamgProb = omodWeights[destination]!! / weightSumOMOD
-                val odProb = odWeights[destination]!! / weightSumOD
 
-                factors[Pair(odRow.origin, destination)] = odProb / gamgProb
+            // Transitions from origin are impossible. Leave unadjusted. Factor should never be used.
+            if ((weightSumOMOD <= 0) || (weightSumOD <= 0)){
+                for (destOdZone in originOdZone.destinations.map { it.first }) {
+                    factors[Pair(originOdZone, destOdZone)] = 1.0
+                }
+            } else {
+                for (destOdZone in originOdZone.destinations.map { it.first }) {
+                    // Normalize
+                    val gamgProb = omodWeights[destOdZone]!! / weightSumOMOD
+                    val odProb = odWeights[destOdZone]!! / weightSumOD
+
+                    factors[Pair(originOdZone, destOdZone)] = odProb / gamgProb
+                }
             }
         }
         return Pair(activities, factors)
