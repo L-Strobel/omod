@@ -11,13 +11,19 @@ internal class OmodTest {
     private val testBuildings = File(OmodTest::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
     private val testOmod = Omod.fromFile( testBuildings)
 
-    @Suppress("USELESS_CAST")
     @Test
-    fun createAgents() {
+    fun createAgents_features() {
         val popTxt = OmodTest::class.java.classLoader.getResource("testPopulation.json")!!.readText(Charsets.UTF_8)
         val populationDef = Json.decodeFromString<Map<String, Map<String, Double>>>(popTxt)
         val agents = testOmod.createAgents(100, inputPopDef = populationDef)
-        val sum = agents.sumOf { if (it.age == "undefined") 1 as Int else 0 as Int}
-        assertEquals(100, sum)
+        assert( agents.all { it.age == "undefined"})
+    }
+
+    @Test
+    fun createAgents_count() {
+        val popTxt = OmodTest::class.java.classLoader.getResource("testPopulation.json")!!.readText(Charsets.UTF_8)
+        val populationDef = Json.decodeFromString<Map<String, Map<String, Double>>>(popTxt)
+        val agents = testOmod.createAgents(100, inputPopDef = populationDef)
+        assert( agents.count { it.home.inFocusArea } == 100)
     }
 }
