@@ -15,6 +15,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+import kotlin.math.sqrt
 
 
 val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
@@ -425,6 +426,8 @@ class Omod(
      */
     fun createAgents(n: Int, inputPopDef: Map<String, Map<String,
                      Double>>? = null): List<MobiAgent> {
+        val agents = mutableListOf<MobiAgent>()
+
         // Get sociodemographic features
         val usedPopDef = if (inputPopDef == null) {
             populationDef
@@ -446,10 +449,20 @@ class Omod(
         // Assign home and work
         val homCumDist = getDistrNoOrigin(zones, ActivityType.HOME)
 
-        // Generate population TODO: enable fixed number in focus area, maybe by just stopping after i have enough?
+        // Generate population
         val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
         val schoolDistCache = mutableMapOf<Int, DoubleArray>()
-        val agents = List(n) { i ->
+
+        // Check the rough proportions of in and out of focus area homes for emergency break
+        val hWeights = getWeightsNoOrigin(zones, ActivityType.HOME)
+        val inShare = hWeights.filterIndexed { i, _ -> zones[i].inFocusArea }.sum() / hWeights.sum()
+
+        require(inShare > 0) {"Must be possible to life in focus zone!"}
+
+        // Create agent until n life in the focus area
+        var id = 0
+        var agentsInFocusArea = 0
+        while (agentsInFocusArea < n) {
             // Sociodemographic features
             val agentFeatures = sampleCumDist(featureDistribution, rng)
             val homogenousGroup = features[agentFeatures].first
@@ -499,7 +512,16 @@ class Omod(
             }
 
             // Add the agent to the population
-            MobiAgent(i, homogenousGroup, mobilityGroup, age, home, work, school)
+            agents.add(MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school))
+
+            // Counter
+            id += 1
+            if (home.inFocusArea) { agentsInFocusArea += 1 }
+            // Catch infinite loops.
+            // If number of agents in focus area is 10 standard deviations
+            // smaller than the expected value something might have gone wrong.
+            require(id * inShare - 10 * sqrt(id * inShare * (1 - inShare)) < 100 + agentsInFocusArea )
+                {"Loop seems infinite!"}
         }
         return agents
     }
