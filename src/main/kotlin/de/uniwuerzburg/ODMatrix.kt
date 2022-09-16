@@ -18,8 +18,26 @@ data class ODRow (
 )
 
 data class ODZone (
-    val name: String
-)
+    val name: String,
+    var inFocusArea: Boolean = false
+) {
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ODZone
+
+        if (name != other.name) return false
+        assert(other.inFocusArea == inFocusArea) {"Somehow there are two different version of one OD-Zone"}
+
+        return true
+    }
+}
+
 
 class ODMatrix (odFile: File, factory: GeometryFactory) {
     val rows: Map<ODZone, ODRow>
@@ -31,13 +49,22 @@ class ODMatrix (odFile: File, factory: GeometryFactory) {
         val geoJson: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
             .decodeFromString(odFile.readText(Charsets.UTF_8))
 
+        // Get zones
+        val odZonesStr = mutableSetOf<String>()
         for (entry in geoJson.features) {
             val properties = entry.properties as GeoJsonODProperties
-            val origin = ODZone(properties.origin)
+            odZonesStr.add(properties.origin)
+            odZonesStr.addAll(properties.destinations.keys)
+        }
+        val odZones = odZonesStr.associateWith { ODZone(it) }
+
+        for (entry in geoJson.features) {
+            val properties = entry.properties as GeoJsonODProperties
+            val origin = odZones[properties.origin]!!
             val geometry = entry.geometry.toJTS(factory)
             val originActivity = properties.origin_activity
             val destinationActivity = properties.destination_activity
-            val destinations = properties.destinations.mapKeys { ODZone(it.key) }
+            val destinations = properties.destinations.mapKeys { odZones[it.key]!! }
 
             rows[origin] = ODRow(origin, originActivity, destinationActivity, destinations, geometry)
         }
