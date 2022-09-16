@@ -57,8 +57,8 @@ class Run : CliktCommand() {
     private val seed by option(help = "Random seed to use. Like java.util.Random()").long()
     private val cache by option(help = "Defines if the program caches the model area.")
         .choice("true" to true, "false" to false).default(true)
-    private val cache_path by option(help = "Location of cache.")
-        .path().default(Paths.get("omod_cache/buildings.geojson"))
+    private val cache_dir by option(help = "Location of cache.")
+        .path(canBeDir = true, canBeFile = false).default(Paths.get("omod_cache/"))
 
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
@@ -77,7 +77,7 @@ class Run : CliktCommand() {
                 db_url, db_user, db_password, area_osm_ids,
                 odFile = od, censusFile = census, regionTypeFile = region_types,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
-                cache = cache, cachePath = cache_path
+                cache = cache, cacheDir = cache_dir
             )
         }
         println("Loading data took: $timeRead")
