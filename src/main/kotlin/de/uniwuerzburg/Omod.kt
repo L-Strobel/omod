@@ -15,6 +15,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 
 val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
@@ -25,8 +27,16 @@ val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?, seed: Long?,
-           private val geometryFactory: GeometryFactory = GeometryFactory()) {
+class Omod(
+    val buildings: List<Building>,
+    odFile: File?,
+    gridResolution: Double,
+    seed: Long?,
+    private val geometryFactory: GeometryFactory,
+    osmFile: File?,
+    cacheDir: Path,
+    mode: RoutingMode
+) {
     val kdTree: KdTree
     private val grid: List<Cell>
     private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
@@ -36,9 +46,29 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
     private val activityDataMap: ActivityDataMap
     private val distanceDists: DistanceDistributions
     private val rng: Random = if (seed != null) Random(seed) else Random()
-    private val hopper: GraphHopper
-    private val mode: RoutingMode = RoutingMode.GRAPHHOPPER
+    private val hopper: GraphHopper?
     private val routingCache: RoutingCache
+
+    // If given null -> use defaults
+    constructor(
+        buildings: List<Building>,
+        odFile: File?,
+        gridResolution: Double?,
+        seed: Long?,
+        geometryFactory: GeometryFactory?,
+        osmFile: File?,
+        cacheDir: Path?,
+        mode: RoutingMode?
+    ) : this (
+        buildings = buildings,
+        odFile = odFile,
+        gridResolution = gridResolution ?: 500.0,
+        seed = seed,
+        geometryFactory = geometryFactory ?: GeometryFactory(),
+        osmFile = osmFile,
+        cacheDir = cacheDir ?: Paths.get("omod_cache/"),
+        mode = mode ?: RoutingMode.BEELINE
+    )
 
     init {
         // Get population distribution
@@ -60,17 +90,21 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             kdTree.insert(building.coord, building)
         }
 
-        // Create graphhopper TODO add to CLI
-        hopper = createGraphHopper(
-            "C:/Users/strobel/Projekte/esmregio/graphhopperServer/oberbayern-latest.osm.pbf",
-            "omod_cache/routing-graph-cache"
-        )
-
         // Create grid (used for speed up)
-        grid = makeGrid(gridResolution ?: 500.0)
+        grid = makeGrid(gridResolution)
+
+        // Create graphhopper
+        hopper = if (mode == RoutingMode.GRAPHHOPPER) {
+            require(osmFile != null) {"You need to provide a OSM-File for routing mode GRAPHHOPPER"}
+            createGraphHopper(
+                osmFile.toString(),
+                Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
+            )
+        } else {
+            null
+        }
 
         // Create routing cache
-        //routingCache = RoutingCache(grid, mode, hopper)
         routingCache = RoutingCache(mode, hopper)
 
         // Calibration
@@ -78,7 +112,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             // Read OD-Matrix that is used for calibration
             val odMatrix = ODMatrix(odFile, geometryFactory)
             // Add TAZ to buildings and cells
-            val dummyZones = addTAZInfo(odMatrix)
+            val dummyZones = addODZoneInfo(odMatrix)
             zones = grid + dummyZones
             // Get calibration factors based on OD-Matrix
             val (kfo, vfo) = calcFirstOrderScaling(odMatrix)
@@ -92,9 +126,13 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
 
     // Factories
     companion object {
+        /**
+         * Run quick and easy without any additional information
+         */
         @Suppress("unused")
         fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>): Omod {
             return fromPG(dbUrl, dbUser, dbPassword, areaOsmIds,
+                          mode = RoutingMode.BEELINE, osmFile = null,
                           cache = true, cacheDir = Paths.get("omod_cache/"),
                           odFile = null, gridResolution = null, seed = null,
                           bufferRadius = 0.0,
@@ -103,15 +141,19 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         }
         fun fromPG(
             dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
+            mode: RoutingMode? = null, osmFile: File? = null,
             odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
             censusFile: File? = null, regionTypeFile: File? = null,
             bufferRadius: Double = 0.0,
             cache: Boolean = true, cacheDir: Path = Paths.get("omod_cache/"),
         ): Omod {
             val cachePath = Paths.get(cacheDir.toString(),
-                "osmBuildingsFor${areaOsmIds}Buffer${bufferRadius}" +
-                       "WithRegionTypes${regionTypeFile!=null}WithRegionTypes${regionTypeFile!=null}" +
-                       "WithCensus${censusFile != null}.geojson"
+                "osmBuildingsFor${areaOsmIds.sorted().toString().replace(" ", "")}" +
+                       "Buffer${bufferRadius}" +
+                       "WithRegionTypes${regionTypeFile != null}" +
+                       "WithRegionTypes${regionTypeFile != null}" +
+                       "WithCensus${censusFile != null}" +
+                       ".geojson"
             )
             // Check cache
             val buildingsCollection: GeoJsonFeatureCollection
@@ -129,7 +171,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                     censusFile = censusFile,
                     regionTypeFile = regionTypeFile
                 )
-                if (cache) { // TODO better cache path. Include the area
+                if (cache) {
                     Files.createDirectories(cachePath.parent)
                     cachePath.toFile().writeText(Json{ encodeDefaults = true }.encodeToString(buildingsCollection))
                 }
@@ -141,12 +183,16 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 odFile,
                 gridResolution,
                 seed,
-                geometryFactory
+                geometryFactory,
+                osmFile,
+                cacheDir,
+                mode
             )
         }
         @Suppress("unused")
-        fun fromFile(file: File, odFile: File?= null, gridResolution: Double? = null,
-                     seed: Long? = null): Omod {
+        fun fromFile(file: File, mode: RoutingMode? = null, osmFile: File? = null,
+                     odFile: File? = null, gridResolution: Double? = null,
+                     seed: Long? = null, cacheDir: Path? = null) : Omod {
             val buildingsCollection: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
                 .decodeFromString(file.readText(Charsets.UTF_8))
 
@@ -156,7 +202,10 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 odFile,
                 gridResolution,
                 seed,
-                geometryFactory
+                geometryFactory,
+                osmFile,
+                cacheDir,
+                mode
             )
         }
         @Suppress("unused")
@@ -227,27 +276,27 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         return hopper
     }
 
-    fun addTAZInfo(odMatrix: ODMatrix) : List<LocationOption> {
+    fun addODZoneInfo(odMatrix: ODMatrix) : List<LocationOption> {
         val dummyZones = mutableListOf<LocationOption>()
 
         // Get buildings in every TAZ and add the TAZ to that building
         for (odRow in odMatrix.rows.values) {
-            val tazBuildings = mutableListOf<Building>()
+            val zoneBuildings = mutableListOf<Building>()
 
             fastCovers(odRow.geometry, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
                 ifNot = { },
                 ifDoes = { e ->
-                    tazBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) })
+                    zoneBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) })
                 },
                 ifUnsure = { e ->
-                    tazBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) }
+                    zoneBuildings.addAll(kdTree.query(e).map { ((it as KdNode).data as Building) }
                         .filter { odRow.geometry.contains(it.point) })
                 }
             )
 
             val activities = setOf(odRow.originActivity, odRow.destinationActivity)
 
-            if (tazBuildings.isEmpty()) {
+            if (zoneBuildings.isEmpty()) {
                 // Create dummy node for TAZ
                 val dummyLoc = DummyLocation(
                     coord = odRow.geometry.centroid.coordinate,
@@ -260,10 +309,12 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
                 )
                 dummyZones.add(dummyLoc)
             } else {
-                for (building in tazBuildings) {
-                    // Remember TAZ
+                for (building in zoneBuildings) {
+                    // Remember ODZone
                     building.odZone = odRow.origin
                 }
+                // Is zone in focus area?
+                odRow.origin.inFocusArea = zoneBuildings.any{ it.inFocusArea }
             }
         }
 
@@ -280,7 +331,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         require(activity in listOf(ActivityType.HOME, ActivityType.WORK, ActivityType.SCHOOL))
             {"Scaling origins is only implemented for fixed locations"}
 
-        val tazsInFocusArea = buildings.filter { it.inFocusArea }.mapNotNull { it.odZone }.distinct()
+        val odZonesInFocusArea = odMatrix.rows.keys.filter { it.inFocusArea }
 
         val factors = mutableMapOf<ODZone, Double>()
         val omodProbs = calcOMODProbsAsMap(activity)
@@ -292,8 +343,8 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             omodWeights[odRow.origin] = omodProbs.filter { it.key.odZone == odRow.origin }.values.sum()
             // Calculate OD-Matrix origin probability.
             var odWeight = 0.0
-            for (taz in tazsInFocusArea) {
-                odWeight += odRow.destinations[taz]!!
+            for (odZone in odZonesInFocusArea) {
+                odWeight += odRow.destinations[odZone]!!
             }
             odWeights[odRow.origin] = odWeight
         }
@@ -319,8 +370,6 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
         require(activities in setOf(Pair(ActivityType.HOME, ActivityType.WORK))) {
             "Only OD-Matrices with Activities HOME->WORK are currently supported"
         }
-
-        val tazsInFocusArea = buildings.filter { it.inFocusArea }.mapNotNull { it.odZone }.distinct()
         
         val factors = mutableMapOf<Pair<ODZone, ODZone>, Double>()
         val priorProbs = calcOMODProbs(activities.first)
@@ -341,7 +390,7 @@ class Omod(val buildings: List<Building>, odFile: File?, gridResolution: Double?
             // Calculate OD-Matrix origin probability.
             val odWeights = mutableMapOf<ODZone, Double>()
             for (destination in odRow.destinations.keys) {
-                odWeights[destination] = if ((destination in tazsInFocusArea) || (odRow.origin in tazsInFocusArea) ){
+                odWeights[destination] = if ((destination.inFocusArea) || (odRow.origin.inFocusArea) ){
                     odRow.destinations[destination]!!
                 } else {
                     0.0
