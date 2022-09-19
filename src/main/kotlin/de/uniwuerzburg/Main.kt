@@ -32,8 +32,8 @@ class Run : CliktCommand() {
         help="Number of days to simulate"
     ).int().default(1)
     private val start_wd by option(
-        help="First weekday to simulate"
-    ).choice(*weekdays.toTypedArray()).default("mo")
+        help="First weekday to simulate. IF undefined n undefined days are simulated."
+    ).choice(*weekdays.toTypedArray() + listOf("undefined")).default("mo")
     private val out by option (
         help="Output file, must end on .json"
     ).file().default(File("output.json"))
