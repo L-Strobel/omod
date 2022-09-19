@@ -17,9 +17,6 @@ import java.nio.file.Paths
 import java.util.*
 import kotlin.math.sqrt
 
-
-val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
-
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
  *
@@ -649,8 +646,13 @@ class Omod(
     fun run(n_agents: Int, start_wd: String = "mo", n_days: Int = 1) : List<MobiAgent> {
         val agents = createAgents(n_agents)
         val offset = weekdays.indexOf(start_wd)
+
         for (i in 0..n_days) {
-            val weekday = weekdays[(i + offset) % weekdays.size]
+            val weekday = if (start_wd =="undefined") {
+                "undefined"
+            } else {
+                weekdays[(i + offset) % weekdays.size]
+            }
             for (agent in agents) {
                 if (agent.profile == null) {
                     agent.profile = getMobilityProfile(agent, weekday)
