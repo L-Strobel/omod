@@ -17,6 +17,7 @@ import java.nio.file.Paths
 import java.util.*
 import kotlin.math.sqrt
 
+
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
  *
@@ -102,6 +103,9 @@ class Omod(
 
         // Create routing cache
         routingCache = RoutingCache(mode, hopper)
+        if (mode == RoutingMode.GRAPHHOPPER) {
+            routingCache.load(grid, cacheDir)
+        }
 
         // Calibration
         if (odFile != null) {
@@ -122,6 +126,8 @@ class Omod(
 
     // Factories
     companion object {
+        private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
+
         /**
          * Run quick and easy without any additional information
          */
@@ -154,8 +160,7 @@ class Omod(
             // Check cache
             val buildingsCollection: GeoJsonFeatureCollection
             if (cache and cachePath.toFile().exists()) {
-                buildingsCollection = Json{ ignoreUnknownKeys = true }
-                    .decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
+                buildingsCollection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
             } else {
                 // Load data from geojson files and PostgreSQL database with OSM data
                 buildingsCollection = createModelArea(
@@ -169,7 +174,7 @@ class Omod(
                 )
                 if (cache) {
                     Files.createDirectories(cachePath.parent)
-                    cachePath.toFile().writeText(Json{ encodeDefaults = true }.encodeToString(buildingsCollection))
+                    cachePath.toFile().writeText(json.encodeToString(buildingsCollection))
                 }
             }
             val geometryFactory = GeometryFactory()
@@ -189,8 +194,7 @@ class Omod(
         fun fromFile(file: File, mode: RoutingMode? = null, osmFile: File? = null,
                      odFile: File? = null, gridResolution: Double? = null,
                      seed: Long? = null, cacheDir: Path? = null) : Omod {
-            val buildingsCollection: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
-                .decodeFromString(file.readText(Charsets.UTF_8))
+            val buildingsCollection: GeoJsonFeatureCollection = json.decodeFromString(file.readText(Charsets.UTF_8))
 
             val geometryFactory = GeometryFactory()
             return Omod(
@@ -220,7 +224,7 @@ class Omod(
                 censusFile = censusFile,
                 regionTypeFile = regionTypeFile
             )
-            file.writeText(Json{ encodeDefaults = true }.encodeToString(buildingsCollection))
+            file.writeText(json.encodeToString(buildingsCollection))
         }
     }
 
