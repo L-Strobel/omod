@@ -150,7 +150,14 @@ fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations:
     val distances = mutableListOf<Double?>()
     for (destination in destinations) {
         val snap = preparedQGraph.snaps[destination]
-        distances.add(treeDistances[snap?.closestNode])
+
+        val distance = if (origin == destination) {
+            origin.avgDistanceToSelf
+        } else {
+            treeDistances[snap?.closestNode]
+        }
+
+        distances.add(distance)
     }
     return distances
 }
