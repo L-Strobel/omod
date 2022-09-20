@@ -20,6 +20,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.5.0")
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.graphhopper:graphhopper-core:5.3")
+    implementation("org.slf4j:slf4j-simple:2.0.0")
     testImplementation(kotlin("test"))
 }
 

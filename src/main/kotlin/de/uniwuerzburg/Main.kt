@@ -62,8 +62,8 @@ class Run : CliktCommand() {
               " to allow for short distance commutes. Unit: meters"
     ).double().default(0.0)
     private val seed by option(help = "Random seed to use. Like java.util.Random()").long()
-    private val cache by option(help = "Defines if the program caches the model area.")
-        .choice("true" to true, "false" to false).default(true)
+    // private val cache by option(help = "Defines if the program caches the model area.")
+    //     .choice("true" to true, "false" to false).default(true)
     private val cache_dir by option(help = "Location of cache.")
         .path(canBeDir = true, canBeFile = false).default(Paths.get("omod_cache/"))
 
@@ -85,7 +85,7 @@ class Run : CliktCommand() {
                 mode = routing_mode, osmFile = osm_file,
                 odFile = od, censusFile = census, regionTypeFile = region_types,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
-                cache = cache, cacheDir = cache_dir
+                cache = true, cacheDir = cache_dir
             )
         }
         println("Loading data took: $timeRead")
