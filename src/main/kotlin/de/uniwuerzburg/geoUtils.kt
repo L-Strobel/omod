@@ -2,6 +2,14 @@ package de.uniwuerzburg
 
 import com.graphhopper.GHRequest
 import com.graphhopper.GraphHopper
+import com.graphhopper.isochrone.algorithm.ShortestPathTree
+import com.graphhopper.routing.ev.Subnetwork
+import com.graphhopper.routing.querygraph.QueryGraph
+import com.graphhopper.routing.util.DefaultSnapFilter
+import com.graphhopper.routing.util.TraversalMode
+import com.graphhopper.routing.weighting.FastestWeighting
+import com.graphhopper.routing.weighting.Weighting
+import com.graphhopper.storage.index.Snap
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
@@ -85,11 +93,64 @@ fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: Gra
         req.profile = "car"
         val rsp = hopper.route(req)
 
-        // If routing didn't work fall back to beeline
-        if (rsp.hasErrors()) {
-            origin.coord.distance(destination.coord)
-        } else {
-            rsp.best.distance
+        rsp.best.distance
+    }
+}
+
+data class PreparedQGraph (
+    val queryGraph: QueryGraph,
+    val weighting: Weighting,
+    val snaps: Map<LocationOption, Snap>
+)
+
+fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph{
+    val encodingManager = hopper.encodingManager
+    val encoder = encodingManager.getEncoder("car")
+    val weighting = FastestWeighting(encoder)
+
+    val snaps = mutableMapOf<LocationOption, Snap>()
+    for (loc in locsToSnap) {
+        snaps[loc] = hopper.locationIndex.findClosest(
+            loc.latlonCoord.x,
+            loc.latlonCoord.y,
+            DefaultSnapFilter(weighting, encodingManager.getBooleanEncodedValue(Subnetwork.key("car")))
+        )
+    }
+    val queryGraph = QueryGraph.create(hopper.graphHopperStorage.baseGraph, snaps.values.toList())
+    return PreparedQGraph(queryGraph, weighting, snaps)
+}
+
+fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<Double?> {
+    require(preparedQGraph.snaps[origin] != null) { "Origin must be snapped to query graph" }
+
+    // Get estimate of max distance for speed up
+    val maxDistanceBeeline = destinations.maxOf { calcDistanceBeeline(origin, it) }
+
+    // Build shortest path tree
+    val tree = ShortestPathTree(
+        preparedQGraph.queryGraph,
+        preparedQGraph.weighting,
+        false,
+        TraversalMode.NODE_BASED
+    )
+
+    // Reduce tree. I hope routing distances are almost never twice as long as the beeline.
+    tree.setDistanceLimit(maxDistanceBeeline * 2)
+
+    // Query
+    val snapIDs = preparedQGraph.snaps.values.map { it.closestNode }.toSet()
+    val treeDistances = mutableMapOf<Int, Double>()
+    tree.search(preparedQGraph.snaps[origin]!!.closestNode) { label ->
+        if (label.node in snapIDs) {
+            treeDistances[label.node] = label.distance
         }
     }
+
+    // Format information
+    val distances = mutableListOf<Double?>()
+    for (destination in destinations) {
+        val snap = preparedQGraph.snaps[destination]
+        distances.add(treeDistances[snap?.closestNode])
+    }
+    return distances
 }
