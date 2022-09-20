@@ -83,7 +83,8 @@ class RoutingCache(
                     for ((i, destination) in locations.withIndex()) {
                         if (destination is DummyLocation) { continue }
                         if (oTable[destination] != null)  { continue }
-                        oTable[destination] = distances[i]!!.toFloat()
+
+                        oTable[destination] = distances[i]?.toFloat() ?: calcDistance(origin, destination).toFloat()
                     }
                 }
             }
@@ -187,46 +188,4 @@ class RoutingCache(
         }
         return OOMCacheFormat(coords, matrix)
     }
-
-    /*@OptIn(ExperimentalTime::class)
-    fun fromCache (cachePath: Path, locations: List<LocationOption>) {
-        val fis = FileInputStream(cachePath.toFile())
-        val ois = ObjectInputStream(fis)
-        val (frmtTable, time) = measureTimedValue {
-            ois.readObject() as Map<String, Map<String, Float>>
-        }
-        println(time)
-        // @Suppress("UNCHECKED_CAST")
-        //val frmtTable = ois.readObject() as Map<Coordinate, Map<Coordinate, Float>>
-
-        for (origin in locations) {
-            val cachedDestinations = frmtTable[makeKeyFromCoord(origin.latlonCoord)]
-            assert(cachedDestinations != null)
-
-            val oTable  = if (!table.containsKey(origin)) {
-                table[origin] = MaxSizeHashMap(sizeLimitSecTable)
-                table[origin]!!
-            } else {
-                table[origin]!!
-            }
-
-            for (destination in locations) {
-                val value = cachedDestinations!![makeKeyFromCoord(destination.latlonCoord)]
-                assert(value != null)
-
-                oTable[destination] = value!!
-            }
-        }
-    }*/
-
-    /*private fun formatForCache(table: HashMap<LocationOption, HashMap<LocationOption, Float>>) :
-            Map<String, Map<String, Float>> {
-        val frmtTable = table.mapKeys { makeKeyFromCoord(it.key.latlonCoord) }
-        return frmtTable.mapValues { i -> i.value.mapKeys { j -> makeKeyFromCoord(j.key.latlonCoord) } }
-    }
-
-     private fun makeKeyFromCoord(coordinate: Coordinate): String {
-        return coordinate.x.toString() + coordinate.y.toString()
-    }
-    */
 }
