@@ -89,6 +89,9 @@ class Omod(
 
         // Create grid (used for speed up)
         grid = makeGrid(gridResolution)
+        for (cell in grid) {
+            cell.buildings.forEach { it.cell = cell }
+        }
 
         // Create graphhopper
         hopper = if (mode == RoutingMode.GRAPHHOPPER) {
@@ -257,8 +260,6 @@ class Omod(
                     buildings = cellBuildings,
                 )
 
-                cellBuildings.forEach { it.cell = cell }
-
                 grid.add(cell)
                 id += 1
             }
@@ -425,8 +426,7 @@ class Omod(
      * @param n number of agents in focus area
      * @param inputPopDef sociodemographic distribution of the agents. If null the distributions in Population.json are used.
      */
-    fun createAgents(n: Int, inputPopDef: Map<String, Map<String,
-                     Double>>? = null): List<MobiAgent> {
+    fun createAgents(n: Int, inputPopDef: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
         val agents = mutableListOf<MobiAgent>()
 
         // Get sociodemographic features
