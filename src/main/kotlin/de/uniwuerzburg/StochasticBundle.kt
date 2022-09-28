@@ -83,3 +83,7 @@ class LogNorm(val shape: Double, val scale: Double) {
         }
     }
 }
+
+object DestinationChoiceMN {
+
+}

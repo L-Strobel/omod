@@ -34,7 +34,7 @@ class RoutingCache(
             cacheDir.toString(),
             "routing-matrix-cache",
             "RoutingMode${mode}NCells${locations.size}" +
-            "GridBounds${listOf(latMin, latMax, lonMin, lonMax).toString().replace(" ", "")}"
+                    "GridBounds${listOf(latMin, latMax, lonMin, lonMax).toString().replace(" ", "")}"
         )
         // Fill cache
         if (cachePath.toFile().exists()) {
