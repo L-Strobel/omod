@@ -42,6 +42,9 @@ interface AggregateLocation : LocationOption
  * @param regionType RegioStar7 of the municipality
  */
 class Building  (
+    @Suppress("unused")
+    val osmID: Int,
+
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
     override val regionType: Int,
@@ -76,7 +79,7 @@ class Building  (
                 val point = it.geometry.toJTS(geometryFactory).centroid
 
                 Building(
-                    // osmID = properties.osm_id,
+                    osmID = properties.osm_id,
                     coord = point.coordinate,
                     latlonCoord = mercatorToLatLon(point.coordinate.x, point.coordinate.y),
                     area = properties.area,
