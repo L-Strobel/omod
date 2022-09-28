@@ -3,11 +3,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.5.10"
     kotlin("plugin.serialization") version "1.5.10"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("java")
     application
 }
 
 group = "de.uniwuerzburg"
-version = "0.3"
+version = "0.5"
 
 repositories {
     mavenCentral()
@@ -32,6 +34,10 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
+tasks.shadowJar {
+    relocate("com.graphhopper", "com.graphhopper.shadow")
+}
+
 application {
-    mainClass.set("MainKt")
+    mainClass.set("de.uniwuerzburg.MainKt")
 }
