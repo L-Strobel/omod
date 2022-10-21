@@ -173,7 +173,7 @@ fun readOSMDataFromPG (db_url: String, db_user: String, db_password: String,
     }
 
     // Get POIs
-    val shops = executePOIQuery("AND shop IS NOT null", POIType.SHOP, fullAreaWKT,
+    val shops = executePOIQuery("AND shop IS NOT NULL", POIType.SHOP, fullAreaWKT,
         areaSRID, stmt, geometryFactory)
     val offices = executePOIQuery("AND office IS NOT NULL", POIType.OFFICE, fullAreaWKT,
         areaSRID, stmt, geometryFactory)

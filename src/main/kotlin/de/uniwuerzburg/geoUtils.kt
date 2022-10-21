@@ -100,7 +100,8 @@ fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: Gra
 data class PreparedQGraph (
     val queryGraph: QueryGraph,
     val weighting: Weighting,
-    val snaps: Map<LocationOption, Snap>
+    val locNodes: Map<LocationOption, Int>,
+    val snapNodes: Set<Int>
 )
 
 fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph{
@@ -108,20 +109,29 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
     val encoder = encodingManager.getEncoder("car")
     val weighting = FastestWeighting(encoder)
 
-    val snaps = mutableMapOf<LocationOption, Snap>()
+    val snaps = mutableListOf<Snap>()
+    val locNodes = mutableMapOf<LocationOption, Int>()
+    val snapNodes = mutableSetOf<Int>()
     for (loc in locsToSnap) {
-        snaps[loc] = hopper.locationIndex.findClosest(
+        val snap = hopper.locationIndex.findClosest(
             loc.latlonCoord.x,
             loc.latlonCoord.y,
             DefaultSnapFilter(weighting, encodingManager.getBooleanEncodedValue(Subnetwork.key("car")))
         )
+        if (snap.isValid) {
+            snaps.add(snap)
+
+            val node = snap.closestNode
+            snapNodes.add(node)
+            locNodes[loc] = node
+        }
     }
-    val queryGraph = QueryGraph.create(hopper.graphHopperStorage.baseGraph, snaps.values.toList())
-    return PreparedQGraph(queryGraph, weighting, snaps)
+    val queryGraph = QueryGraph.create(hopper.graphHopperStorage.baseGraph, snaps)
+    return PreparedQGraph(queryGraph, weighting, locNodes, snapNodes)
 }
 
 fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<Double?> {
-    require(preparedQGraph.snaps[origin] != null) { "Origin must be snapped to query graph" }
+    val originNode = preparedQGraph.locNodes[origin]!! // Origin must be snapped to query graph
 
     // Get estimate of max distance for speed up
     val maxDistanceBeeline = destinations.maxOf { calcDistanceBeeline(origin, it) }
@@ -138,10 +148,9 @@ fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations:
     tree.setDistanceLimit(maxDistanceBeeline * 2)
 
     // Query
-    val snapIDs = preparedQGraph.snaps.values.map { it.closestNode }.toSet()
     val treeDistances = mutableMapOf<Int, Double>()
-    tree.search(preparedQGraph.snaps[origin]!!.closestNode) { label ->
-        if (label.node in snapIDs) {
+    tree.search(originNode) { label ->
+        if (label.node in preparedQGraph.snapNodes) {
             treeDistances[label.node] = label.distance
         }
     }
@@ -149,12 +158,12 @@ fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations:
     // Format information
     val distances = mutableListOf<Double?>()
     for (destination in destinations) {
-        val snap = preparedQGraph.snaps[destination]
+        val destinationNode = preparedQGraph.locNodes[destination]
 
         val distance = if (origin == destination) {
             origin.avgDistanceToSelf
         } else {
-            treeDistances[snap?.closestNode]
+            treeDistances[destinationNode]
         }
 
         distances.add(distance)
