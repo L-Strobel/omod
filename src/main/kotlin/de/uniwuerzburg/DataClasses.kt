@@ -21,24 +21,6 @@ fun PopulationDef(map: Map<String, Map<String, Double>>): PopulationDef{
 }
 
 /**
- * Distance distributions from MID 2017
- */
-@Serializable
-data class DistanceDistributions(
-    val home_work: Map<Int, Distribution>,
-    val home_school: Map<Int, Distribution>,
-    val any_shopping: Map<Int, Distribution>,
-    val any_other: Map<Int, Distribution>
-) {
-    @Serializable
-    data class Distribution(
-        val distribution: String,
-        val shape: Double,
-        val scale: Double
-    )
-}
-
-/**
  * Landuse categories. For work and home probabilities
  */
 enum class Landuse {

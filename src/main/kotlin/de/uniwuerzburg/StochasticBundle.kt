@@ -3,7 +3,6 @@ package de.uniwuerzburg
 import org.apache.commons.math3.linear.Array2DRowRealMatrix
 import org.apache.commons.math3.linear.CholeskyDecomposition
 import java.util.*
-import kotlin.math.*
 
 // Create cumulative distribution from weights
 @Suppress("unused")
@@ -60,30 +59,4 @@ fun sampleNDGaussian(means: DoubleArray, covariances: Array<DoubleArray>, rng: R
         x[i] += means[i]
     }
     return x
-}
-
-/**
- * Lognormal distribution
- * @param shape Shape parameter as defined by scipy
- * @param scale Scale parameter as defined by scipy
- */
-@Suppress("MemberVisibilityCanBePrivate")
-class LogNorm(val shape: Double, val scale: Double) {
-    @Suppress("unused")
-    fun sample(rng: Random): Double {
-        return exp(rng.nextGaussian() * shape) * scale
-    }
-    fun density(x: Double): Double{
-        require(x >= 0) { "x must be positive! Given value for x: $x"}
-        return if (x == 0.0) {
-            0.0 // Lognormal distribution converges to zero at zero
-        } else {
-            val xScaled = x / scale
-            1 / (shape * xScaled * sqrt(2 * PI)) * exp(- ln(xScaled).pow(2) / (2 * shape.pow(2))) / scale
-        }
-    }
-}
-
-object DestinationChoiceMN {
-
 }

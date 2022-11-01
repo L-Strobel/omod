@@ -11,15 +11,11 @@ import org.locationtech.jts.geom.Point
 interface LocationOption {
     val coord: Coordinate
     val latlonCoord: Coordinate
-    val homeWeight: Double
-    val workWeight: Double
-    val schoolWeight: Double
-    val shoppingWeight: Double
-    val otherWeight: Double
     val regionType: Int
     var odZone: ODZone?
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
+    fun getPriorWeightFor(activityType: ActivityType) : Double
 }
 
 /**
@@ -61,12 +57,17 @@ class Building  (
     val nSchools: Double,
     var cell: Cell? = null
 ) : LocationOption, RealLocation {
-    override val workWeight = nShops + nOffices + landuse.getWorkWeight()
-    override val homeWeight = population ?: 1.0
-    override val schoolWeight = nSchools
-    override val shoppingWeight = nShops
-    override val otherWeight = 1.0
     override val avgDistanceToSelf = 0.0
+
+    override fun getPriorWeightFor(activityType: ActivityType): Double {
+        return when(activityType) {
+            ActivityType.HOME -> population ?: 1.0
+            ActivityType.WORK -> nShops + nOffices + landuse.getWorkWeight()
+            ActivityType.SCHOOL -> nSchools
+            ActivityType.SHOPPING -> nShops
+            else -> 1.0
+        }
+    }
 
     companion object {
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory): List<Building> {
@@ -122,16 +123,26 @@ data class Cell (
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
 
     // Sum
-    override val homeWeight = buildings.sumOf { it.homeWeight }
-    override val workWeight = buildings.sumOf { it.workWeight }
-    override val schoolWeight = buildings.sumOf { it.schoolWeight }
-    override val shoppingWeight = buildings.sumOf { it.shoppingWeight }
-    override val otherWeight = buildings.sumOf { it.otherWeight }
+    val homeWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.HOME) }
+    val workWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.WORK) }
+    val schoolWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.SCHOOL) }
+    val shoppingWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.SHOPPING) }
+    val otherWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.OTHER) }
 
     override val inFocusArea = buildings.any { it.inFocusArea }
 
     override fun hashCode(): Int {
         return id
+    }
+
+    override fun getPriorWeightFor(activityType: ActivityType): Double {
+        return when(activityType) {
+            ActivityType.HOME -> homeWeight
+            ActivityType.WORK -> workWeight
+            ActivityType.SCHOOL -> schoolWeight
+            ActivityType.SHOPPING -> shoppingWeight
+            else -> otherWeight
+        }
     }
 
     /**
@@ -167,15 +178,27 @@ data class Cell (
  */
 data class DummyLocation (
     override val coord: Coordinate,
-    override val homeWeight: Double,
-    override val workWeight: Double,
-    override val schoolWeight: Double,
-    override val shoppingWeight: Double,
-    override val otherWeight: Double,
+    val homeWeight: Double,
+    val workWeight: Double,
+    val schoolWeight: Double,
+    val shoppingWeight: Double,
+    val otherWeight: Double,
     override var odZone: ODZone?
 ) : LocationOption, AggregateLocation {
     override val regionType = 0 // 0 means undefined
     override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
     override val latlonCoord = mercatorToLatLon(coord.x, coord.y)
     override val inFocusArea = false
+
+    override fun getPriorWeightFor(activityType: ActivityType): Double {
+        return when(activityType) {
+            ActivityType.HOME -> homeWeight
+            ActivityType.WORK -> workWeight
+            ActivityType.SCHOOL -> schoolWeight
+            ActivityType.SHOPPING -> shoppingWeight
+            else -> otherWeight
+        }
+    }
+
+
 }
