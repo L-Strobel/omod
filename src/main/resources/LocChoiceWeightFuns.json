@@ -1,0 +1,26 @@
+[
+    {
+        "type": "CombinedPowerExpon",
+        "destActivity": "WORK",
+        "coeff0": -0.04354018,
+        "coeff1": -0.52442676
+    },
+    {
+        "type": "LogNorm",
+        "destActivity": "SCHOOL",
+        "coeff0": -0.21108726,
+        "coeff1": -1.26654197
+    },
+    {
+        "type": "LogNorm",
+        "destActivity": "SHOPPING",
+        "coeff0": -0.20279374,
+        "coeff1": -1.53184668
+    },
+    {
+        "type": "LogNorm",
+        "destActivity": "OTHER",
+        "coeff0": -0.21586951,
+        "coeff1": -1.19128006
+    }
+]
