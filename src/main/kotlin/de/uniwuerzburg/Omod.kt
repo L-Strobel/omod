@@ -41,7 +41,7 @@ class Omod(
     private val secondOrderCFactors = mutableMapOf<Pair<ActivityType, ActivityType>, Map<Pair<ODZone, ODZone>, Double>>()
     private val populationDef: PopulationDef
     private val activityDataMap: ActivityDataMap
-    private val distanceDists: DistanceDistributions
+    private val locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
     private val rng: Random = if (seed != null) Random(seed) else Random()
     private val hopper: GraphHopper?
     private val routingCache: RoutingCache
@@ -78,8 +78,9 @@ class Omod(
         activityDataMap = ActivityDataMap(activityGroups)
 
         // Get distance distributions
-        val distrTxt = Omod::class.java.classLoader.getResource("DistanceDistributions.json")!!.readText(Charsets.UTF_8)
-        distanceDists = Json.decodeFromString(distrTxt)
+        val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
+        locChoiceWeightFuns = Json.decodeFromString<List<LocationChoiceDCWeightFun>>(distrTxt)
+            .associateBy { it.destActivity }
 
         // Create KD-Tree for faster access
         kdTree = KdTree()
@@ -717,73 +718,54 @@ class Omod(
     }
     fun getWeights(origin: LocationOption, destinations: List<LocationOption>,
                    activityType: ActivityType): List<Double> {
-        return when(activityType) {
-            ActivityType.HOME -> getWeightsNoOrigin(destinations, ActivityType.HOME)
-            ActivityType.WORK -> {
-                val priors = getWeightsNoOrigin(destinations, ActivityType.WORK)
-                val distances = calcDistances(origin, destinations)
-                val distObj = distanceDists.home_work[origin.regionType]!!
-                val distr = LogNorm(distObj.shape, distObj.scale)
-                destinations.mapIndexed { i, destination ->
-                    val foFactor = firstOrderCFactors[ActivityType.WORK]?.get(destination.odZone) ?: 1.0
-                    val soFactor = secondOrderCFactors[Pair(ActivityType.HOME, ActivityType.WORK)]
-                        ?.get(Pair(origin.odZone, destination.odZone)) ?: 1.0
-                    foFactor * soFactor * priors[i] * distr.density(distances[i].toDouble())
-                }
-            }
-            ActivityType.SCHOOL -> {
-                val priors = getWeightsNoOrigin(destinations, ActivityType.SCHOOL)
-                val distances = calcDistances(origin, destinations)
-                val distObj = distanceDists.home_school[origin.regionType]!!
-                val distr = LogNorm(distObj.shape, distObj.scale)
-                List (destinations.size){ i ->
-                    priors[i] * distr.density(distances[i].toDouble())
-                }
-            }
-            ActivityType.SHOPPING -> {
-                // Flexible activities don't leave dummy location except OD-Matrix defines it
-                if ((origin is DummyLocation) && (origin.shoppingWeight == 0.0) ) {
-                    destinations.map { if (origin == it)  1.0 else 0.0 }
-                    // Normal case
-                } else {
-                    val priors = getWeightsNoOrigin(destinations, ActivityType.SHOPPING)
-                    val distances = calcDistances(origin, destinations)
-                    val distObj = distanceDists.any_shopping[origin.regionType]!!
-                    val distr = LogNorm(distObj.shape, distObj.scale)
-                    List(destinations.size) { i ->
-                        priors[i] * distr.density(distances[i].toDouble())
-                    }
-                }
-            }
-            else -> {
-                // Flexible activities don't leave dummy location except OD-Matrix defines it
-                if ((origin is DummyLocation) && (origin.otherWeight == 0.0) ) {
-                    destinations.map { if (origin == it)  1.0 else 0.0 }
-                    // Normal case
-                } else {
-                    val priors = getWeightsNoOrigin(destinations, ActivityType.OTHER)
-                    val distances = calcDistances(origin, destinations)
-                    val distObj = distanceDists.any_other[origin.regionType]!!
-                    val distr = LogNorm(distObj.shape, distObj.scale)
-                    List(destinations.size) { i ->
-                        priors[i] * distr.density(distances[i].toDouble())
-                    }
-                }
+        val activity = when(activityType) {
+            ActivityType.HOME -> throw NotImplementedError("For HOME activities call getWeightsNoOrigin()!")
+            ActivityType.WORK -> ActivityType.WORK
+            ActivityType.SCHOOL -> ActivityType.SCHOOL
+            ActivityType.SHOPPING -> ActivityType.SHOPPING
+            else -> ActivityType.OTHER
+        }
+
+        // Flexible activities don't leave dummy location except OD-Matrix defines it
+        if (origin is DummyLocation) {
+            if (((activity == ActivityType.SHOPPING) && (origin.shoppingWeight == 0.0)) ||
+                ((activity == ActivityType.OTHER)    && (origin.otherWeight == 0.0))) {
+                return destinations.map { if (origin == it)  1.0 else 0.0 }
             }
         }
+
+        val distances = calcDistances(origin, destinations)
+        val weightFunction = locChoiceWeightFuns[activity]!!
+
+       return if (activity == ActivityType.WORK) {
+           destinations.mapIndexed { i, destination ->
+               val foFactor = firstOrderCFactors[activityType]?.get(destination.odZone) ?: 1.0
+               val soFactor = secondOrderCFactors[Pair(ActivityType.HOME, activityType)]
+                   ?.get(Pair(origin.odZone, destination.odZone)) ?: 1.0
+               val distance = distances[i].toDouble()
+               foFactor * soFactor * weightFunction.calcFor(destination, distance)
+           }
+        } else {
+           destinations.mapIndexed { i, destination ->
+               val distance = distances[i].toDouble()
+               weightFunction.calcFor(destination, distance)
+           }
+        }
     }
+
     fun getWeightsNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : List<Double> {
         return when(activityType) {
             ActivityType.HOME -> {
                 destinations.map { destination ->
                     val foFactor = firstOrderCFactors[activityType]?.get(destination.odZone) ?: 1.0
-                    foFactor * destination.homeWeight
+                    foFactor * destination.getPriorWeightFor(activityType)
                 }
             }
-            ActivityType.WORK -> destinations.map { it.workWeight }
-            ActivityType.SCHOOL -> destinations.map { it.schoolWeight }
-            ActivityType.SHOPPING -> destinations.map { it.shoppingWeight }
-            else -> destinations.map { it.otherWeight }
+            ActivityType.WORK -> destinations.map { destination ->
+                val foFactor = firstOrderCFactors[activityType]?.get(destination.odZone) ?: 1.0
+                foFactor * destination.getPriorWeightFor(activityType)
+            }
+            else -> destinations.map { it.getPriorWeightFor(activityType) }
         }
     }
 
