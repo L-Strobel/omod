@@ -199,6 +199,4 @@ data class DummyLocation (
             else -> otherWeight
         }
     }
-
-
 }

@@ -25,7 +25,7 @@ data class LogNormDCUtil (
         val distanceAdj = if (distance == 0.0) {
             Double.MIN_VALUE
         } else {
-            distance
+            distance / 1000
         }
         val v = coeff0 * ln(distanceAdj) * ln(distanceAdj) + coeff1 * ln(distanceAdj)
         val choices = destination.getPriorWeightFor(destActivity)
@@ -46,7 +46,7 @@ data class CombinedDCUtil(
         val distanceAdj = if (distance == 0.0) {
             Double.MIN_VALUE
         } else {
-            distance
+            distance / 1000
         }
         val v = coeff0 * distanceAdj  + coeff1 * ln(distanceAdj)
         val choices = destination.getPriorWeightFor(destActivity)
