@@ -11,7 +11,6 @@ import org.locationtech.jts.geom.Point
 interface LocationOption {
     val coord: Coordinate
     val latlonCoord: Coordinate
-    val regionType: Int
     var odZone: ODZone?
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
@@ -35,7 +34,6 @@ interface AggregateLocation : LocationOption
  * @param area area of the building in meters
  * @param population population of building. Can be non-integer.
  * @param landuse OSM-Landuse of the building
- * @param regionType RegioStar7 of the municipality
  */
 class Building  (
     @Suppress("unused")
@@ -43,7 +41,6 @@ class Building  (
 
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
-    override val regionType: Int,
     override var odZone: ODZone?,
     override val inFocusArea: Boolean,
 
@@ -86,7 +83,6 @@ class Building  (
                     area = properties.area,
                     population = properties.population,
                     landuse = Landuse.valueOf(properties.landuse),
-                    regionType = properties.region_type,
                     nShops = properties.number_shops,
                     nOffices = properties.number_offices,
                     nSchools = properties.number_schools,
@@ -115,9 +111,6 @@ data class Cell (
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
     override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
-
-    // Most common region type
-    override val regionType = buildings.groupingBy { it.regionType }.eachCount().maxByOrNull { it.value }!!.key
 
     // Most common taz (Normally null here)
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
@@ -160,7 +153,6 @@ data class Cell (
         if (buildings != other.buildings) return false
         if (avgDistanceToSelf != other.avgDistanceToSelf) return false
         if (latlonCoord != other.latlonCoord) return false
-        if (regionType != other.regionType) return false
         if (odZone != other.odZone) return false
         if (homeWeight != other.homeWeight) return false
         if (workWeight != other.workWeight) return false
@@ -185,7 +177,6 @@ data class DummyLocation (
     val otherWeight: Double,
     override var odZone: ODZone?
 ) : LocationOption, AggregateLocation {
-    override val regionType = 0 // 0 means undefined
     override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
     override val latlonCoord = mercatorToLatLon(coord.x, coord.y)
     override val inFocusArea = false
