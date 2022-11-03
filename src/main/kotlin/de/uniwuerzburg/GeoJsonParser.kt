@@ -63,7 +63,6 @@ sealed class GeoJsonProperties
 @SerialName("BuildingEntree")
 data class GeoJsonBuildingProperties (
     val osm_id: Int,
-    val region_type: Int,
     val in_focus_area: Boolean,
     val area: Double,
     val population: Double?,
@@ -87,12 +86,6 @@ data class GeoJsonODProperties (
 @SerialName("CensusEntry")
 data class GeoJsonCensusProperties (
     val population: Double
-) : GeoJsonProperties()
-
-@Serializable
-@SerialName("RegionTypeEntry")
-data class GeoJsonRTProperties (
-    val region_type: Int
 ) : GeoJsonProperties()
 
 // Basic structure

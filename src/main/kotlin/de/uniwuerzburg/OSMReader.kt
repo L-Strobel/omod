@@ -26,7 +26,6 @@ data class OSMBuilding(
     var nUnis: Double = 0.0
     var inFocusArea: Boolean = false
     var population: Double? = null
-    var regionType: Int = 0
 }
 
 data class OSMLanduse(
@@ -244,7 +243,7 @@ fun readOSMDataFromPG (db_url: String, db_user: String, db_password: String,
 
 fun createModelArea(dbUrl: String, dbUser: String, dbPassword: String,
                     areaOsmIds: List<Int>, bufferRadius: Double = 0.0,
-                    censusFile: File? = null, regionTypeFile: File? = null): GeoJsonFeatureCollection {
+                    censusFile: File? = null): GeoJsonFeatureCollection {
     val geometryFactory = GeometryFactory()
 
     val osmBuildings = readOSMDataFromPG(dbUrl, dbUser, dbPassword, areaOsmIds, bufferRadius)
@@ -256,9 +255,9 @@ fun createModelArea(dbUrl: String, dbUser: String, dbPassword: String,
     }
 
     // Add census data if available
+    val json = Json { ignoreUnknownKeys = true }
     if (censusFile != null) {
-        val censusData: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
-            .decodeFromString(censusFile.readText(Charsets.UTF_8))
+        val censusData: GeoJsonFeatureCollection = json.decodeFromString(censusFile.readText(Charsets.UTF_8))
 
         for (censusEntree in censusData.features) {
             val population = (censusEntree.properties as GeoJsonCensusProperties).population
@@ -274,25 +273,6 @@ fun createModelArea(dbUrl: String, dbUser: String, dbPassword: String,
         }
     }
 
-    // Add region type data if available
-    if (regionTypeFile != null) {
-        val regionTypeData: GeoJsonFeatureCollection = Json{ ignoreUnknownKeys = true }
-            .decodeFromString(regionTypeFile.readText(Charsets.UTF_8))
-
-        for (regionTypeEntree in regionTypeData.features) {
-            val regionType = (regionTypeEntree.properties as GeoJsonRTProperties).region_type
-            val regionGeom = regionTypeEntree.geometry.toJTS(geometryFactory)
-
-            val intersectingBuildings = buildingsTree.query(regionGeom.envelopeInternal)
-                .map { it as OSMBuilding }
-                .filter { it.geometry.intersects(regionGeom) }
-
-            for (building in intersectingBuildings) {
-                building.regionType = regionType
-            }
-        }
-    }
-
     val outBuildings = GeoJsonFeatureCollection(
         features = osmBuildings.map {
             val center = it.geometry.centroid
@@ -301,7 +281,6 @@ fun createModelArea(dbUrl: String, dbUser: String, dbPassword: String,
 
             val properties = GeoJsonBuildingProperties(
                 osm_id = it.osm_id,
-                region_type = it.regionType,
                 in_focus_area = it.inFocusArea,
                 area = it.area,
                 population = it.population,

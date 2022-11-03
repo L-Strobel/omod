@@ -50,10 +50,6 @@ class Run : CliktCommand() {
         help="Path to population census in geojson format. For example see regional_inputs/." +
               "Should cover the entire area, but can cover more"
     ).file(mustExist = true, mustBeReadable = true)
-    private val region_types by option(
-        help="Path to region type information in geojson format. For example see regional_inputs/." +
-             "Can only cover parts of the area."
-    ).file(mustExist = true, mustBeReadable = true)
     private val grid_res by option(
         help="Size of the grid cells used for quicker sampling. The 500m default is suitable in most cases. Unit: meters"
     ).double().default(500.0)
@@ -73,7 +69,7 @@ class Run : CliktCommand() {
         /*
         val omod = Omod.fromPG(
             db_url, db_user, db_password, area_osm_ids,
-            odFile = od, censusFile = census, regionTypeFile = region_types,
+            odFile = od, censusFile = census,
             gridResolution = grid_res, bufferRadius = buffer, seed = seed,
             cache = cache, cachePath = cache_path
         )
@@ -83,7 +79,7 @@ class Run : CliktCommand() {
             Omod.fromPG(
                 db_url, db_user, db_password, area_osm_ids,
                 mode = routing_mode, osmFile = osm_file,
-                odFile = od, censusFile = census, regionTypeFile = region_types,
+                odFile = od, censusFile = census,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
                 cache = true, cacheDir = cache_dir
             )
@@ -108,7 +104,6 @@ fun main() {
             "postgres",
             "password",
             listOf(62428),
-            regionTypeFile = File("C:/Users/strobel/Projekte/esmregio/Daten/InputOMOD/region_types.geojson"),
             bufferRadius = 5000.0,
         )
     }
