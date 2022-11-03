@@ -142,22 +142,20 @@ class Omod(
                           cache = true, cacheDir = Paths.get("omod_cache/"),
                           odFile = null, gridResolution = null, seed = null,
                           bufferRadius = 0.0,
-                          censusFile = null, regionTypeFile = null
+                          censusFile = null
             )
         }
         fun fromPG(
             dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
             mode: RoutingMode? = null, osmFile: File? = null,
             odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
-            censusFile: File? = null, regionTypeFile: File? = null,
+            censusFile: File? = null,
             bufferRadius: Double = 0.0,
             cache: Boolean = true, cacheDir: Path = Paths.get("omod_cache/"),
         ): Omod {
             val cachePath = Paths.get(cacheDir.toString(),
                 "osmBuildingsFor${areaOsmIds.sorted().toString().replace(" ", "")}" +
                        "Buffer${bufferRadius}" +
-                       "WithRegionTypes${regionTypeFile != null}" +
-                       "WithRegionTypes${regionTypeFile != null}" +
                        "WithCensus${censusFile != null}" +
                        ".geojson"
             )
@@ -173,8 +171,7 @@ class Omod(
                     dbPassword = dbPassword,
                     areaOsmIds = areaOsmIds,
                     bufferRadius = bufferRadius,
-                    censusFile = censusFile,
-                    regionTypeFile = regionTypeFile
+                    censusFile = censusFile
                 )
                 if (cache) {
                     Files.createDirectories(cachePath.parent)
@@ -215,7 +212,7 @@ class Omod(
         @Suppress("unused")
         fun makeFileFromPG(file: File, dbUrl: String, dbUser: String, dbPassword: String,
                            areaOsmIds: List<Int>,
-                           censusFile: File? = null, regionTypeFile: File? = null,
+                           censusFile: File? = null,
                            bufferRadius: Double = 0.0
         ) {
             // Load data from geojson files and PostgreSQL database with OSM data
@@ -225,8 +222,7 @@ class Omod(
                 dbPassword = dbPassword,
                 areaOsmIds = areaOsmIds,
                 bufferRadius = bufferRadius,
-                censusFile = censusFile,
-                regionTypeFile = regionTypeFile
+                censusFile = censusFile
             )
             file.writeText(json.encodeToString(buildingsCollection))
         }
