@@ -83,7 +83,7 @@ fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : D
 /**
  * Calculate the distance between two locations using a car
  */
-fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : Double {
+fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : Double? {
     return if (origin == destination) {
         origin.avgDistanceToSelf // 0.0 for Buildings
     } else {
@@ -97,10 +97,7 @@ fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: Gra
         val rsp = hopper.route(req)
 
         if (rsp.hasErrors()) {
-            logger.warn(
-                "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Substituted with Beeline."
-            )
-            calcDistanceBeeline(origin, destination)
+            return null
         } else {
             rsp.best.distance
         }
@@ -143,17 +140,16 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
 }
 
 fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<Double?> {
-    val beelineDists = destinations.map { calcDistanceBeeline(origin, it) }
-
     val originNode = preparedQGraph.locNodes[origin]
 
+    // Origin node must be in graph
     if (originNode == null) {
         logger.warn("Origin: ${origin.latlonCoord} was not in the prepared graph.")
-        return beelineDists
+        return List(destinations.size) { null }
     }
 
     // Get estimate of max distance for speed up
-    val maxDistanceBeeline: Double = beelineDists.maxOrNull() ?: 0.0
+    val maxDistanceBeeline = destinations.maxOf { calcDistanceBeeline(origin, it) }
 
     // Build shortest path tree
     val tree = ShortestPathTree(
