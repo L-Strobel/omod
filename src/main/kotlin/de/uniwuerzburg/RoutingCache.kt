@@ -121,7 +121,17 @@ class RoutingCache(
     private fun calcDistance(origin: LocationOption, destination: LocationOption) : Double {
         return when (mode) {
             RoutingMode.BEELINE -> calcDistanceBeeline(origin, destination)
-            RoutingMode.GRAPHHOPPER -> calcDistanceGH(origin as RealLocation, destination as RealLocation, hopper!!)
+            RoutingMode.GRAPHHOPPER -> {
+                val rslt = calcDistanceGH(origin as RealLocation, destination as RealLocation, hopper!!)
+                if (rslt == null) {
+                    logger.warn(
+                        "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."
+                    )
+                    calcDistanceBeeline(origin, destination)
+                } else {
+                    rslt
+                }
+            }
         }
     }
 
