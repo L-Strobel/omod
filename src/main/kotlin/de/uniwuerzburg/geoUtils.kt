@@ -14,7 +14,10 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import org.slf4j.LoggerFactory
 import kotlin.math.*
+
+private val logger = LoggerFactory.getLogger("de.uniwuerzburg.GeoUtils")
 
 // Earth radius according to WGS 84
 const val earthMajorAxis = 6378137.0
@@ -93,7 +96,14 @@ fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: Gra
         req.profile = "car"
         val rsp = hopper.route(req)
 
-        rsp.best.distance
+        if (rsp.hasErrors()) {
+            logger.warn(
+                "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Substituted with Beeline."
+            )
+            calcDistanceBeeline(origin, destination)
+        } else {
+            rsp.best.distance
+        }
     }
 }
 
@@ -124,6 +134,8 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
             val node = snap.closestNode
             snapNodes.add(node)
             locNodes[loc] = node
+        } else {
+            logger.warn("Couldn't snap ${loc.latlonCoord}.")
         }
     }
     val queryGraph = QueryGraph.create(hopper.graphHopperStorage.baseGraph, snaps)
@@ -131,10 +143,17 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
 }
 
 fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<Double?> {
-    val originNode = preparedQGraph.locNodes[origin]!! // Origin must be snapped to query graph
+    val beelineDists = destinations.map { calcDistanceBeeline(origin, it) }
+
+    val originNode = preparedQGraph.locNodes[origin]
+
+    if (originNode == null) {
+        logger.warn("Origin: ${origin.latlonCoord} was not in the prepared graph.")
+        return beelineDists
+    }
 
     // Get estimate of max distance for speed up
-    val maxDistanceBeeline = destinations.maxOf { calcDistanceBeeline(origin, it) }
+    val maxDistanceBeeline: Double = beelineDists.maxOrNull() ?: 0.0
 
     // Build shortest path tree
     val tree = ShortestPathTree(
