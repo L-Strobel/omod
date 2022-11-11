@@ -1,4 +1,4 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.routing
 
 import com.graphhopper.GHRequest
 import com.graphhopper.GraphHopper
@@ -10,64 +10,12 @@ import com.graphhopper.routing.util.TraversalMode
 import com.graphhopper.routing.weighting.FastestWeighting
 import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
+import de.uniwuerzburg.omod.core.LocationOption
+import de.uniwuerzburg.omod.core.RealLocation
 import org.slf4j.LoggerFactory
-import kotlin.math.*
 
-private val logger = LoggerFactory.getLogger("de.uniwuerzburg.GeoUtils")
 
-// Earth radius according to WGS 84
-const val earthMajorAxis = 6378137.0
-
-fun latlonToMercator(lat: Double, lon: Double) : Coordinate {
-    val radLat = lat * PI / 180.0
-    val radLon = lon * PI / 180.0
-
-    val x = earthMajorAxis * (radLon)
-    val y = earthMajorAxis * ln(tan(radLat / 2 + PI / 4))
-    return Coordinate(x, y)
-}
-
-fun mercatorToLatLon(x: Double, y: Double) : Coordinate {
-    val radLon = x / earthMajorAxis
-    val radLat = (atan(exp(y / earthMajorAxis)) - PI / 4) * 2
-
-    val lon = radLon * 180.0 / PI
-    val lat = radLat * 180.0 / PI
-    return Coordinate(lat, lon)
-}
-
-/**
- * Find envelops that are covered by a geometry quickly
- */
-fun fastCovers(geometry: Geometry, resolutions: List<Double>, geometryFactory: GeometryFactory,
-               ifNot: (Envelope) -> Unit, ifDoes: (Envelope) -> Unit, ifUnsure: (Envelope) -> Unit) {
-    val envelope = geometry.envelopeInternal!!
-    val resolution = resolutions.first()
-    for (x in semiOpenDoubleRange(envelope.minX, envelope.maxX, resolution)) {
-        for (y in semiOpenDoubleRange(envelope.minY, envelope.maxY, resolution)) {
-            val smallEnvelope = Envelope(x, min(x + resolution, envelope.maxX), y, min(y + resolution, envelope.maxY))
-            val smallGeom = geometryFactory.toGeometry(smallEnvelope)
-
-            if (geometry.disjoint(smallGeom)) {
-                ifNot(smallEnvelope)
-            } else if (geometry.contains(smallGeom)) {
-                ifDoes(smallEnvelope)
-            } else {
-                val newResolutions = resolutions.drop(1)
-                if (newResolutions.isEmpty()) {
-                    ifUnsure(smallEnvelope)
-                } else {
-                    fastCovers(geometry.intersection(smallGeom), newResolutions, geometryFactory,
-                        ifNot = ifNot, ifDoes = ifDoes,  ifUnsure = ifUnsure)
-                }
-            }
-        }
-    }
-}
+private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.routing.DistanceCalculator")
 
 /**
  * Calculate the euclidean distance between two locations
@@ -111,7 +59,7 @@ data class PreparedQGraph (
     val snapNodes: Set<Int>
 )
 
-fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph{
+fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph {
     val encodingManager = hopper.encodingManager
     val encoder = encodingManager.getEncoder("car")
     val weighting = FastestWeighting(encoder)

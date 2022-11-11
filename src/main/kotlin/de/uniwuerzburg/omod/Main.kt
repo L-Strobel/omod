@@ -1,4 +1,4 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -7,6 +7,10 @@ import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
+import de.uniwuerzburg.omod.core.Omod
+import de.uniwuerzburg.omod.core.weekdays
+import de.uniwuerzburg.omod.io.formatOutput
+import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -94,20 +98,5 @@ class Run : CliktCommand() {
         out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
     }
 }
-
-/* Speed test of OSM reading
-fun main() {
-    val elapsed = measureTimeMillis {
-        Omod.makeFileFromPG(
-            File("omod_cache/bav.geojson"),
-            "jdbc:postgresql://localhost:5432/OSM_Ger",
-            "postgres",
-            "password",
-            listOf(62428),
-            bufferRadius = 5000.0,
-        )
-    }
-    println(elapsed / 1000)
-}*/
 
 fun main(args: Array<String>) = Run().main(args)

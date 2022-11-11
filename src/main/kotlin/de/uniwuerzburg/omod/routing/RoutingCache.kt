@@ -1,6 +1,9 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.routing
 
 import com.graphhopper.GraphHopper
+import de.uniwuerzburg.omod.core.DummyLocation
+import de.uniwuerzburg.omod.core.LocationOption
+import de.uniwuerzburg.omod.core.RealLocation
 import org.locationtech.jts.geom.Coordinate
 import org.slf4j.LoggerFactory
 import java.io.FileInputStream
@@ -10,6 +13,22 @@ import java.io.ObjectOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+
+
+enum class RoutingMode {
+    GRAPHHOPPER, BEELINE
+}
+
+/**
+ * HashMap with fixed size. If the collection is full and an entry is put in the oldest entry is removed.
+ * See: https://stackoverflow.com/questions/5601333/limiting-the-max-size-of-a-hashmap-in-java
+ */
+class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
+    override fun removeEldestEntry(eldest: Map.Entry<K, V>): Boolean {
+        return size > maxSize
+    }
+}
+
 
 /**
  * Stores routing information

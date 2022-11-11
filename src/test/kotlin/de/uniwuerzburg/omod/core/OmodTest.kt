@@ -1,15 +1,14 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.io.File
 
 internal class OmodTest {
 
     private val testBuildings = File(OmodTest::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
-    private val testOmod = Omod.fromFile( testBuildings)
+    private val testOmod = Omod.fromFile(testBuildings)
 
     @Test
     fun createAgents_features() {
