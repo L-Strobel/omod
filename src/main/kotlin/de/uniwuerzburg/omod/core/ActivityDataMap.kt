@@ -1,4 +1,4 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
 import kotlinx.serialization.Serializable
 
@@ -30,6 +30,8 @@ class GaussianMixture(
 /**
  * Holds activity data.
  * Structure is designed for fast access. Where possible data is already processed.
+ *
+ * TODO: Speed up tests
  */
 class ActivityDataMap(activityGroups: List<ActivityGroup>) {
     private val nodes: Map<Key, GroupData>
@@ -58,14 +60,14 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
      */
     fun get(weekday: String, homogenousGroup: String, mobilityGroup: String, age: String, from: ActivityType,
             givenChain: List<ActivityType>? = null): ChainData {
-        require(from == ActivityType.HOME || from == ActivityType.OTHER ) { "Chain starts at $from. This is not allowed."}
+        require(from == ActivityType.HOME || from == ActivityType.OTHER) { "Chain starts at $from. This is not allowed."}
 
         val key = Key(weekday, homogenousGroup, mobilityGroup, age)
         var groupData = nodes[key]
 
         // Check if data exists and sample size is adequate.
         val thresh = 280
-        var check = groupData == null || groupData.sampleSize < thresh || groupData.chainsFrom[from] == null
+        var check = (groupData == null) || (groupData.sampleSize < thresh) || (groupData.chainsFrom[from] == null)
         if (givenChain != null) {
             check = check || groupData?.chainsFrom?.get(from)?.mixtures?.get(givenChain) == null
         }
@@ -79,7 +81,7 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
 
             for (k in keys) {
                 groupData = nodes[k]
-                check = groupData != null && groupData.sampleSize >= thresh && groupData.chainsFrom[from] != null
+                check = (groupData != null) && (groupData.sampleSize >= thresh) && (groupData.chainsFrom[from] != null)
                 if (givenChain != null) {
                     check = check && groupData?.chainsFrom?.get(from)?.mixtures?.get(givenChain) != null
                 }

@@ -1,5 +1,7 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
+import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory

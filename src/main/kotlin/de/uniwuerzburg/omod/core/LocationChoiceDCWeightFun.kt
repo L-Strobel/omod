@@ -1,4 +1,4 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -19,7 +19,7 @@ data class LogNormDCUtil (
     val coeff0: Double,
     val coeff1: Double,
     override val destActivity: ActivityType
-) : LocationChoiceDCWeightFun () {
+) : LocationChoiceDCWeightFun() {
     override fun calcFor(destination: LocationOption, distance: Double): Double {
         // Log is undefined for 0
         val distanceAdj = if (distance == 0.0) {
@@ -40,7 +40,7 @@ data class CombinedDCUtil(
     val coeff0: Double,
     val coeff1: Double,
     override val destActivity: ActivityType
-) : LocationChoiceDCWeightFun () {
+) : LocationChoiceDCWeightFun() {
     override fun calcFor(destination: LocationOption, distance: Double): Double {
         // Log is undefined for 0
         val distanceAdj = if (distance == 0.0) {
