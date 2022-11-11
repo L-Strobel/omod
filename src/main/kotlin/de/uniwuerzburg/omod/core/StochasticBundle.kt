@@ -1,4 +1,4 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix
 import org.apache.commons.math3.linear.CholeskyDecomposition

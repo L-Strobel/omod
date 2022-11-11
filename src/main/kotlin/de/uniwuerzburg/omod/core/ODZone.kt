@@ -1,10 +1,14 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
+import de.uniwuerzburg.omod.io.GeoJsonODProperties
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import java.io.File
+
+private val json = Json { ignoreUnknownKeys = true }
 
 /**
  * Zone of the OD-Matrix
@@ -24,8 +28,7 @@ data class ODZone (
     companion object {
         fun readODMatrix(odFile: File, factory: GeometryFactory) : List<ODZone> {
             // Read OD
-            val geoJson: GeoJsonFeatureCollection = Json { ignoreUnknownKeys = true }
-                .decodeFromString(odFile.readText(Charsets.UTF_8))
+            val geoJson: GeoJsonFeatureCollection = json.decodeFromString(odFile.readText(Charsets.UTF_8))
 
             // Get zones
             val odZones = geoJson.features.map {

@@ -1,4 +1,4 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
 @Suppress("unused")
 infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
@@ -26,13 +26,3 @@ fun semiOpenDoubleRange(start: Double, end: Double, step: Double): Iterable<Doub
 @Suppress("unused")
 fun Boolean.toInt() = if (this) 1 else 0
 fun Boolean.toDouble() = if (this) 1.0 else 0.0
-
-/**
- * HashMap with fixed size. If the collection is full and an entry is put in the oldest entry is removed.
- * See: https://stackoverflow.com/questions/5601333/limiting-the-max-size-of-a-hashmap-in-java
- */
-class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
-    override fun removeEldestEntry(eldest: Map.Entry<K, V>): Boolean {
-        return size > maxSize
-    }
-}
