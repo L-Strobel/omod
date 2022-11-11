@@ -1,8 +1,12 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.core
 
 import com.graphhopper.GraphHopper
 import com.graphhopper.config.CHProfile
 import com.graphhopper.config.Profile
+import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
+import de.uniwuerzburg.omod.io.createModelArea
+import de.uniwuerzburg.omod.routing.RoutingCache
+import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -16,6 +20,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import kotlin.math.sqrt
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 
 /**
@@ -145,6 +151,7 @@ class Omod(
                           censusFile = null
             )
         }
+        @OptIn(ExperimentalTime::class)
         fun fromPG(
             dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
             mode: RoutingMode? = null, osmFile: File? = null,
@@ -165,14 +172,17 @@ class Omod(
                 buildingsCollection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
             } else {
                 // Load data from geojson files and PostgreSQL database with OSM data
-                buildingsCollection = createModelArea(
-                    dbUrl = dbUrl,
-                    dbUser = dbUser,
-                    dbPassword = dbPassword,
-                    areaOsmIds = areaOsmIds,
-                    bufferRadius = bufferRadius,
-                    censusFile = censusFile
-                )
+                val time = measureTime {
+                    buildingsCollection = createModelArea(
+                        dbUrl = dbUrl,
+                        dbUser = dbUser,
+                        dbPassword = dbPassword,
+                        areaOsmIds = areaOsmIds,
+                        bufferRadius = bufferRadius,
+                        censusFile = censusFile
+                    )
+                }
+                println("$time")
                 if (cache) {
                     Files.createDirectories(cachePath.parent)
                     cachePath.toFile().writeText(json.encodeToString(buildingsCollection))
@@ -575,7 +585,8 @@ class Omod(
      * Get the stay times given an activity chain
      */
     fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: String = "undefined",
-                     from: ActivityType = ActivityType.HOME) : List<Double?> {
+                     from: ActivityType = ActivityType.HOME
+    ) : List<Double?> {
         return if (activityChain.size == 1) {
             // Stay at one location the entire day
             listOf(null)
@@ -598,7 +609,8 @@ class Omod(
      * @param start The location the day starts at
      */
     fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
-                     start: LocationOption) : List<LocationOption> {
+                     start: LocationOption
+    ) : List<LocationOption> {
         val locations = mutableListOf<LocationOption>()
         activityChain.forEachIndexed { i, activity ->
             if (i == 0){
@@ -621,7 +633,8 @@ class Omod(
      * Get the mobility profile for the given agent.
      */
     fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
-                           from: ActivityType = ActivityType.HOME): List<Activity> {
+                           from: ActivityType = ActivityType.HOME
+    ): List<Activity> {
         val location = when(from) {
             ActivityType.HOME -> agent.home
             ActivityType.WORK -> agent.work
@@ -631,7 +644,8 @@ class Omod(
         return getMobilityProfile(agent, weekday, from, location)
     }
     fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME,
-                           start: LocationOption): List<Activity> {
+                           start: LocationOption
+    ): List<Activity> {
         val activityChain = getActivityChain(agent, weekday, from)
         val stayTimes = getStayTimes(activityChain, agent, weekday, from)
         val locations = getLocations(agent, activityChain, start)
@@ -704,7 +718,8 @@ class Omod(
      * Determine probabilities for the activities
      */
     fun getDistr(origin: LocationOption, destinations: List<LocationOption>,
-                 activityType: ActivityType) : DoubleArray {
+                 activityType: ActivityType
+    ) : DoubleArray {
         val weights = getWeights(origin, destinations, activityType)
         return createCumDist(weights.toDoubleArray())
     }
@@ -713,7 +728,8 @@ class Omod(
         return createCumDist(weights.toDoubleArray())
     }
     fun getWeights(origin: LocationOption, destinations: List<LocationOption>,
-                   activityType: ActivityType): List<Double> {
+                   activityType: ActivityType
+    ): List<Double> {
         val activity = when(activityType) {
             ActivityType.HOME -> throw NotImplementedError("For HOME activities call getWeightsNoOrigin()!")
             ActivityType.WORK -> ActivityType.WORK

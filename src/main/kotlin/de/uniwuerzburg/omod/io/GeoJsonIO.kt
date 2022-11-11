@@ -1,5 +1,7 @@
-package de.uniwuerzburg
+package de.uniwuerzburg.omod.io
 
+import de.uniwuerzburg.omod.core.ActivityType
+import de.uniwuerzburg.omod.core.latlonToMercator
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.locationtech.jts.geom.Geometry
@@ -15,7 +17,7 @@ sealed class GeoJsonGeom {
 @SerialName("Point")
 data class GeoJsonPoint(
     val coordinates: List<Double>
-) : GeoJsonGeom () {
+) : GeoJsonGeom() {
     override fun toJTS(factory: GeometryFactory): Geometry {
         val coord = latlonToMercator(coordinates[1], coordinates[0])
         return factory.createPoint(coord)
@@ -27,7 +29,7 @@ data class GeoJsonPoint(
 @Suppress("unused")
 data class GeoJsonPoly(
     val coordinates: List<List<List<Double>>>
-) : GeoJsonGeom () {
+) : GeoJsonGeom() {
     override fun toJTS(factory: GeometryFactory): Geometry {
         val rings = coordinates.map { ring ->
             val coords = ring.map { coord -> latlonToMercator(coord[1], coord[0]) }
@@ -42,7 +44,7 @@ data class GeoJsonPoly(
 @Suppress("unused")
 data class GeoJsonMultiPoly(
     val coordinates: List<List<List<List<Double>>>>
-) : GeoJsonGeom () {
+) : GeoJsonGeom() {
     override fun toJTS(factory: GeometryFactory): Geometry {
         val polys = coordinates.map { polys ->
             val rings = polys.map { ring ->
@@ -71,7 +73,7 @@ data class GeoJsonBuildingProperties (
     val number_offices: Double,
     val number_schools: Double,
     val number_universities: Double,
-) : GeoJsonProperties ()
+) : GeoJsonProperties()
 
 @Serializable
 @SerialName("ODEntry")
@@ -80,7 +82,7 @@ data class GeoJsonODProperties (
     val origin_activity: ActivityType,
     val destination_activity: ActivityType,
     val destinations: Map<String, Double>
-) : GeoJsonProperties ()
+) : GeoJsonProperties()
 
 @Serializable
 @SerialName("CensusEntry")
