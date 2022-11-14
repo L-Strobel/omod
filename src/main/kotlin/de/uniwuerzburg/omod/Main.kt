@@ -2,8 +2,6 @@ package de.uniwuerzburg.omod
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.arguments.check
-import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
@@ -78,7 +76,7 @@ class Run : CliktCommand() {
         val agents = omod.run(n_agents, start_wd, n_days)
         */
         val (omod, timeRead) = measureTimedValue {
-            Omod.fromOSM(
+            Omod(
                 area_wkt, osm_file,
                 mode = routing_mode,
                 odFile = od, censusFile = census,

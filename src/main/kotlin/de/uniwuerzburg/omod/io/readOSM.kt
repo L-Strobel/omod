@@ -25,20 +25,15 @@ data class BuildingData (
 }
 
 fun readOSM (area: Geometry, osmFile: File, bufferRadius: Double,
-             geometryFactory: GeometryFactory): List<BuildingData> {
-    val mercatorFocusArea = geometryFactory.createPolygon(
-        area.convexHull().coordinates.map { latlonToMercator(it.x, it.y) }.toTypedArray()
-    )
-    val mercatorArea = mercatorFocusArea.buffer(bufferRadius)
-    val latlonArea = geometryFactory.createPolygon(
-        mercatorArea.coordinates.map { mercatorToLatLon(it.x, it.y) }.toTypedArray()
-    )
+             geometryFactory: GeometryFactory, transformer: CRSTransformer): List<BuildingData> {
+    val utmFocusArea = transformer.toModelCRS(area)
+    val utmArea = utmFocusArea.buffer(bufferRadius)
 
     // Prepare osmosis pipeline
     val reader = OsmosisReader( FileInputStream(osmFile) )
     val processor = OSMProcessor(IdTrackerType.Dynamic, geometryFactory)
     val geomFilter = GeometryFilter(
-        latlonArea,
+        transformer.toLatLon(utmArea),
         geometryFactory,
         IdTrackerType.Dynamic,
         clipIncompleteEntities = true,
@@ -52,14 +47,16 @@ fun readOSM (area: Geometry, osmFile: File, bufferRadius: Double,
     // Read osm.pbf
     reader.run()
 
-    // Filter objects and create spatial index
+    // Filter objects, transform the coordinates, and create spatial index
     val buildings = mutableListOf<BuildingData>()
     val extraInfoTree = HPRtree()
     for (mapObject in processor.mapObjects) {
+        val geom = transformer.toModelCRS(mapObject.geometry)
         if (mapObject.type == MapObjectType.BUILDING) {
-            buildings.add ( BuildingData(mapObject.id, mapObject.geometry) )
+            buildings.add ( BuildingData(mapObject.id, geom) )
         } else {
-            extraInfoTree.insert(mapObject.geometry.envelopeInternal, mapObject)
+            val extraInfo = MapObject(mapObject.id, mapObject.type, geom)
+            extraInfoTree.insert(geom.envelopeInternal, extraInfo)
         }
     }
 
@@ -88,7 +85,7 @@ fun readOSM (area: Geometry, osmFile: File, bufferRadius: Double,
         buildingsTree.insert(building.geometry.envelopeInternal, building)
     }
 
-    fastCovers(mercatorFocusArea, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
+    fastCovers(utmFocusArea, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
         ifNot = { },
         ifDoes = { e ->
             buildingsTree.query(e)
@@ -98,7 +95,7 @@ fun readOSM (area: Geometry, osmFile: File, bufferRadius: Double,
         ifUnsure = { e ->
             buildingsTree.query(e)
                 .map { (it as BuildingData) }
-                .filter { mercatorFocusArea.intersects(it.geometry) }
+                .filter { utmFocusArea.intersects(it.geometry) }
                 .forEach { it.inFocusArea = true }
         }
     )
