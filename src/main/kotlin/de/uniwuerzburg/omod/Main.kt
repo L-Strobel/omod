@@ -16,14 +16,22 @@ import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
+
 @Suppress("PrivatePropertyName")
 class Run : CliktCommand() {
     // Arguments
-    private val area_wkt by argument()
+    private val area_wkt by argument(
+        help = "The area you want OMOD to generate mobility demand for. " +
+                "Must be a WKT string in lat/lon coordinates. " +
+                "See: https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry. " +
+                "These strings can get very long, it can be helpful to store all command line arguments " +
+                "in a file and use the @argfile syntax. " +
+                "See: https://ajalt.github.io/clikt/advanced/#command-line-argument-files-argfiles"
+    )
     private val osm_file by argument(
         help = "Path to osm.pbf file that includes the area completely. " +
-               "Must cover the entire area, but can cover more" +
-               "Large files can slow down initialisation." +
+               "Must cover the entire area, but can cover more. " +
+               "However, Large files can slow down initialisation. " +
                "Recommended download platform: https://download.geofabrik.de/"
     ).file(mustExist = true, mustBeReadable = true)
     // Options
