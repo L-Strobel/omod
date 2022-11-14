@@ -139,7 +139,6 @@ class Omod(
     /**
      * Get the buildings.
      */
-    @OptIn(ExperimentalTime::class)
     fun getBuildings(areaWKT: String, geometryFactory: GeometryFactory, transformer: CRSTransformer,
                      osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
                      cache: Boolean) : List<Building> {
@@ -159,17 +158,15 @@ class Omod(
             collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
         } else {
             // Load data from geojson files and PostgreSQL database with OSM data
-            val time = measureTime {
-                collection = buildArea(
-                    area = area,
-                    osmFile = osmFile,
-                    bufferRadius = bufferRadius,
-                    censusFile = censusFile,
-                    transformer = transformer,
-                    geometryFactory = geometryFactory
-                )
-            }
-            println("$time")
+            collection = buildArea(
+                area = area,
+                osmFile = osmFile,
+                bufferRadius = bufferRadius,
+                censusFile = censusFile,
+                transformer = transformer,
+                geometryFactory = geometryFactory
+            )
+
             if (cache) {
                 Files.createDirectories(cachePath.parent)
                 cachePath.toFile().writeText(json.encodeToString(collection))
