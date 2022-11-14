@@ -1,30 +1,29 @@
 package de.uniwuerzburg.omod.core
 
-import org.locationtech.jts.geom.Coordinate
+import org.geotools.geometry.jts.JTS
+import org.geotools.referencing.CRS
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import kotlin.math.*
 
-// Earth radius according to WGS 84
-const val earthMajorAxis = 6378137.0
+/**
+ * Use this class to transform from lat lon to the CRS used in OMOD and back.
+ * Currently, OMOD uses web mercator.
+ */
+class CRSTransformer() {
+    private val latlonCRS = CRS.decode("EPSG:4326")
+    private val utmCRS = CRS.decode("EPSG:3857")
+    private val transformerToLatLon = CRS.findMathTransform(utmCRS, latlonCRS)
+    private val transformerToUTM = CRS.findMathTransform(latlonCRS, utmCRS)
 
-fun latlonToMercator(lat: Double, lon: Double) : Coordinate {
-    val radLat = lat * PI / 180.0
-    val radLon = lon * PI / 180.0
+    fun toLatLon(geometry: Geometry) : Geometry {
+        return JTS.transform(geometry, transformerToLatLon)
+    }
 
-    val x = earthMajorAxis * (radLon)
-    val y = earthMajorAxis * ln(tan(radLat / 2 + PI / 4))
-    return Coordinate(x, y)
-}
-
-fun mercatorToLatLon(x: Double, y: Double) : Coordinate {
-    val radLon = x / earthMajorAxis
-    val radLat = (atan(exp(y / earthMajorAxis)) - PI / 4) * 2
-
-    val lon = radLon * 180.0 / PI
-    val lat = radLat * 180.0 / PI
-    return Coordinate(lat, lon)
+    fun toModelCRS(geometry: Geometry) : Geometry {
+        return JTS.transform(geometry, transformerToUTM)
+    }
 }
 
 /**
