@@ -69,19 +69,20 @@ class Building  (
     }
 
     companion object {
-        fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory): List<Building> {
+        fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
+                        transformer: CRSTransformer): List<Building> {
             return collection.features.map {
                 require(it.properties is GeoJsonBuildingProperties) {
                     "Geo json contains features that are not buildings!"
                 }
 
                 val properties = it.properties
-                val point = it.geometry.toJTS(geometryFactory).centroid
+                val point = it.geometry.toJTS(geometryFactory, transformer).centroid
 
                 Building(
                     osmID = properties.osm_id,
                     coord = point.coordinate,
-                    latlonCoord = mercatorToLatLon(point.coordinate.x, point.coordinate.y),
+                    latlonCoord = transformer.toLatLon(point).coordinate,
                     area = properties.area,
                     population = properties.population,
                     landuse = properties.landuse,
@@ -105,14 +106,12 @@ class Building  (
 data class Cell (
     val id: Int,
     override val coord: Coordinate,
-
+    override val latlonCoord: Coordinate ,
     val envelope: Envelope,
     val buildings: List<Building>,
 ) : LocationOption, RealLocation, AggregateLocation {
     // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
-
-    override val latlonCoord: Coordinate = mercatorToLatLon(coord.x, coord.y)
 
     // Most common taz (Normally null here)
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
@@ -172,6 +171,7 @@ data class Cell (
  */
 data class DummyLocation (
     override val coord: Coordinate,
+    override val latlonCoord: Coordinate,
     val homeWeight: Double,
     val workWeight: Double,
     val schoolWeight: Double,
@@ -180,7 +180,6 @@ data class DummyLocation (
     override var odZone: ODZone?
 ) : LocationOption, AggregateLocation {
     override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
-    override val latlonCoord = mercatorToLatLon(coord.x, coord.y)
     override val inFocusArea = false
 
     override fun getPriorWeightFor(activityType: ActivityType): Double {

@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.latlonToMercator
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry

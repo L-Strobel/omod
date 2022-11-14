@@ -8,10 +8,17 @@ plugins {
     application
 }
 
-group = "de.uniwuerzburg"
+group = "de.uniwuerzburg.omod"
 version = "0.5"
 
 repositories {
+    mavenLocal()
+    maven {
+        url = uri("https://repo.osgeo.org/repository/release/")
+    }
+    maven {
+        url = uri("https://repo.osgeo.org/repository/snapshot/")
+    }
     mavenCentral()
 }
 
@@ -19,12 +26,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("org.locationtech.jts:jts-core:1.19.0")
     implementation("org.apache.commons:commons-math3:3.6.1")
-    implementation("org.postgresql:postgresql:42.5.0")
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.graphhopper:graphhopper-core:5.3")
     implementation("org.slf4j:slf4j-simple:2.0.0")
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.3")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.3")
+    implementation("org.geotools:gt-main:27.1")
+    implementation("org.geotools:gt-epsg-hsql:27.1")
     testImplementation(kotlin("test"))
 }
 
@@ -41,5 +49,5 @@ tasks.shadowJar {
 }
 
 application {
-    mainClass.set("de.uniwuerzburg.MainKt")
+    mainClass.set("de.uniwuerzburg.omood.MainKt")
 }

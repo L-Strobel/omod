@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.latlonToMercator
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.operation.linemerge.LineMerger
 import org.openstreetmap.osmosis.core.container.v0_6.*
@@ -119,7 +118,7 @@ class OSMProcessor(idTrackerType: IdTrackerType,
     override fun process(boundContainer: BoundContainer) { }
 
     private fun getGeom(node: Node) : Point {
-        val coords = latlonToMercator(node.latitude, node.longitude)
+        val coords = Coordinate(node.latitude, node.longitude)
         val geometry = geometryFactory.createPoint(coords)
 
         if (!geometry.isValid) {
@@ -133,7 +132,7 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         val coords = Array(way.wayNodes.size) { i ->
             val id = way.wayNodes[i].nodeId
             val node = nodeReader.get(id).entity
-            latlonToMercator(node.latitude, node.longitude)
+            Coordinate(node.latitude, node.longitude)
         }
 
         if (coords.size == 1) {
