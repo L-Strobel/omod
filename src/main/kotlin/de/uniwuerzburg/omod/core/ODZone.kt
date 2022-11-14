@@ -26,7 +26,7 @@ data class ODZone (
     val aggLocs: MutableList<AggregateLocation> = mutableListOf()
 
     companion object {
-        fun readODMatrix(odFile: File, factory: GeometryFactory) : List<ODZone> {
+        fun readODMatrix(odFile: File, factory: GeometryFactory, transformer: CRSTransformer) : List<ODZone> {
             // Read OD
             val geoJson: GeoJsonFeatureCollection = json.decodeFromString(odFile.readText(Charsets.UTF_8))
 
@@ -37,7 +37,7 @@ data class ODZone (
                     name = properties.origin,
                     originActivity = properties.origin_activity,
                     destinationActivity = properties.destination_activity,
-                    geometry = it.geometry.toJTS(factory)
+                    geometry = it.geometry.toJTS(factory, transformer)
                 )
             }
 

@@ -1,6 +1,6 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.mercatorToLatLon
+import de.uniwuerzburg.omod.core.CRSTransformer
 import kotlinx.serialization.decodeFromString
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -10,11 +10,9 @@ import java.io.File
 /**
  * @param area in latitude longitude format
  */
-fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double,
-                   censusFile: File? = null) : GeoJsonFeatureCollection {
-    val geometryFactory = GeometryFactory()
-
-    val osmBuildings = readOSM(area, osmFile, bufferRadius, geometryFactory)
+fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: CRSTransformer,
+              geometryFactory: GeometryFactory, censusFile: File? = null) : GeoJsonFeatureCollection {
+    val osmBuildings = readOSM(area, osmFile, bufferRadius, geometryFactory, transformer)
 
     // Add census data if available
     if (censusFile != null) {
@@ -28,7 +26,7 @@ fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double,
 
         for (censusEntree in censusData.features) {
             val population = (censusEntree.properties as GeoJsonCensusProperties).population
-            val censusZone = censusEntree.geometry.toJTS(geometryFactory)
+            val censusZone = censusEntree.geometry.toJTS(geometryFactory, transformer)
 
             val intersectingBuildings = buildingsTree.query(censusZone.envelopeInternal)
                 .map { it as BuildingData }
@@ -43,7 +41,7 @@ fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double,
     val collection = GeoJsonFeatureCollection(
         features = osmBuildings.map {
             val center = it.geometry.centroid
-            val coords = mercatorToLatLon(center.x, center.y)
+            val coords = transformer.toLatLon(center).coordinate
             val geometry = GeoJsonPoint(listOf(coords.y, coords.x))
 
             val properties = GeoJsonBuildingProperties(

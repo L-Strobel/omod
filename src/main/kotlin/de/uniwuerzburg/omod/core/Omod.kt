@@ -31,18 +31,22 @@ import kotlin.time.measureTime
  *
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
+
 @Suppress("MemberVisibilityCanBePrivate")
 class Omod(
-    val buildings: List<Building>,
-    odFile: File?,
-    gridResolution: Double,
-    seed: Long?,
-    private val geometryFactory: GeometryFactory,
-    osmFile: File?,
-    cacheDir: Path,
-    mode: RoutingMode
+    areaWKT: String,
+    osmFile: File,
+    mode: RoutingMode = RoutingMode.BEELINE,
+    cache: Boolean = true,
+    cacheDir: Path = Paths.get("omod_cache/"),
+    odFile: File? = null,
+    gridResolution: Double = 500.0,
+    seed: Long? = null,
+    bufferRadius: Double = 0.0,
+    censusFile: File? = null,
 ) {
     val kdTree: KdTree
+    val buildings: List<Building>
     private val grid: List<Cell>
     private val zones: List<AggregateLocation> // Grid + DummyLocations for commuting locations
     private val firstOrderCFactors = mutableMapOf<ActivityType, Map<ODZone, Double>>()
@@ -53,27 +57,8 @@ class Omod(
     private val rng: Random = if (seed != null) Random(seed) else Random()
     private val hopper: GraphHopper?
     private val routingCache: RoutingCache
-
-    // If given null -> use defaults
-    constructor(
-        buildings: List<Building>,
-        odFile: File?,
-        gridResolution: Double?,
-        seed: Long?,
-        geometryFactory: GeometryFactory?,
-        osmFile: File?,
-        cacheDir: Path?,
-        mode: RoutingMode?
-    ) : this (
-        buildings = buildings,
-        odFile = odFile,
-        gridResolution = gridResolution ?: 500.0,
-        seed = seed,
-        geometryFactory = geometryFactory ?: GeometryFactory(),
-        osmFile = osmFile,
-        cacheDir = cacheDir ?: Paths.get("omod_cache/"),
-        mode = mode ?: RoutingMode.BEELINE
-    )
+    private val geometryFactory: GeometryFactory = GeometryFactory()
+    private val transformer: CRSTransformer
 
     init {
         // Get population distribution
@@ -90,6 +75,11 @@ class Omod(
         locChoiceWeightFuns = Json.decodeFromString<List<LocationChoiceDCWeightFun>>(distrTxt)
             .associateBy { it.destActivity }
 
+        // Get spatial data
+        transformer = CRSTransformer()
+        buildings = getBuildings(areaWKT, geometryFactory, transformer, osmFile, cacheDir, bufferRadius,
+                                     censusFile, cache)
+
         // Create KD-Tree for faster access
         kdTree = KdTree()
         buildings.forEach { building ->
@@ -104,7 +94,6 @@ class Omod(
 
         // Create graphhopper
         hopper = if (mode == RoutingMode.GRAPHHOPPER) {
-            require(osmFile != null) {"You need to provide a OSM-File for routing mode GRAPHHOPPER"}
             createGraphHopper(
                 osmFile.toString(),
                 Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
@@ -122,7 +111,7 @@ class Omod(
         // Calibration
         if (odFile != null) {
             // Read OD-Matrix that is used for calibration
-            val odZones = ODZone.readODMatrix(odFile, geometryFactory)
+            val odZones = ODZone.readODMatrix(odFile, geometryFactory, transformer)
             // Add TAZ to buildings and cells
             val dummyZones = addODZoneInfo(odZones)
             zones = grid + dummyZones
@@ -142,61 +131,51 @@ class Omod(
          * Run quick and easy without any additional information
          */
         @Suppress("unused")
-        fun fromOSM(areaWKT: String, osmFile: File): Omod {
-            return fromOSM(areaWKT, osmFile, mode = RoutingMode.BEELINE,
-                          cache = true, cacheDir = Paths.get("omod_cache/"),
-                          odFile = null, gridResolution = null, seed = null,
-                          bufferRadius = 0.0, censusFile = null
-            )
+        fun defaultFactory(areaWKT: String, osmFile: File): Omod {
+            return Omod(areaWKT, osmFile)
         }
-        @OptIn(ExperimentalTime::class)
-        fun fromOSM(areaWKT: String, osmFile: File,
-            mode: RoutingMode? = null, odFile: File? = null, gridResolution: Double? = null,
-            seed: Long? = null, censusFile: File? = null, bufferRadius: Double = 0.0,
-            cache: Boolean = true, cacheDir: Path = Paths.get("omod_cache/"),
-        ): Omod {
-            val geometryFactory = GeometryFactory()
-            val area = WKTReader(geometryFactory).read( areaWKT )
-            val bound = area.envelopeInternal
-            val cachePath = Paths.get(cacheDir.toString(),
-                       "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
-                           .toString().replace(" ", "")}" +
-                       "Buffer${bufferRadius}" +
-                       "Census${censusFile != null}" +
-                       ".geojson"
-            )
+    }
 
-            // Check cache
-            val collection: GeoJsonFeatureCollection
-            if (cache and cachePath.toFile().exists()) {
-                collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
-            } else {
-                // Load data from geojson files and PostgreSQL database with OSM data
-                val time = measureTime {
-                    collection = buildArea(
-                        area = area,
-                        osmFile = osmFile,
-                        bufferRadius = bufferRadius,
-                        censusFile = censusFile
-                    )
-                }
-                println("$time")
-                if (cache) {
-                    Files.createDirectories(cachePath.parent)
-                    cachePath.toFile().writeText(json.encodeToString(collection))
-                }
+    /**
+     * Get the buildings.
+     */
+    @OptIn(ExperimentalTime::class)
+    fun getBuildings(areaWKT: String, geometryFactory: GeometryFactory, transformer: CRSTransformer,
+                     osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
+                     cache: Boolean) : List<Building> {
+        val area = WKTReader(geometryFactory).read( areaWKT )
+        val bound = area.envelopeInternal
+        val cachePath = Paths.get(cacheDir.toString(),
+            "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
+                .toString().replace(" ", "")}" +
+                    "Buffer${bufferRadius}" +
+                    "Census${censusFile != null}" +
+                    ".geojson"
+        )
+
+        // Check cache
+        val collection: GeoJsonFeatureCollection
+        if (cache and cachePath.toFile().exists()) {
+            collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
+        } else {
+            // Load data from geojson files and PostgreSQL database with OSM data
+            val time = measureTime {
+                collection = buildArea(
+                    area = area,
+                    osmFile = osmFile,
+                    bufferRadius = bufferRadius,
+                    censusFile = censusFile,
+                    transformer = transformer,
+                    geometryFactory = geometryFactory
+                )
             }
-            return Omod(
-                Building.fromGeoJson(collection, geometryFactory),
-                odFile,
-                gridResolution,
-                seed,
-                geometryFactory,
-                osmFile,
-                cacheDir,
-                mode
-            )
+            println("$time")
+            if (cache) {
+                Files.createDirectories(cachePath.parent)
+                cachePath.toFile().writeText(json.encodeToString(collection))
+            }
         }
+        return Building.fromGeoJson(collection, geometryFactory, transformer)
     }
 
     /**
@@ -221,9 +200,12 @@ class Omod(
                     cellBuildings.map { it.point }.toTypedArray()
                 ).centroid.coordinate
 
+                val latlonCoord = transformer.toLatLon( geometryFactory.createPoint(featureCentroid) ).coordinate
+
                 val cell = Cell(
                     id = id,
                     coord = featureCentroid,
+                    latlonCoord = latlonCoord,
                     envelope = envelope,
                     buildings = cellBuildings,
                 )
@@ -266,9 +248,12 @@ class Omod(
             val activities = setOf(odZone.originActivity, odZone.destinationActivity)
 
             if (zoneBuildings.isEmpty()) {
+                val centroid =  odZone.geometry.centroid
+                val latlonCoord = transformer.toLatLon( centroid ).coordinate
                 // Create dummy node for TAZ
                 val dummyLoc = DummyLocation(
-                    coord = odZone.geometry.centroid.coordinate,
+                    coord = centroid.coordinate,
+                    latlonCoord = latlonCoord,
                     homeWeight = (ActivityType.HOME in activities).toDouble(),
                     workWeight = (ActivityType.WORK in activities).toDouble(),
                     schoolWeight = (ActivityType.SCHOOL in activities).toDouble(),

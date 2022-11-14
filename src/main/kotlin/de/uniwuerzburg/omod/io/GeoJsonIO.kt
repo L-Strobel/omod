@@ -1,17 +1,18 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.core.ActivityType
+import de.uniwuerzburg.omod.core.CRSTransformer
 import de.uniwuerzburg.omod.core.Landuse
-import de.uniwuerzburg.omod.core.latlonToMercator
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 
 // Expected geometries
 @Serializable
 sealed class GeoJsonGeom {
-    abstract fun toJTS(factory: GeometryFactory) : Geometry
+    abstract fun toJTS(factory: GeometryFactory, transformer: CRSTransformer) : Geometry
 }
 
 @Serializable
@@ -19,9 +20,10 @@ sealed class GeoJsonGeom {
 data class GeoJsonPoint(
     val coordinates: List<Double>
 ) : GeoJsonGeom() {
-    override fun toJTS(factory: GeometryFactory): Geometry {
-        val coord = latlonToMercator(coordinates[1], coordinates[0])
-        return factory.createPoint(coord)
+    override fun toJTS(factory: GeometryFactory, transformer: CRSTransformer): Geometry {
+        val coord = Coordinate(coordinates[1], coordinates[0])
+        val point = factory.createPoint(coord)
+        return transformer.toModelCRS(point)
     }
 }
 
@@ -31,12 +33,13 @@ data class GeoJsonPoint(
 data class GeoJsonPoly(
     val coordinates: List<List<List<Double>>>
 ) : GeoJsonGeom() {
-    override fun toJTS(factory: GeometryFactory): Geometry {
+    override fun toJTS(factory: GeometryFactory, transformer: CRSTransformer): Geometry {
         val rings = coordinates.map { ring ->
-            val coords = ring.map { coord -> latlonToMercator(coord[1], coord[0]) }
+            val coords = ring.map { coord -> Coordinate(coord[1], coord[0]) }
             factory.createLinearRing(coords.toTypedArray())
         }
-        return factory.createPolygon(rings.first(), rings.drop(1).toTypedArray())
+        val polygon = factory.createPolygon(rings.first(), rings.drop(1).toTypedArray())
+        return transformer.toModelCRS(polygon)
     }
 }
 
@@ -46,15 +49,16 @@ data class GeoJsonPoly(
 data class GeoJsonMultiPoly(
     val coordinates: List<List<List<List<Double>>>>
 ) : GeoJsonGeom() {
-    override fun toJTS(factory: GeometryFactory): Geometry {
+    override fun toJTS(factory: GeometryFactory, transformer: CRSTransformer): Geometry {
         val polys = coordinates.map { polys ->
             val rings = polys.map { ring ->
-                val coords = ring.map { coord -> latlonToMercator(coord[1], coord[0]) }
+                val coords = ring.map { coord -> Coordinate(coord[1], coord[0]) }
                 factory.createLinearRing(coords.toTypedArray())
             }
             factory.createPolygon(rings.first(), rings.drop(1).toTypedArray())
         }
-        return factory.createMultiPolygon(polys.toTypedArray())
+        val multiPoly = factory.createMultiPolygon(polys.toTypedArray())
+        return transformer.toModelCRS(multiPoly)
     }
 }
 
