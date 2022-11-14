@@ -21,12 +21,13 @@ import kotlin.time.measureTimedValue
 @Suppress("PrivatePropertyName")
 class Run : CliktCommand() {
     // Arguments
-    private val db_url by argument()
-    private val db_user by argument()
-    private val db_password by argument()
-    private val area_osm_ids by argument()
-        .convert { input -> input.trim().splitToSequence(',').map { it.toInt() }.toList() }
-        .check("Reading osm ids failed! Expected format \"name1,name2,name3\".") { it.isNotEmpty() }
+    private val area_wkt by argument()
+    private val osm_file by argument(
+        help = "Path to osm.pbf file that includes the area completely. " +
+               "Must cover the entire area, but can cover more" +
+               "Large files can slow down initialisation." +
+               "Recommended download platform: https://download.geofabrik.de/"
+    ).file(mustExist = true, mustBeReadable = true)
     // Options
     private val n_agents by option(
         help="Number of agents in focus area to simulate." +
@@ -44,9 +45,6 @@ class Run : CliktCommand() {
     private val routing_mode by option(
         help = "Method of distance calculation. Either with euclidean distance (BEELINE) or routed using a car (GRAPHHOPPER)"
     ).enum<RoutingMode>().default(RoutingMode.BEELINE)
-    private val osm_file by option(
-        help = "Path to osm.pbf file of the area. Only used then routing_mode == GRAPHHOPPER"
-    ).file(mustExist = true, mustBeReadable = true)
     private val od by option(
         help="Path to an OD-Matrix in geojson format that will be used for calibration"
     ).file(mustExist = true, mustBeReadable = true)
@@ -80,9 +78,9 @@ class Run : CliktCommand() {
         val agents = omod.run(n_agents, start_wd, n_days)
         */
         val (omod, timeRead) = measureTimedValue {
-            Omod.fromPG(
-                db_url, db_user, db_password, area_osm_ids,
-                mode = routing_mode, osmFile = osm_file,
+            Omod.fromOSM(
+                area_wkt, osm_file,
+                mode = routing_mode,
                 odFile = od, censusFile = census,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
                 cache = true, cacheDir = cache_dir
