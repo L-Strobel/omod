@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.core.ActivityType
+import de.uniwuerzburg.omod.core.Landuse
 import de.uniwuerzburg.omod.core.latlonToMercator
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -64,11 +65,11 @@ sealed class GeoJsonProperties
 @Serializable
 @SerialName("BuildingEntree")
 data class GeoJsonBuildingProperties (
-    val osm_id: Int,
+    val osm_id: Long,
     val in_focus_area: Boolean,
     val area: Double,
     val population: Double?,
-    val landuse: String,
+    val landuse: Landuse,
     val number_shops: Double,
     val number_offices: Double,
     val number_schools: Double,

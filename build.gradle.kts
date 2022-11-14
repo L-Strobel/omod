@@ -23,6 +23,8 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.graphhopper:graphhopper-core:5.3")
     implementation("org.slf4j:slf4j-simple:2.0.0")
+    implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.3")
+    implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.3")
     testImplementation(kotlin("test"))
 }
 

@@ -39,7 +39,7 @@ interface AggregateLocation : LocationOption
  */
 class Building  (
     @Suppress("unused")
-    val osmID: Int,
+    val osmID: Long,
 
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
@@ -84,7 +84,7 @@ class Building  (
                     latlonCoord = mercatorToLatLon(point.coordinate.x, point.coordinate.y),
                     area = properties.area,
                     population = properties.population,
-                    landuse = Landuse.valueOf(properties.landuse),
+                    landuse = properties.landuse,
                     nShops = properties.number_shops,
                     nOffices = properties.number_offices,
                     nSchools = properties.number_schools,
