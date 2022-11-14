@@ -4,7 +4,8 @@ import com.graphhopper.GraphHopper
 import com.graphhopper.config.CHProfile
 import com.graphhopper.config.Profile
 import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
-import de.uniwuerzburg.omod.io.createModelArea
+import de.uniwuerzburg.omod.io.buildArea
+import de.uniwuerzburg.omod.io.json
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.decodeFromString
@@ -14,6 +15,7 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
+import org.locationtech.jts.io.WKTReader
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -136,48 +138,44 @@ class Omod(
 
     // Factories
     companion object {
-        private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
-
         /**
          * Run quick and easy without any additional information
          */
         @Suppress("unused")
-        fun fromPG(dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>): Omod {
-            return fromPG(dbUrl, dbUser, dbPassword, areaOsmIds,
-                          mode = RoutingMode.BEELINE, osmFile = null,
+        fun fromOSM(areaWKT: String, osmFile: File): Omod {
+            return fromOSM(areaWKT, osmFile, mode = RoutingMode.BEELINE,
                           cache = true, cacheDir = Paths.get("omod_cache/"),
                           odFile = null, gridResolution = null, seed = null,
-                          bufferRadius = 0.0,
-                          censusFile = null
+                          bufferRadius = 0.0, censusFile = null
             )
         }
         @OptIn(ExperimentalTime::class)
-        fun fromPG(
-            dbUrl: String, dbUser: String, dbPassword: String, areaOsmIds: List<Int>,
-            mode: RoutingMode? = null, osmFile: File? = null,
-            odFile: File? = null, gridResolution: Double? = null, seed: Long? = null,
-            censusFile: File? = null,
-            bufferRadius: Double = 0.0,
+        fun fromOSM(areaWKT: String, osmFile: File,
+            mode: RoutingMode? = null, odFile: File? = null, gridResolution: Double? = null,
+            seed: Long? = null, censusFile: File? = null, bufferRadius: Double = 0.0,
             cache: Boolean = true, cacheDir: Path = Paths.get("omod_cache/"),
         ): Omod {
+            val geometryFactory = GeometryFactory()
+            val area = WKTReader(geometryFactory).read( areaWKT )
+            val bound = area.envelopeInternal
             val cachePath = Paths.get(cacheDir.toString(),
-                "osmBuildingsFor${areaOsmIds.sorted().toString().replace(" ", "")}" +
+                       "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
+                           .toString().replace(" ", "")}" +
                        "Buffer${bufferRadius}" +
-                       "WithCensus${censusFile != null}" +
+                       "Census${censusFile != null}" +
                        ".geojson"
             )
+
             // Check cache
-            val buildingsCollection: GeoJsonFeatureCollection
+            val collection: GeoJsonFeatureCollection
             if (cache and cachePath.toFile().exists()) {
-                buildingsCollection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
+                collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
             } else {
                 // Load data from geojson files and PostgreSQL database with OSM data
                 val time = measureTime {
-                    buildingsCollection = createModelArea(
-                        dbUrl = dbUrl,
-                        dbUser = dbUser,
-                        dbPassword = dbPassword,
-                        areaOsmIds = areaOsmIds,
+                    collection = buildArea(
+                        area = area,
+                        osmFile = osmFile,
                         bufferRadius = bufferRadius,
                         censusFile = censusFile
                     )
@@ -185,13 +183,11 @@ class Omod(
                 println("$time")
                 if (cache) {
                     Files.createDirectories(cachePath.parent)
-                    cachePath.toFile().writeText(json.encodeToString(buildingsCollection))
+                    cachePath.toFile().writeText(json.encodeToString(collection))
                 }
             }
-            val geometryFactory = GeometryFactory()
-
             return Omod(
-                Building.fromGeoJson(buildingsCollection, geometryFactory),
+                Building.fromGeoJson(collection, geometryFactory),
                 odFile,
                 gridResolution,
                 seed,
@@ -200,41 +196,6 @@ class Omod(
                 cacheDir,
                 mode
             )
-        }
-        @Suppress("unused")
-        fun fromFile(file: File, mode: RoutingMode? = null, osmFile: File? = null,
-                     odFile: File? = null, gridResolution: Double? = null,
-                     seed: Long? = null, cacheDir: Path? = null) : Omod {
-            val buildingsCollection: GeoJsonFeatureCollection = json.decodeFromString(file.readText(Charsets.UTF_8))
-
-            val geometryFactory = GeometryFactory()
-            return Omod(
-                Building.fromGeoJson(buildingsCollection, geometryFactory),
-                odFile,
-                gridResolution,
-                seed,
-                geometryFactory,
-                osmFile,
-                cacheDir,
-                mode
-            )
-        }
-        @Suppress("unused")
-        fun makeFileFromPG(file: File, dbUrl: String, dbUser: String, dbPassword: String,
-                           areaOsmIds: List<Int>,
-                           censusFile: File? = null,
-                           bufferRadius: Double = 0.0
-        ) {
-            // Load data from geojson files and PostgreSQL database with OSM data
-            val buildingsCollection = createModelArea(
-                dbUrl = dbUrl,
-                dbUser = dbUser,
-                dbPassword = dbPassword,
-                areaOsmIds = areaOsmIds,
-                bufferRadius = bufferRadius,
-                censusFile = censusFile
-            )
-            file.writeText(json.encodeToString(buildingsCollection))
         }
     }
 
