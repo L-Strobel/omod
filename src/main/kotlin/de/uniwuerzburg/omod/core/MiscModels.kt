@@ -9,16 +9,7 @@ val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
  * Landuse categories. For work and home probabilities
  */
 enum class Landuse {
-    RESIDENTIAL, INDUSTRIAL, COMMERCIAL, RECREATIONAL, AGRICULTURE, FOREST, NONE;
-
-    fun getWorkWeight() : Double {
-        return when(this) {
-            RESIDENTIAL -> 0.0
-            INDUSTRIAL -> 1.0
-            COMMERCIAL -> 0.0
-            else -> 0.0
-        }
-    }
+    RESIDENTIAL, INDUSTRIAL, COMMERCIAL, NONE;
 }
 
 /**
