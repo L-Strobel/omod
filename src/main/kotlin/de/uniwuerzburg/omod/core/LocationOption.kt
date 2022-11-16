@@ -16,7 +16,12 @@ interface LocationOption {
     var odZone: ODZone?
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
-    fun getPriorWeightFor(activityType: ActivityType) : Double
+    val nBuilding: Double
+    val nOffices: Double
+    val nShops: Double
+    val nSchools: Double
+    val nUnis: Double
+    val population: Double
 }
 
 /**
@@ -46,27 +51,20 @@ class Building  (
     override var odZone: ODZone?,
     override val inFocusArea: Boolean,
 
-    val point: Point,
+    override val nShops: Double,
+    override val nOffices: Double,
+    override val nSchools: Double,
+    override val nUnis: Double,
+    override val population: Double,
 
+    val point: Point,
     val area: Double,
-    val population: Double?,
     val landuse: Landuse,
-    val nShops: Double,
-    val nOffices: Double,
-    val nSchools: Double,
+
     var cell: Cell? = null
 ) : LocationOption, RealLocation {
     override val avgDistanceToSelf = 0.0
-
-    override fun getPriorWeightFor(activityType: ActivityType): Double {
-        return when(activityType) {
-            ActivityType.HOME -> population ?: 1.0
-            ActivityType.WORK -> nShops + nOffices + landuse.getWorkWeight()
-            ActivityType.SCHOOL -> nSchools
-            ActivityType.SHOPPING -> nShops
-            else -> 1.0
-        }
-    }
+    override val nBuilding = 1.0
 
     companion object {
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
@@ -84,12 +82,12 @@ class Building  (
                     coord = point.coordinate,
                     latlonCoord = transformer.toLatLon(point).coordinate,
                     area = properties.area,
-                    population = properties.population,
+                    population = properties.population ?: 1.0,
                     landuse = properties.landuse,
                     nShops = properties.number_shops,
                     nOffices = properties.number_offices,
                     nSchools = properties.number_schools,
-                    // nUnis = properties.number_universities,
+                    nUnis = properties.number_universities,
                     inFocusArea = properties.in_focus_area,
                     odZone = null,
                     point = point
@@ -117,11 +115,12 @@ data class Cell (
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
 
     // Sum
-    val homeWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.HOME) }
-    val workWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.WORK) }
-    val schoolWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.SCHOOL) }
-    val shoppingWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.SHOPPING) }
-    val otherWeight = buildings.sumOf { it.getPriorWeightFor(ActivityType.OTHER) }
+    override val nBuilding = buildings.sumOf { it.nBuilding }
+    override val population = buildings.sumOf { it.population }
+    override val nOffices = buildings.sumOf { it.nOffices }
+    override val nSchools = buildings.sumOf { it.nSchools }
+    override val nUnis = buildings.sumOf { it.nUnis }
+    override val nShops = buildings.sumOf { it.nShops }
 
     override val inFocusArea = buildings.any { it.inFocusArea }
 
@@ -129,19 +128,7 @@ data class Cell (
         return id
     }
 
-    override fun getPriorWeightFor(activityType: ActivityType): Double {
-        return when(activityType) {
-            ActivityType.HOME -> homeWeight
-            ActivityType.WORK -> workWeight
-            ActivityType.SCHOOL -> schoolWeight
-            ActivityType.SHOPPING -> shoppingWeight
-            else -> otherWeight
-        }
-    }
-
-    /**
-     * Auto generated equals
-     */
+    // Auto generated
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -150,16 +137,17 @@ data class Cell (
 
         if (id != other.id) return false
         if (coord != other.coord) return false
+        if (latlonCoord != other.latlonCoord) return false
         if (envelope != other.envelope) return false
         if (buildings != other.buildings) return false
         if (avgDistanceToSelf != other.avgDistanceToSelf) return false
-        if (latlonCoord != other.latlonCoord) return false
         if (odZone != other.odZone) return false
-        if (homeWeight != other.homeWeight) return false
-        if (workWeight != other.workWeight) return false
-        if (schoolWeight != other.schoolWeight) return false
-        if (shoppingWeight != other.shoppingWeight) return false
-        if (otherWeight != other.otherWeight) return false
+        if (nBuilding != other.nBuilding) return false
+        if (population != other.population) return false
+        if (nOffices != other.nOffices) return false
+        if (nSchools != other.nSchools) return false
+        if (nUnis != other.nUnis) return false
+        if (nShops != other.nShops) return false
         if (inFocusArea != other.inFocusArea) return false
 
         return true
@@ -172,23 +160,20 @@ data class Cell (
 data class DummyLocation (
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
-    val homeWeight: Double,
-    val workWeight: Double,
-    val schoolWeight: Double,
-    val shoppingWeight: Double,
-    val otherWeight: Double,
-    override var odZone: ODZone?
+    override val population: Double,
+    override var odZone: ODZone?,
+    val transferActivities: Set<ActivityType> // Activities which can cause arrival and departure here
 ) : LocationOption, AggregateLocation {
-    override val avgDistanceToSelf = 1.0 // Number irrelevant as long as it is > 0
-    override val inFocusArea = false
+    // IF numbers get multiplied with k-factor later.
+    // Therefore, the only real distinction is between 0 and >0
+    override val nBuilding = 1.0 // If zero: location unreachable
+    override val avgDistanceToSelf = 1.0 // Must be >0
 
-    override fun getPriorWeightFor(activityType: ActivityType): Double {
-        return when(activityType) {
-            ActivityType.HOME -> homeWeight
-            ActivityType.WORK -> workWeight
-            ActivityType.SCHOOL -> schoolWeight
-            ActivityType.SHOPPING -> shoppingWeight
-            else -> otherWeight
-        }
-    }
+    // These don't matter. Only exist for LocationOption interface.
+    override val nOffices = 0.0
+    override val nSchools = 0.0
+    override val nUnis = 0.0
+    override val nShops = 0.0
+
+    override val inFocusArea = false
 }
