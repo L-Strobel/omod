@@ -31,7 +31,6 @@ private fun getShortLanduseDescription(osmDescription: String): MapObjectType? {
         "commercial"        -> MapObjectType.LU_COMMERCIAL
         "retail"            -> MapObjectType.LU_COMMERCIAL
         "industrial"        -> MapObjectType.LU_INDUSTRIAL
-        "military"          -> MapObjectType.LU_INDUSTRIAL
         /* Unused landuse types
         "cemetery"          -> MapObjectType.LU_RECREATIONAL
         "meadow"            -> MapObjectType.LU_RECREATIONAL
@@ -46,6 +45,7 @@ private fun getShortLanduseDescription(osmDescription: String): MapObjectType? {
         "orchard"           -> MapObjectType.LU_AGRICULTURE
         "forest"            -> MapObjectType.LU_FOREST
         "quarry"            -> MapObjectType.LU_FOREST
+        "military"          -> MapObjectType.LU_NONE
          */
         else -> null
     }

@@ -10,29 +10,33 @@ import org.locationtech.jts.geom.Point
 /**
  * Interface for cells and buildings
  */
-interface LocationOption {
+sealed interface LocationOption {
     val coord: Coordinate
     val latlonCoord: Coordinate
     var odZone: ODZone?
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
-    val nBuilding: Double
-    val nOffices: Double
-    val nShops: Double
-    val nSchools: Double
-    val nUnis: Double
-    val population: Double
 }
 
 /**
  * A location that is inside the area with OSM data, i.e. not a dummy location
  */
-interface RealLocation : LocationOption
+interface RealLocation : LocationOption {
+    val population: Double
 
-/**
- * A location that is not a just a building, i.e. dummy location or cell
- */
-interface AggregateLocation : LocationOption
+    val nBuilding: Double
+    val nOffices: Double
+    val nShops: Double
+    val nSchools: Double
+    val nUnis: Double
+    val nCommercial: Double
+    val nIndustrial: Double
+
+    val areaResidential: Double
+    val areaCommercial: Double
+    val areaIndustrial: Double
+    val areaOther: Double
+}
 
 /**
  * Model for a building
@@ -62,9 +66,52 @@ class Building  (
     val landuse: Landuse,
 
     var cell: Cell? = null
-) : LocationOption, RealLocation {
+) : RealLocation {
     override val avgDistanceToSelf = 0.0
+
     override val nBuilding = 1.0
+    override val nIndustrial: Double
+    override val nCommercial: Double
+
+    override val areaResidential: Double
+    override val areaCommercial: Double
+    override val areaIndustrial: Double
+    override val areaOther: Double
+
+    init {
+        var nIndustrial = 0.0
+        var nCommercial = 0.0
+
+        var areaResidential = 0.0
+        var areaCommercial = 0.0
+        var areaIndustrial = 0.0
+        var areaOther = 0.0
+
+        when(landuse) {
+            Landuse.RESIDENTIAL -> {
+                areaResidential = area
+            }
+            Landuse.COMMERCIAL -> {
+                nCommercial = 1.0
+                areaCommercial = area
+            }
+            Landuse.INDUSTRIAL -> {
+                nIndustrial = 1.0
+                areaIndustrial = area
+            }
+            else -> {
+                areaOther = area
+            }
+        }
+
+        this.nIndustrial = nIndustrial
+        this.nCommercial = nCommercial
+
+        this.areaResidential = areaResidential
+        this.areaCommercial = areaCommercial
+        this.areaIndustrial = areaIndustrial
+        this.areaOther = areaOther
+    }
 
     companion object {
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
@@ -107,7 +154,7 @@ data class Cell (
     override val latlonCoord: Coordinate ,
     val envelope: Envelope,
     val buildings: List<Building>,
-) : LocationOption, RealLocation, AggregateLocation {
+) : RealLocation {
     // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
@@ -115,14 +162,21 @@ data class Cell (
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
 
     // Sum
-    override val nBuilding = buildings.sumOf { it.nBuilding }
+    override val inFocusArea = buildings.any { it.inFocusArea }
     override val population = buildings.sumOf { it.population }
+
+    override val nBuilding = buildings.sumOf { it.nBuilding }
     override val nOffices = buildings.sumOf { it.nOffices }
     override val nSchools = buildings.sumOf { it.nSchools }
     override val nUnis = buildings.sumOf { it.nUnis }
     override val nShops = buildings.sumOf { it.nShops }
+    override val nIndustrial = buildings.sumOf { it.nIndustrial }
+    override val nCommercial = buildings.sumOf { it.nCommercial }
 
-    override val inFocusArea = buildings.any { it.inFocusArea }
+    override val areaResidential = buildings.sumOf { it.areaResidential }
+    override val areaCommercial = buildings.sumOf { it.areaCommercial }
+    override val areaIndustrial = buildings.sumOf { it.areaIndustrial }
+    override val areaOther = buildings.sumOf { it.areaOther }
 
     override fun hashCode(): Int {
         return id
@@ -160,20 +214,9 @@ data class Cell (
 data class DummyLocation (
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
-    override val population: Double,
     override var odZone: ODZone?,
     val transferActivities: Set<ActivityType> // Activities which can cause arrival and departure here
-) : LocationOption, AggregateLocation {
-    // IF numbers get multiplied with k-factor later.
-    // Therefore, the only real distinction is between 0 and >0
-    override val nBuilding = 1.0 // If zero: location unreachable
-    override val avgDistanceToSelf = 1.0 // Must be >0
-
-    // These don't matter. Only exist for LocationOption interface.
-    override val nOffices = 0.0
-    override val nSchools = 0.0
-    override val nUnis = 0.0
-    override val nShops = 0.0
-
+) : LocationOption {
     override val inFocusArea = false
+    override val avgDistanceToSelf = 1.0
 }

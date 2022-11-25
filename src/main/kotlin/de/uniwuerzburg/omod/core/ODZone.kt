@@ -23,7 +23,7 @@ data class ODZone (
     // First: Destination zones. Second: the number of trips from here to there
     var destinations: List<Pair<ODZone, Double>> = listOf()
 
-    val aggLocs: MutableList<AggregateLocation> = mutableListOf()
+    val aggLocs: MutableList<LocationOption> = mutableListOf()
 
     companion object {
         fun readODMatrix(odFile: File, factory: GeometryFactory, transformer: CRSTransformer) : List<ODZone> {
