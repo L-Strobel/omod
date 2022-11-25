@@ -1,7 +1,6 @@
 package de.uniwuerzburg.omod.routing
 
 import com.graphhopper.GraphHopper
-import de.uniwuerzburg.omod.core.DummyLocation
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.RealLocation
 import org.locationtech.jts.geom.Coordinate
@@ -13,6 +12,7 @@ import java.io.ObjectOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.math.max
 
 
 enum class RoutingMode {
@@ -37,12 +37,13 @@ class RoutingCache(
     private val mode: RoutingMode,
     private val hopper: GraphHopper?
 ) {
-    private val sizeLimit = 20_000 // This value caps the memory consumption roughly at 5 GB
-    private val sizeLimitSecTable = sizeLimit * 3
+    private val sizeLimit = 20_000 // This value caps the memory consumption roughly at 5 GB (I hope)
+    private val prefillSize = 10_000 // Should be smaller than sizeLimit
+    private val sizeLimitSecTable = sizeLimit
     private var table: HashMap<LocationOption, HashMap<LocationOption, Float>> = MaxSizeHashMap(sizeLimit)
     private val logger = LoggerFactory.getLogger(RoutingCache::class.java)
 
-    fun load(locations: List<LocationOption>, cacheDir: Path){
+    fun load(locations: List<LocationOption>, cacheDir: Path, priorityValues: List<Double>?){
         // Bounds
         val latMin = locations.minOfOrNull { it.latlonCoord.x } ?:0.0
         val lonMin = locations.minOfOrNull { it.latlonCoord.y } ?:0.0
@@ -59,12 +60,12 @@ class RoutingCache(
         if (cachePath.toFile().exists()) {
             fillFromOOMCache(cachePath, locations)
         } else {
-            fill(locations)
+            fill(locations, priorityValues!!)
             toOOMCache(cachePath)
         }
     }
 
-    private fun fill(locations: List<LocationOption>) {
+    private fun fill(locations: List<LocationOption>, priorityValues: List<Double>) {
         val modeInfo = if (mode == RoutingMode.GRAPHHOPPER) {
             "Routing mode is GRAPHHOPPER so this will take a while. If you want to run quick tests use BEELINE."
         } else {
@@ -72,11 +73,17 @@ class RoutingCache(
         }
         logger.info("Calculating distance matrix. $modeInfo")
 
+        val nLocations = max(locations.size, prefillSize)
+        val highestPriorities = priorityValues.mapIndexed {i, it -> i to it}.sortedBy { it.second }.takeLast(nLocations)
+        val relevantLocations = highestPriorities.map { locations[it.first] }
+
         var progress = 0
-        for (origin in locations) {
+        for (origin in relevantLocations) {
             if (progress % 100 == 0) {
-                logger.info("Progress: ${ "%.2f".format(null, 100.0 * progress / locations.size) } %")
+                logger.info("Progress: ${ "%.2f".format(null, 100.0 * progress / nLocations) } %")
             }
+
+            if (origin !is RealLocation) { continue }
 
             val oTable  = if (!table.containsKey(origin)) {
                 table[origin] = MaxSizeHashMap(sizeLimitSecTable)
@@ -85,25 +92,24 @@ class RoutingCache(
                 table[origin]!!
             }
 
-            if (origin is DummyLocation) { continue }
-
             when (mode) {
                 RoutingMode.BEELINE -> {
-                    for (destination in locations) {
-                        if (destination is DummyLocation) { continue }
+                    for (destination in relevantLocations) {
+                        if (destination !is RealLocation) { continue }
                         if (oTable[destination] != null)  { continue }
                         oTable[destination] = calcDistanceBeeline(origin, destination).toFloat()
                     }
                 }
                 RoutingMode.GRAPHHOPPER -> {
-                    val qGraph = prepareQGraph(hopper!!, locations.filterIsInstance<RealLocation>())
-                    val distances = querySPT(qGraph, origin as RealLocation, locations)
+                    val qGraph = prepareQGraph(hopper!!, relevantLocations.filterIsInstance<RealLocation>())
+                    val distances = querySPT(qGraph, origin, relevantLocations)
 
-                    for ((i, destination) in locations.withIndex()) {
-                        if (destination is DummyLocation) { continue }
+                    for ((i, destination) in relevantLocations.withIndex()) {
+                        if (destination !is RealLocation) { continue }
                         if (oTable[destination] != null)  { continue }
 
-                        oTable[destination] = distances[i]?.toFloat() ?: calcDistance(origin, destination).toFloat()
+                        val sptDistance = distances[i]?.toFloat()
+                        oTable[destination] = sptDistance ?: calcDistanceGHWithFallback(origin, destination).toFloat()
                     }
                 }
             }
@@ -112,45 +118,46 @@ class RoutingCache(
     }
 
     fun getDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
-        if (origin is DummyLocation) {
-            return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
-        }
-        val oTable  = if (!table.containsKey(origin)) {
-            table[origin] = MaxSizeHashMap(sizeLimitSecTable)
-            table[origin]!!
-        } else {
-            table[origin]!!
-        }
-        return FloatArray(destinations.size) {
-            val destination = destinations[it]
-            if (destination is DummyLocation) {
-                calcDistanceBeeline(origin, destination).toFloat()
-            } else {
-                val entry = oTable[destination]
-                if (entry == null) {
-                    val distance = calcDistance(origin, destination).toFloat()
-                    oTable[destination] = distance
-                    distance
+        when (mode) {
+            RoutingMode.BEELINE -> return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
+            RoutingMode.GRAPHHOPPER -> {
+                if (origin !is RealLocation) {
+                    return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
+                }
+                val oTable  = if (!table.containsKey(origin)) {
+                    table[origin] = MaxSizeHashMap(sizeLimitSecTable)
+                    table[origin]!!
                 } else {
-                    oTable[destination]!!
+                    table[origin]!!
+                }
+                return FloatArray(destinations.size) {
+                    val destination = destinations[it]
+                    if (destination !is RealLocation) {
+                        calcDistanceBeeline(origin, destination).toFloat()
+                    } else {
+                        val entry = oTable[destination]
+                        if (entry == null) {
+                            val distance = calcDistanceGHWithFallback(origin, destination).toFloat()
+                            oTable[destination] = distance
+                            distance
+                        } else {
+                            oTable[destination]!!
+                        }
+                    }
                 }
             }
         }
     }
-    private fun calcDistance(origin: LocationOption, destination: LocationOption) : Double {
-        return when (mode) {
-            RoutingMode.BEELINE -> calcDistanceBeeline(origin, destination)
-            RoutingMode.GRAPHHOPPER -> {
-                val rslt = calcDistanceGH(origin as RealLocation, destination as RealLocation, hopper!!)
-                if (rslt == null) {
-                    logger.warn(
-                        "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."
-                    )
-                    calcDistanceBeeline(origin, destination)
-                } else {
-                    rslt
-                }
-            }
+
+    private fun calcDistanceGHWithFallback(origin: RealLocation, destination: RealLocation) : Double {
+        val rslt = calcDistanceGH(origin, destination, hopper!!)
+        return if (rslt == null) {
+            logger.warn(
+                "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."
+            )
+            calcDistanceBeeline(origin, destination)
+        } else {
+            rslt
         }
     }
 
