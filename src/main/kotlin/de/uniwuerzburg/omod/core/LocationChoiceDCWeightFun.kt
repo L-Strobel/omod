@@ -8,62 +8,73 @@ import kotlin.math.ln
 // Expected meta information
 @Serializable
 sealed class LocationChoiceDCWeightFun {
-    abstract val coeffOFFICE: Double
-    abstract val coeffSHOP: Double
-    abstract val coeffSCHOOL: Double
-    abstract val coeffUNI: Double
+    abstract val coeffResidentialArea: Double
+    abstract val coeffCommercialArea: Double
+    abstract val coeffIndustrialArea: Double
+    abstract val coeffOtherArea: Double
+    abstract val coeffOfficeUnits: Double
+    abstract val coeffShopUnits: Double
+    abstract val coeffSchoolUnits: Double
+    abstract val coeffUniUnits: Double
+    abstract val coeffCommercialUnits: Double
+    abstract val coeffIndustrialUnits: Double
 
     abstract fun deterrenceFunction(distance: Double) : Double
 
-    open fun calcFor(destination: LocationOption, distance: Double) : Double {
+    open fun calcFor(destination: RealLocation, distance: Double) : Double {
         // Log is undefined for 0
         val distanceAdj = if (distance == 0.0) {
             Double.MIN_VALUE
         } else {
             distance / 1000
         }
-        val v = deterrenceFunction(distanceAdj)
-        val destinationAttraction = calcForNoOrigin(destination)
-        return  destinationAttraction * exp(v)
+        val fd = deterrenceFunction(distanceAdj)
+        val attraction = calcForNoOrigin(destination)
+        return exp(attraction + fd)
     }
 
-    open fun calcForNoOrigin(destination: LocationOption) : Double {
-        return destination.nBuilding +
-               coeffOFFICE * destination.nOffices +
-               coeffSHOP * destination.nShops +
-               coeffSCHOOL * destination.nSchools +
-               coeffUNI * destination.nUnis
+    open fun calcForNoOrigin(destination: RealLocation) : Double {
+        return coeffResidentialArea * destination.areaResidential +
+               coeffCommercialArea * destination.areaCommercial +
+               coeffIndustrialArea * destination.areaIndustrial +
+               coeffOtherArea * destination.areaOther +
+               coeffOfficeUnits * destination.nOffices +
+               coeffShopUnits * destination.nShops +
+               coeffSchoolUnits * destination.nSchools +
+               coeffUniUnits * destination.nUnis +
+               coeffCommercialUnits * destination.nCommercial +
+               coeffIndustrialUnits * destination.nIndustrial
     }
 }
 
 @Suppress("unused")
-object ByPopulation : LocationChoiceDCWeightFun() {
-    override val coeffOFFICE: Double
-        get() {
-            throw NotImplementedError()
-        }
-    override val coeffSHOP: Double
-        get() {
-            throw NotImplementedError()
-        }
-    override val coeffSCHOOL: Double
-        get() {
-            throw NotImplementedError()
-        }
-    override val coeffUNI: Double
-        get() {
-            throw NotImplementedError()
-        }
+class ByPopulation(
+    private val homeOnlyInside: Boolean
+) : LocationChoiceDCWeightFun () {
+    override val coeffResidentialArea: Double get() { throw NotImplementedError() }
+    override val coeffCommercialArea: Double get() { throw NotImplementedError() }
+    override val coeffIndustrialArea: Double get() { throw NotImplementedError() }
+    override val coeffOtherArea: Double get() { throw NotImplementedError() }
+    override val coeffOfficeUnits: Double get() { throw NotImplementedError() }
+    override val coeffShopUnits: Double get() { throw NotImplementedError() }
+    override val coeffSchoolUnits: Double get() { throw NotImplementedError() }
+    override val coeffUniUnits: Double get() { throw NotImplementedError() }
+    override val coeffCommercialUnits: Double get() { throw NotImplementedError() }
+    override val coeffIndustrialUnits: Double get() { throw NotImplementedError() }
 
-    override fun calcForNoOrigin(destination: LocationOption): Double {
-        return destination.population
+    override fun calcForNoOrigin(destination: RealLocation): Double {
+        return if (homeOnlyInside){
+            destination.population * destination.inFocusArea.toDouble()
+        } else {
+            destination.population
+        }
     }
 
     override fun deterrenceFunction(distance: Double): Double {
         throw NotImplementedError()
     }
 
-    override fun calcFor(destination: LocationOption, distance: Double): Double {
+    override fun calcFor(destination: RealLocation, distance: Double): Double {
         throw NotImplementedError()
     }
 }
@@ -72,10 +83,16 @@ object ByPopulation : LocationChoiceDCWeightFun() {
 @SerialName("LogNorm")
 @Suppress("unused")
 class LogNormDCUtil (
-    override val coeffOFFICE: Double,
-    override val coeffSHOP: Double,
-    override val coeffSCHOOL: Double,
-    override val coeffUNI: Double,
+    override val coeffResidentialArea: Double,
+    override val coeffCommercialArea: Double,
+    override val coeffIndustrialArea: Double,
+    override val coeffOtherArea: Double,
+    override val coeffOfficeUnits: Double,
+    override val coeffShopUnits: Double,
+    override val coeffSchoolUnits: Double,
+    override val coeffUniUnits: Double,
+    override val coeffCommercialUnits: Double,
+    override val coeffIndustrialUnits: Double,
     // For deterrence function
     private val coeff0: Double,
     private val coeff1: Double,
@@ -87,13 +104,44 @@ class LogNormDCUtil (
 }
 
 @Serializable
+@SerialName("LogNormPower")
+@Suppress("unused")
+class LogNormPowerDCUtil (
+    override val coeffResidentialArea: Double,
+    override val coeffCommercialArea: Double,
+    override val coeffIndustrialArea: Double,
+    override val coeffOtherArea: Double,
+    override val coeffOfficeUnits: Double,
+    override val coeffShopUnits: Double,
+    override val coeffSchoolUnits: Double,
+    override val coeffUniUnits: Double,
+    override val coeffCommercialUnits: Double,
+    override val coeffIndustrialUnits: Double,
+    // For deterrence function
+    private val coeff0: Double,
+    private val coeff1: Double,
+    private val coeff2: Double
+) : LocationChoiceDCWeightFun( ) {
+
+    override fun deterrenceFunction(distance: Double) : Double {
+        return coeff0 * ln(distance) * ln(distance) + coeff1 * ln(distance) + coeff2 * distance
+    }
+}
+
+@Serializable
 @SerialName("CombinedPowerExpon")
 @Suppress("unused")
 data class CombinedDCUtil(
-    override val coeffOFFICE: Double,
-    override val coeffSHOP: Double,
-    override val coeffSCHOOL: Double,
-    override val coeffUNI: Double,
+    override val coeffResidentialArea: Double,
+    override val coeffCommercialArea: Double,
+    override val coeffIndustrialArea: Double,
+    override val coeffOtherArea: Double,
+    override val coeffOfficeUnits: Double,
+    override val coeffShopUnits: Double,
+    override val coeffSchoolUnits: Double,
+    override val coeffUniUnits: Double,
+    override val coeffCommercialUnits: Double,
+    override val coeffIndustrialUnits: Double,
     // For deterrence function
     private val coeff0: Double,
     private val coeff1: Double,

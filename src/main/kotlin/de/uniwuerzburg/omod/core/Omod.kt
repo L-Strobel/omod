@@ -46,7 +46,7 @@ class Omod(
     val kdTree: KdTree
     val buildings: List<Building>
     private val grid: List<Cell>
-    private val zones: List<AggregateLocation> // Grid + DummyLocations for commuting locations
+    private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
     private val firstOrderCFactors = mutableMapOf<ActivityType, Map<ODZone, Double>>()
     private val secondOrderCFactors = mutableMapOf<Pair<ActivityType, ActivityType>, Map<Pair<ODZone, ODZone>, Double>>()
     private val populationDef: PopulationDef
@@ -57,6 +57,7 @@ class Omod(
     private val routingCache: RoutingCache
     private val geometryFactory: GeometryFactory = GeometryFactory()
     private val transformer: CRSTransformer
+    private val homeOnlyInside = false
 
     init {
         // Get population distribution
@@ -71,7 +72,7 @@ class Omod(
         // Get distance distributions
         val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
         val mutLocChoiceFuns: MutableMap<ActivityType, LocationChoiceDCWeightFun> = Json.decodeFromString(distrTxt)
-        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation
+        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation(homeOnlyInside)
         mutLocChoiceFuns[ActivityType.BUSINESS] = mutLocChoiceFuns[ActivityType.OTHER]!!
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
@@ -105,7 +106,8 @@ class Omod(
         // Create routing cache
         routingCache = RoutingCache(mode, hopper)
         if (mode == RoutingMode.GRAPHHOPPER) {
-            routingCache.load(grid, cacheDir)
+            val priorityValues = getWeightsNoOrigin(grid, ActivityType.OTHER) // Priority of cells for caching
+            routingCache.load(grid, cacheDir, priorityValues)
         }
 
         // Calibration
@@ -251,7 +253,6 @@ class Omod(
                 val dummyLoc = DummyLocation(
                     coord = centroid.coordinate,
                     latlonCoord = latlonCoord,
-                    population = (ActivityType.HOME in activities).toDouble(),
                     odZone = odZone,
                     transferActivities = activities
                 )
@@ -680,19 +681,22 @@ class Omod(
             }
         }
 
-        val distances = calcDistances(origin, destinations)
+        val distances = routingCache.getDistances(origin, destinations)
         val weightFunction = locChoiceWeightFuns[activityType]!!
 
         val weights = destinations.mapIndexed { i, destination ->
-            if (destination is DummyLocation) {
-                if (activityType !in destination.transferActivities) {
-                    1.0
-                } else {
-                    0.0
+            when(destination) {
+                is DummyLocation -> {
+                    if (activityType !in destination.transferActivities) {
+                        1.0
+                    } else {
+                        0.0
+                    }
                 }
-            } else {
-                val distance = distances[i].toDouble()
-                weightFunction.calcFor(destination, distance)
+                is RealLocation -> {
+                    val distance = distances[i].toDouble()
+                    weightFunction.calcFor(destination, distance)
+                }
             }
         }
 
@@ -712,14 +716,17 @@ class Omod(
         val weightFunction = locChoiceWeightFuns[activityType]!!
 
         val weights = destinations.map { destination ->
-            if (destination is DummyLocation) {
-                if (activityType !in destination.transferActivities) {
-                    1.0
-                } else {
-                    0.0
+            when (destination) {
+                is DummyLocation -> {
+                    if (activityType !in destination.transferActivities) {
+                        1.0
+                    } else {
+                        0.0
+                    }
                 }
-            } else {
-                weightFunction.calcForNoOrigin(destination)
+                is RealLocation -> {
+                    weightFunction.calcForNoOrigin(destination)
+                }
             }
         }
 
@@ -736,9 +743,5 @@ class Omod(
             }
             else -> weights
         }
-    }
-
-    fun calcDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
-        return routingCache.getDistances(origin, destinations)
     }
 }
