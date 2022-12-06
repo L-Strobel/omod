@@ -1,8 +1,6 @@
 package de.uniwuerzburg.omod.core
 
 import org.junit.jupiter.api.Test
-
-import org.junit.jupiter.api.Assertions.*
 import java.util.Random
 
 internal class StochasticBundleTest {
@@ -13,7 +11,7 @@ internal class StochasticBundleTest {
     @Test
     fun createCumDist() {
         val expected = 1.0
-        assertEquals(expected, createCumDist(testWeights).last())
+        assert(expected == createCumDist(testWeights).last())
     }
 
     @Test

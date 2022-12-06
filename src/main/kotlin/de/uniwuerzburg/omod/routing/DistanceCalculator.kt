@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.routing
 
 import com.graphhopper.GHRequest
+import com.graphhopper.GHResponse
 import com.graphhopper.GraphHopper
 import com.graphhopper.isochrone.algorithm.ShortestPathTree
 import com.graphhopper.routing.ev.Subnetwork
@@ -21,35 +22,21 @@ private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.routing.Dista
  * Calculate the euclidean distance between two locations
  */
 fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : Double {
-    return if (origin == destination) {
-        origin.avgDistanceToSelf // 0.0 for Buildings
-    } else {
-        origin.coord.distance(destination.coord)
-    }
+    return origin.coord.distance(destination.coord)
 }
 
 /**
  * Calculate the distance between two locations using a car
  */
-fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : Double? {
-    return if (origin == destination) {
-        origin.avgDistanceToSelf // 0.0 for Buildings
-    } else {
-        val req = GHRequest(
-            origin.latlonCoord.x,
-            origin.latlonCoord.y,
-            destination.latlonCoord.x,
-            destination.latlonCoord.y
-        )
-        req.profile = "car"
-        val rsp = hopper.route(req)
-
-        if (rsp.hasErrors()) {
-            return null
-        } else {
-            rsp.best.distance
-        }
-    }
+fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
+    val req = GHRequest(
+        origin.latlonCoord.x,
+        origin.latlonCoord.y,
+        destination.latlonCoord.x,
+        destination.latlonCoord.y
+    )
+    req.profile = "custom_car"
+    return hopper.route(req)
 }
 
 data class PreparedQGraph (
@@ -71,7 +58,7 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
         val snap = hopper.locationIndex.findClosest(
             loc.latlonCoord.x,
             loc.latlonCoord.y,
-            DefaultSnapFilter(weighting, encodingManager.getBooleanEncodedValue(Subnetwork.key("car")))
+            DefaultSnapFilter(weighting, encodingManager.getBooleanEncodedValue(Subnetwork.key("custom_car")))
         )
         if (snap.isValid) {
             snaps.add(snap)

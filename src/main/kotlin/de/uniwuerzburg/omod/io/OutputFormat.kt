@@ -1,8 +1,6 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.ActivityType
-import de.uniwuerzburg.omod.core.DummyLocation
-import de.uniwuerzburg.omod.core.MobiAgent
+import de.uniwuerzburg.omod.core.*
 import kotlinx.serialization.Serializable
 
 /**
@@ -20,9 +18,9 @@ data class OutputActivity (
 @Serializable
 data class OutputEntry (
     val id: Int,
-    val homogenousGroup: String,
-    val mobilityGroup: String,
-    val age: String,
+    val homogenousGroup: HomogeneousGrp,
+    val mobilityGroup: MobilityGrp,
+    val age: AgeGrp,
     val profile: List<OutputActivity>?
 )
 fun formatOutput(agent: MobiAgent) : OutputEntry {
