@@ -37,7 +37,7 @@ class Run : CliktCommand() {
     // Options
     private val n_agents by option(
         help="Number of agents in focus area to simulate." +
-             "The buffer area and in-commuting sources are populated proportionally if home_only_in_focus = y."
+             "The buffer area and in-commuting sources are populated proportionally if populate_buffer_area = y."
     ).int().default(1000)
     private val n_days by option(
         help="Number of days to simulate"
@@ -70,8 +70,8 @@ class Run : CliktCommand() {
     //     .choice("true" to true, "false" to false).default(true)
     private val cache_dir by option(help = "Location of cache.")
         .path(canBeDir = true, canBeFile = false).default(Paths.get("omod_cache/"))
-    private val home_only_in_focus by option(
-        help = "Should agents homes all be in the focus area?"
+    private val populate_buffer_area by option(
+        help = "Set if agents can life in the buffer area?"
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(true)
 
     //@OptIn(ExperimentalTime::class)
@@ -93,7 +93,7 @@ class Run : CliktCommand() {
                 odFile = od, censusFile = census,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
                 cache = true, cacheDir = cache_dir,
-                homeOnlyFocus = home_only_in_focus
+                populateBufferArea = populate_buffer_area
             )
         }
         println("Loading data took: $timeRead")
