@@ -30,10 +30,10 @@ class GaussianMixture(
 /**
  * Holds activity data.
  * Structure is designed for fast access. Where possible data is already processed.
- * TODO: Search for same chain in other features
  */
-class ActivityDataMap(activityGroups: List<ActivityGroup>) {
+class ActivityDataStore(activityGroups: List<ActivityGroup>) {
     private val nodes: Map<Int, GroupData>
+    private val thresh = 280 // Minimum number of samples that a valid activity chain distribution needs
 
     private val cHom = Weekday.values().size
     private val cMob = cHom * HomogeneousGrp.values().size
@@ -58,41 +58,47 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
      *
      * If givenChain != null the function will also ensure that there are parameters for the gaussian mixture
      */
-    fun get(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
-            from: ActivityType, givenChain: List<ActivityType>? = null): ChainData {
-        require(from == ActivityType.HOME || from == ActivityType.OTHER) { "Chain starts at $from. This is not allowed."}
-
-        val key = getKey(weekday, homogenousGroup, mobilityGroup, age)
-        var groupData = nodes[key]
-
-        // Check if data exists and sample size is adequate.
-        val thresh = 280
-        var check = (groupData == null) || (groupData.sampleSize < thresh) || (groupData.chainsFrom[from] == null)
-        if (givenChain != null) {
-            check = check || groupData?.chainsFrom?.get(from)?.mixtures?.get(givenChain) == null
+    fun getChain(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
+                 from: ActivityType): ChainData {
+        require(from == ActivityType.HOME || from == ActivityType.OTHER) {
+            "Chain starts at $from. This is not allowed."
         }
-        if (check) {
-            val keys = listOf(
-                getKey(weekday, homogenousGroup, mobilityGroup, AgeGrp.UNDEFINED),
-                getKey(weekday, homogenousGroup, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED),
-                getKey(weekday, HomogeneousGrp.UNDEFINED, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED),
-                getKey(Weekday.UNDEFINED, HomogeneousGrp.UNDEFINED, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED)
-            )
 
-            for (k in keys) {
-                groupData = nodes[k]
-                check = (groupData != null) && (groupData.sampleSize >= thresh) && (groupData.chainsFrom[from] != null)
-                if (givenChain != null) {
-                    check = check && groupData?.chainsFrom?.get(from)?.mixtures?.get(givenChain) != null
-                }
-                if (check) {
-                    break
-                } else if (k == keys.last()) {
-                    throw Exception("Couldn't find activity data for group: $key and chain $givenChain")
-                }
+        val groupData = searchFor(weekday, homogenousGroup, mobilityGroup, age) {
+            (it.sampleSize >= thresh) && (it.chainsFrom[from] != null)
+        }
+
+        return groupData.chainsFrom[from]!!
+    }
+
+    fun getMixture(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
+                    chain: List<ActivityType>) : Mixture {
+        val from = chain.first()
+
+        val groupData = searchFor(weekday, homogenousGroup, mobilityGroup, age) {
+            it.chainsFrom[from]?.mixtures?.get(chain) != null
+        }
+
+        return groupData.chainsFrom[from]?.mixtures?.get(chain)!!
+    }
+
+    private fun searchFor(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
+                          predicate: (GroupData) -> Boolean) : GroupData {
+        // Relax conditions of probability distribution in this order
+        val keys = listOf(
+            getKey(weekday, homogenousGroup, mobilityGroup, age),
+            getKey(weekday, homogenousGroup, mobilityGroup, AgeGrp.UNDEFINED),
+            getKey(weekday, homogenousGroup, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED),
+            getKey(weekday, HomogeneousGrp.UNDEFINED, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED),
+            getKey(Weekday.UNDEFINED, HomogeneousGrp.UNDEFINED, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED)
+        )
+        for (k in keys) {
+            val groupData = nodes[k]
+            if ( (groupData != null) && predicate(groupData) ) {
+                return groupData
             }
         }
-        return groupData!!.chainsFrom[from]!!
+        throw Exception("Couldn't find desired data for group: $weekday, $homogenousGroup, $mobilityGroup, $age")
     }
 
     class GroupData(activityGroup: ActivityGroup) {
@@ -102,8 +108,12 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
         init {
             sampleSize = activityGroup.sampleSize
             chainsFrom = mutableMapOf()
-            chainsFrom[ActivityType.HOME] = ChainData(activityGroup.activityChains.filter { it.chain[0] == ActivityType.HOME })
-            chainsFrom[ActivityType.OTHER] = ChainData(activityGroup.activityChains.filter { it.chain[0] == ActivityType.OTHER })
+            chainsFrom[ActivityType.HOME] = ChainData(
+                activityGroup.activityChains.filter { it.chain[0] == ActivityType.HOME }
+            )
+            chainsFrom[ActivityType.OTHER] = ChainData(
+                activityGroup.activityChains.filter { it.chain[0] == ActivityType.OTHER }
+            )
         }
     }
 
