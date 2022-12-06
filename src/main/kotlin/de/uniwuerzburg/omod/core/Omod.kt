@@ -23,7 +23,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
-import kotlin.math.sqrt
 
 
 /**
@@ -44,7 +43,7 @@ class Omod(
     seed: Long? = null,
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
-    homeOnlyFocus: Boolean = true
+    private val homeOnlyFocus: Boolean = true
 ) {
     val kdTree: KdTree
     val buildings: List<Building>
@@ -74,7 +73,7 @@ class Omod(
         // Get distance distributions
         val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
         val mutLocChoiceFuns: MutableMap<ActivityType, LocationChoiceDCWeightFun> = Json.decodeFromString(distrTxt)
-        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation(homeOnlyFocus)
+        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation
         mutLocChoiceFuns[ActivityType.BUSINESS] = mutLocChoiceFuns[ActivityType.OTHER]!!
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
@@ -397,25 +396,27 @@ class Omod(
                 }
             }
         }
-        val featureDistribution =  createCumDist(jointProbability.toDoubleArray())
+        val featureDistribution = createCumDist(jointProbability.toDoubleArray())
 
-        // Assign home and work
-        val homCumDist = getDistrNoOrigin(zones, ActivityType.HOME)
+        // Home distributions inside and outside of focus area
+        val insideHWeights = getHomeWeightsRestricted(zones, true).toDoubleArray()
+        val outsideHWeight = getHomeWeightsRestricted(zones, false).toDoubleArray()
+        val insideCumDist = createCumDist(insideHWeights)
+        val outsideCumDist = createCumDist(outsideHWeight)
 
-        // Generate population
-        val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
-        val schoolDistCache = mutableMapOf<Int, DoubleArray>()
-
-        // Check the rough proportions of in and out of focus area homes for emergency break
-        val hWeights = getWeightsNoOrigin(zones, ActivityType.HOME)
-        val inShare = hWeights.filterIndexed { i, _ -> zones[i].inFocusArea }.sum() / hWeights.sum()
-
-        require(inShare > 0) {"Must be possible to life in focus zone!"}
+        val totalNAgents = if (homeOnlyFocus) {
+            n
+        } else {
+            // Check the rough proportions of in and out of focus area homes for emergency break
+            val hWeights = getWeightsNoOrigin(zones, ActivityType.HOME)
+            val inShare = insideHWeights.sum() / hWeights.sum()
+            (n / inShare).toInt()
+        }
 
         // Create agent until n life in the focus area
-        var id = 0
-        var agentsInFocusArea = 0
-        while (agentsInFocusArea < n) { // TODO without infinite loop
+        val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
+        val schoolDistCache = mutableMapOf<Int, DoubleArray>()
+        for (id in 0 until totalNAgents) {
             // Sociodemographic features
             val agentFeatures = sampleCumDist(featureDistribution, rng)
             val homogenousGroup = features[agentFeatures].first
@@ -423,16 +424,18 @@ class Omod(
             val age = features[agentFeatures].third
 
             // Get home zone (might be cell or dummy is node)
-            val homeZoneID = sampleCumDist(homCumDist, rng)
+            val inside = id < n // Should agent live inside focus area
+            val homeCumDist = if ( inside ) insideCumDist else outsideCumDist
+            val homeZoneID = sampleCumDist(homeCumDist, rng)
             val homeZone = zones[homeZoneID]
 
             // Get home location
-            val home = if (homeZone is Cell) {
-                // IS building
-                val buildingsHomeDist = getDistrNoOrigin(homeZone.buildings, ActivityType.HOME)
+            val home = if (homeZone is Cell) { // Home is building
+                val buildingsHomeDist = createCumDist(
+                    getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
+                )
                 homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
-            } else {
-                // IS dummy location
+            } else { // IS dummy location
                 homeZone
             }
 
@@ -466,18 +469,17 @@ class Omod(
 
             // Add the agent to the population
             agents.add(MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school))
-
-            // Counter
-            id += 1
-            if (home.inFocusArea) { agentsInFocusArea += 1 }
-            // Catch infinite loops.
-            // If number of agents in focus area is 10 standard deviations
-            // smaller than the expected value something might have gone wrong.
-            require(id * inShare - 10 * sqrt(id * inShare * (1 - inShare)) < 100 + agentsInFocusArea )
-                {"Loop seems infinite!"}
         }
         return agents
     }
+     private fun getHomeWeightsRestricted(destinations: List<LocationOption>, inside: Boolean) : List<Double> {
+         val originalWeights = getWeightsNoOrigin(destinations, ActivityType.HOME)
+         return if (inside) {
+             originalWeights.mapIndexed { i, weight -> destinations[i].inFocusArea.toDouble() * weight }
+         } else {
+             originalWeights.mapIndexed { i, weight -> (!destinations[i].inFocusArea).toDouble() * weight }
+         }
+     }
 
     /**
      * Get the location of an activity with flexible location with a given current location
