@@ -43,7 +43,7 @@ class Omod(
     seed: Long? = null,
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
-    private val homeOnlyFocus: Boolean = true
+    private val populateBufferArea: Boolean = true
 ) {
     val kdTree: KdTree
     val buildings: List<Building>
@@ -52,7 +52,7 @@ class Omod(
     private val firstOrderCFactors = mutableMapOf<ActivityType, Map<ODZone, Double>>()
     private val secondOrderCFactors = mutableMapOf<Pair<ActivityType, ActivityType>, Map<Pair<ODZone, ODZone>, Double>>()
     private val populationDef: PopulationDef
-    private val activityDataMap: ActivityDataMap
+    private val activityDataStore: ActivityDataStore
     private val locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
     private val rng: Random = if (seed != null) Random(seed) else Random()
     private val hopper: GraphHopper?
@@ -68,7 +68,7 @@ class Omod(
         // Get activity chain data
         val actTxt = Omod::class.java.classLoader.getResource("ActivityGroups.json")!!.readText(Charsets.UTF_8)
         val activityGroups: List<ActivityGroup> = Json.decodeFromString(actTxt)
-        activityDataMap = ActivityDataMap(activityGroups)
+        activityDataStore = ActivityDataStore(activityGroups)
 
         // Get distance distributions
         val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
@@ -380,9 +380,9 @@ class Omod(
 
     /**
      * Initialize population by assigning home and work locations
-     * @param n number of agents in focus areas
+     * @param nFocus number of agents in focus areas
      */
-    fun createAgents(n: Int): List<MobiAgent> {
+    fun createAgents(nFocus: Int): List<MobiAgent> {
         val agents = mutableListOf<MobiAgent>()
 
         // Get sociodemographic features
@@ -404,13 +404,13 @@ class Omod(
         val insideCumDist = createCumDist(insideHWeights)
         val outsideCumDist = createCumDist(outsideHWeight)
 
-        val totalNAgents = if (homeOnlyFocus) {
-            n
-        } else {
+        val totalNAgents = if (populateBufferArea) {
             // Check the rough proportions of in and out of focus area homes for emergency break
             val hWeights = getWeightsNoOrigin(zones, ActivityType.HOME)
             val inShare = insideHWeights.sum() / hWeights.sum()
-            (n / inShare).toInt()
+            (nFocus / inShare).toInt()
+        } else {
+            nFocus
         }
 
         // Create agent until n life in the focus area
@@ -424,7 +424,7 @@ class Omod(
             val age = features[agentFeatures].third
 
             // Get home zone (might be cell or dummy is node)
-            val inside = id < n // Should agent live inside focus area
+            val inside = id < nFocus // Should agent live inside focus area
             val homeCumDist = if ( inside ) insideCumDist else outsideCumDist
             val homeZoneID = sampleCumDist(homeCumDist, rng)
             val homeZone = zones[homeZoneID]
@@ -472,14 +472,15 @@ class Omod(
         }
         return agents
     }
-     private fun getHomeWeightsRestricted(destinations: List<LocationOption>, inside: Boolean) : List<Double> {
-         val originalWeights = getWeightsNoOrigin(destinations, ActivityType.HOME)
-         return if (inside) {
-             originalWeights.mapIndexed { i, weight -> destinations[i].inFocusArea.toDouble() * weight }
-         } else {
-             originalWeights.mapIndexed { i, weight -> (!destinations[i].inFocusArea).toDouble() * weight }
-         }
-     }
+
+    private fun getHomeWeightsRestricted(destinations: List<LocationOption>, inside: Boolean) : List<Double> {
+        val originalWeights = getWeightsNoOrigin(destinations, ActivityType.HOME)
+        return if (inside) {
+            originalWeights.mapIndexed { i, weight -> destinations[i].inFocusArea.toDouble() * weight }
+        } else {
+            originalWeights.mapIndexed { i, weight -> (!destinations[i].inFocusArea).toDouble() * weight }
+        }
+    }
 
     /**
      * Get the location of an activity with flexible location with a given current location
@@ -523,25 +524,24 @@ class Omod(
      */
     fun getActivityChain(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
                          from: ActivityType = ActivityType.HOME) : List<ActivityType> {
-        val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
-        val i = sampleCumDist(data.distr, rng)
-        return data.chains[i]
+        val chainData = activityDataStore.getChain(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
+        val i = sampleCumDist(chainData.distr, rng)
+        return chainData.chains[i]
     }
 
     /**
      * Get the stay times given an activity chain
      */
-    fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
-                     from: ActivityType = ActivityType.HOME
-    ) : List<Double?> {
+    fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED
+        ) : List<Double?> {
         return if (activityChain.size == 1) {
             // Stay at one location the entire day
             listOf(null)
         } else {
             // Sample stay times from gaussian mixture
-            val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from,
-                                           givenChain = activityChain)
-            val mixture = data.mixtures[activityChain]!! // non-null is ensured in get()
+            val mixture = activityDataStore.getMixture(
+                weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, activityChain
+            )
             val i = sampleCumDist(mixture.distr, rng)
             val stayTimes = sampleNDGaussian(mixture.means[i], mixture.covariances[i], rng).toList()
             // Handle negative values. Last stay is always until the end of the day, marked by null
@@ -594,7 +594,7 @@ class Omod(
                            start: LocationOption
     ): List<Activity> {
         val activityChain = getActivityChain(agent, weekday, from)
-        val stayTimes = getStayTimes(activityChain, agent, weekday, from)
+        val stayTimes = getStayTimes(activityChain, agent, weekday)
         val locations = getLocations(agent, activityChain, start)
         return List(activityChain.size) { i ->
             Activity(activityChain[i], stayTimes[i], locations[i], locations[i].latlonCoord.x, locations[i].latlonCoord.y)
