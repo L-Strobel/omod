@@ -7,10 +7,10 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ActivityGroup(
-    val weekday: String,
-    val homogenousGroup: String,
-    val mobilityGroup: String,
-    val age: String,
+    val weekday: Weekday,
+    val homogenousGroup: HomogeneousGrp,
+    val mobilityGroup: MobilityGrp,
+    val age: AgeGrp,
     val sampleSize: Int,
     val activityChains: List<ActivityChain>
 )
@@ -30,25 +30,25 @@ class GaussianMixture(
 /**
  * Holds activity data.
  * Structure is designed for fast access. Where possible data is already processed.
- *
- * TODO: Speed up tests
+ * TODO: Search for same chain in other features
  */
 class ActivityDataMap(activityGroups: List<ActivityGroup>) {
-    private val nodes: Map<Key, GroupData>
+    private val nodes: Map<Int, GroupData>
+
+    private val cHom = Weekday.values().size
+    private val cMob = cHom * HomogeneousGrp.values().size
+    private val cAge = cMob * MobilityGrp.values().size
 
     init {
         nodes = activityGroups.associateBy (
-            { Key(it.weekday, it.homogenousGroup, it.mobilityGroup, it.age) },
+            { getKey(it.weekday, it.homogenousGroup, it.mobilityGroup, it.age) },
             { GroupData(it) }
         )
     }
 
-    data class Key(
-        private val weekday: String,
-        private val homogenousGroup: String,
-        private val mobilityGroup: String,
-        private val age: String
-    )
+    private fun getKey(wd: Weekday, homGrp: HomogeneousGrp, mobGrp: MobilityGrp, age: AgeGrp) : Int {
+        return wd.ordinal + cHom * homGrp.ordinal + cMob * mobGrp.ordinal + cAge * age.ordinal
+    }
 
     /**
      * Get the activity distributions for the specified day and agent.
@@ -58,11 +58,11 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
      *
      * If givenChain != null the function will also ensure that there are parameters for the gaussian mixture
      */
-    fun get(weekday: String, homogenousGroup: String, mobilityGroup: String, age: String, from: ActivityType,
-            givenChain: List<ActivityType>? = null): ChainData {
+    fun get(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
+            from: ActivityType, givenChain: List<ActivityType>? = null): ChainData {
         require(from == ActivityType.HOME || from == ActivityType.OTHER) { "Chain starts at $from. This is not allowed."}
 
-        val key = Key(weekday, homogenousGroup, mobilityGroup, age)
+        val key = getKey(weekday, homogenousGroup, mobilityGroup, age)
         var groupData = nodes[key]
 
         // Check if data exists and sample size is adequate.
@@ -73,10 +73,10 @@ class ActivityDataMap(activityGroups: List<ActivityGroup>) {
         }
         if (check) {
             val keys = listOf(
-                Key(weekday, homogenousGroup, mobilityGroup, "undefined"),
-                Key(weekday, homogenousGroup, "undefined", "undefined"),
-                Key(weekday, "undefined", "undefined", "undefined"),
-                Key("undefined", "undefined", "undefined", "undefined")
+                getKey(weekday, homogenousGroup, mobilityGroup, AgeGrp.UNDEFINED),
+                getKey(weekday, homogenousGroup, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED),
+                getKey(weekday, HomogeneousGrp.UNDEFINED, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED),
+                getKey(Weekday.UNDEFINED, HomogeneousGrp.UNDEFINED, MobilityGrp.UNDEFINED,  AgeGrp.UNDEFINED)
             )
 
             for (k in keys) {

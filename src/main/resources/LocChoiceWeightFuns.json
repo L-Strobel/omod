@@ -11,8 +11,8 @@
         "coeffUniUnits": 0.0,
         "coeffCommercialUnits": 0.0,
         "coeffIndustrialUnits": 0.024963475327196834,
-        "coeff0": -0.05136508,
-        "coeff1": -0.88270226
+        "coeff0": -0.03605984,
+        "coeff1": -0.94593643
     },
     "SCHOOL": {
         "type": "LogNormPower",
@@ -26,12 +26,12 @@
         "coeffUniUnits": 0.0,
         "coeffCommercialUnits": 0.0,
         "coeffIndustrialUnits": 0.0,
-        "coeff0": -0.30873721,
-        "coeff1": -1.14620849,
-        "coeff2": 0.0102252
+        "coeff0": -0.27239534,
+        "coeff1": -1.17767664,
+        "coeff2": 0.00832539
     },
     "SHOPPING": {
-        "type": "LogNorm",
+        "type": "LogNormPower",
         "coeffResidentialArea": 2.7207198819799297e-05,
         "coeffCommercialArea": 1.8111063442686075e-05,
         "coeffIndustrialArea": 0.0,
@@ -42,8 +42,9 @@
         "coeffUniUnits": 0.0,
         "coeffCommercialUnits": 0.004934436975020467,
         "coeffIndustrialUnits": 0.0,
-        "coeff0": -0.26381486,
-        "coeff1": -1.43246737
+        "coeff0": -0.29110609,
+        "coeff1": -1.43408801,
+        "coeff2": 0.01178623
     },
     "OTHER": {
         "type": "LogNormPower",
@@ -57,8 +58,8 @@
         "coeffUniUnits": 0.0,
         "coeffCommercialUnits": 0.005808031550477335,
         "coeffIndustrialUnits": 0.01630291317701124,
-        "coeff0": -0.28067401,
-        "coeff1": -1.01029279,
-        "coeff2":  0.00907028
+        "coeff0": -0.23949348,
+        "coeff1": -1.04762463,
+        "coeff2": 0.0066448
     }
 }

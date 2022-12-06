@@ -6,7 +6,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
 import de.uniwuerzburg.omod.core.Omod
-import de.uniwuerzburg.omod.core.weekdays
+import de.uniwuerzburg.omod.core.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
 import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.encodeToString
@@ -37,14 +37,14 @@ class Run : CliktCommand() {
     // Options
     private val n_agents by option(
         help="Number of agents in focus area to simulate." +
-             "The buffer area and in-commuting sources are populated proportionally."
+             "The buffer area and in-commuting sources are populated proportionally if home_only_in_focus = y."
     ).int().default(1000)
     private val n_days by option(
         help="Number of days to simulate"
     ).int().default(1)
     private val start_wd by option(
         help="First weekday to simulate. IF undefined n undefined days are simulated."
-    ).choice(*weekdays.toTypedArray() + listOf("undefined")).default("mo")
+    ).enum<Weekday>().default(Weekday.UNDEFINED)
     private val out by option (
         help="Output file, must end on .json"
     ).file().default(File("output.json"))
@@ -70,6 +70,9 @@ class Run : CliktCommand() {
     //     .choice("true" to true, "false" to false).default(true)
     private val cache_dir by option(help = "Location of cache.")
         .path(canBeDir = true, canBeFile = false).default(Paths.get("omod_cache/"))
+    private val home_only_in_focus by option(
+        help = "Should agents homes all be in the focus area?"
+    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(true)
 
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
@@ -89,7 +92,8 @@ class Run : CliktCommand() {
                 mode = routing_mode,
                 odFile = od, censusFile = census,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
-                cache = true, cacheDir = cache_dir
+                cache = true, cacheDir = cache_dir,
+                homeOnlyFocus = home_only_in_focus
             )
         }
         println("Loading data took: $timeRead")

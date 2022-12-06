@@ -27,7 +27,7 @@ data class BuildingData (
 fun readOSM (area: Geometry, osmFile: File, bufferRadius: Double,
              geometryFactory: GeometryFactory, transformer: CRSTransformer): List<BuildingData> {
     val utmFocusArea = transformer.toModelCRS(area)
-    val utmArea = utmFocusArea.buffer(bufferRadius)
+    val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
 
     // Prepare osmosis pipeline
     val reader = OsmosisReader( FileInputStream(osmFile) )
