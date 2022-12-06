@@ -5,6 +5,8 @@ import com.graphhopper.GHResponse
 import com.graphhopper.GraphHopper
 import com.graphhopper.isochrone.algorithm.ShortestPathTree
 import com.graphhopper.routing.ev.Subnetwork
+import com.graphhopper.routing.ev.VehicleAccess
+import com.graphhopper.routing.ev.VehicleSpeed
 import com.graphhopper.routing.querygraph.QueryGraph
 import com.graphhopper.routing.util.DefaultSnapFilter
 import com.graphhopper.routing.util.TraversalMode
@@ -48,8 +50,9 @@ data class PreparedQGraph (
 
 fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph {
     val encodingManager = hopper.encodingManager
-    val encoder = encodingManager.getEncoder("car")
-    val weighting = FastestWeighting(encoder)
+    val accessEnc = encodingManager.getBooleanEncodedValue(VehicleAccess.key("car"))
+    val speedEnc = encodingManager.getDecimalEncodedValue(VehicleSpeed.key("car"))
+    val weighting = FastestWeighting(accessEnc, speedEnc)
 
     val snaps = mutableListOf<Snap>()
     val locNodes = mutableMapOf<LocationOption, Int>()
@@ -70,7 +73,7 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
             logger.warn("Couldn't snap ${loc.latlonCoord}.")
         }
     }
-    val queryGraph = QueryGraph.create(hopper.graphHopperStorage.baseGraph, snaps)
+    val queryGraph = QueryGraph.create(hopper.baseGraph, snaps)
     return PreparedQGraph(queryGraph, weighting, locNodes, snapNodes)
 }
 
