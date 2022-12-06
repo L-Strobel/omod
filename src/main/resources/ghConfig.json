@@ -1,0 +1,40 @@
+{
+	"speed": [
+		{
+			"if": "road_class == LIVING_STREET",
+			"multiply_by": 0.80859375
+		},
+		{
+			"if": "road_class == TRUNK",
+			"multiply_by": 1.13671875
+		},
+		{
+			"if": "road_class == MOTORWAY",
+			"multiply_by": 0.94921875
+		},
+		{
+			"if": "road_class == SECONDARY",
+			"multiply_by": 0.78515625
+		},
+		{
+			"if": "road_class == PRIMARY",
+			"multiply_by": 1.1015625
+		},
+		{
+			"if": "road_class == SERVICE",
+			"multiply_by": 0.38671875
+		},
+		{
+			"if": "road_class == TERTIARY",
+			"multiply_by": 0.65625
+		},
+		{
+			"if": "road_class == RESIDENTIAL",
+			"multiply_by": 0.48046875
+		},
+		{
+			"if": "road_class == PEDESTRIAN || road_class == FOOTWAY || road_class == CYCLEWAY || road_class == CORRIDOR || road_class == TRACK || road_class == BRIDLEWAY || road_class == STEPS",
+			"multiply_by": 0.0
+		}
+	]
+}

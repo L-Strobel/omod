@@ -1,9 +1,47 @@
 package de.uniwuerzburg.omod.core
 
 /**
-    Possible days. TODO: Should be enumeration
+Possible days.
  */
-val weekdays = listOf("mo", "tu", "we", "th", "fr", "sa", "so")
+enum class Weekday {
+    MO, TU, WE, TH, FR, SA, SO, HO, UNDEFINED;
+
+    fun next() : Weekday {
+        return when(this) {
+            MO -> TU
+            TU -> WE
+            WE -> TH
+            TH -> FR
+            FR -> SA
+            SA -> SO
+            SO -> MO
+            HO -> UNDEFINED
+            UNDEFINED -> UNDEFINED
+        }
+    }
+}
+
+/**
+ * Possible homogeneous groups
+ */
+enum class HomogeneousGrp {
+    WORKING, NON_WORKING, PUPIL_STUDENT, UNDEFINED;
+}
+
+/**
+ * Possible mobility groups
+ */
+enum class MobilityGrp {
+    CAR_USER, CAR_MIXED, NOT_CAR, UNDEFINED;
+}
+
+/**
+ * Possible age groups
+ */
+@Suppress("unused")
+enum class AgeGrp {
+    A0_40, A40_60, A60_100, UNDEFINED;
+}
 
 /**
  * Landuse categories. For work and home probabilities
@@ -25,9 +63,9 @@ enum class ActivityType {
  */
 data class MobiAgent (
     val id: Int,
-    val homogenousGroup: String,
-    val mobilityGroup: String,
-    val age: String,
+    val homogenousGroup: HomogeneousGrp,
+    val mobilityGroup: MobilityGrp,
+    val age: AgeGrp,
     val home: LocationOption,
     val work: LocationOption,
     val school: LocationOption,

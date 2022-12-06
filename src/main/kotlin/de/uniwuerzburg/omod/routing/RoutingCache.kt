@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.routing
 
 import com.graphhopper.GraphHopper
+import com.graphhopper.util.exceptions.PointNotFoundException
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.RealLocation
 import org.locationtech.jts.geom.Coordinate
@@ -12,7 +13,7 @@ import java.io.ObjectOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.math.max
+import kotlin.math.min
 
 
 enum class RoutingMode {
@@ -38,10 +39,12 @@ class RoutingCache(
     private val hopper: GraphHopper?
 ) {
     private val sizeLimit = 20_000 // This value caps the memory consumption roughly at 5 GB (I hope)
-    private val prefillSize = 10_000 // Should be smaller than sizeLimit
+    private val prefillSize = 20_000 // Should be smaller than sizeLimit
     private val sizeLimitSecTable = sizeLimit
     private var table: HashMap<LocationOption, HashMap<LocationOption, Float>> = MaxSizeHashMap(sizeLimit)
     private val logger = LoggerFactory.getLogger(RoutingCache::class.java)
+    private var cachePath: Path? = null
+    private val unRoutableLocs = mutableSetOf<LocationOption>()
 
     fun load(locations: List<LocationOption>, cacheDir: Path, priorityValues: List<Double>?){
         // Bounds
@@ -50,18 +53,18 @@ class RoutingCache(
         val latMax = locations.maxOfOrNull { it.latlonCoord.x } ?:0.0
         val lonMax = locations.maxOfOrNull { it.latlonCoord.y } ?:0.0
         // Unique cache path
-        val cachePath = Paths.get(
+        cachePath = Paths.get(
             cacheDir.toString(),
             "routing-matrix-cache",
             "RoutingMode${mode}NCells${locations.size}" +
                     "GridBounds${listOf(latMin, latMax, lonMin, lonMax).toString().replace(" ", "")}"
         )
         // Fill cache
-        if (cachePath.toFile().exists()) {
-            fillFromOOMCache(cachePath, locations)
+        if (cachePath!!.toFile().exists()) {
+            fillFromOOMCache(cachePath!!, locations)
         } else {
             fill(locations, priorityValues!!)
-            toOOMCache(cachePath)
+            toOOMCache()
         }
     }
 
@@ -73,7 +76,7 @@ class RoutingCache(
         }
         logger.info("Calculating distance matrix. $modeInfo")
 
-        val nLocations = max(locations.size, prefillSize)
+        val nLocations = min(locations.size, prefillSize)
         val highestPriorities = priorityValues.mapIndexed {i, it -> i to it}.sortedBy { it.second }.takeLast(nLocations)
         val relevantLocations = highestPriorities.map { locations[it.first] }
 
@@ -97,7 +100,7 @@ class RoutingCache(
                     for (destination in relevantLocations) {
                         if (destination !is RealLocation) { continue }
                         if (oTable[destination] != null)  { continue }
-                        oTable[destination] = calcDistanceBeeline(origin, destination).toFloat()
+                        oTable[destination] = calcDistance(origin, destination).toFloat()
                     }
                 }
                 RoutingMode.GRAPHHOPPER -> {
@@ -109,7 +112,7 @@ class RoutingCache(
                         if (oTable[destination] != null)  { continue }
 
                         val sptDistance = distances[i]?.toFloat()
-                        oTable[destination] = sptDistance ?: calcDistanceGHWithFallback(origin, destination).toFloat()
+                        oTable[destination] = sptDistance ?: calcDistance(origin, destination).toFloat()
                     }
                 }
             }
@@ -119,10 +122,10 @@ class RoutingCache(
 
     fun getDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
         when (mode) {
-            RoutingMode.BEELINE -> return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
+            RoutingMode.BEELINE -> return destinations.map { calcDistance(origin, it).toFloat() }.toFloatArray()
             RoutingMode.GRAPHHOPPER -> {
                 if (origin !is RealLocation) {
-                    return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
+                    return destinations.map { calcDistance(origin, it).toFloat() }.toFloatArray()
                 }
                 val oTable  = if (!table.containsKey(origin)) {
                     table[origin] = MaxSizeHashMap(sizeLimitSecTable)
@@ -133,11 +136,11 @@ class RoutingCache(
                 return FloatArray(destinations.size) {
                     val destination = destinations[it]
                     if (destination !is RealLocation) {
-                        calcDistanceBeeline(origin, destination).toFloat()
+                        calcDistance(origin, destination).toFloat()
                     } else {
                         val entry = oTable[destination]
                         if (entry == null) {
-                            val distance = calcDistanceGHWithFallback(origin, destination).toFloat()
+                            val distance = calcDistance(origin, destination).toFloat()
                             oTable[destination] = distance
                             distance
                         } else {
@@ -149,24 +152,59 @@ class RoutingCache(
         }
     }
 
-    private fun calcDistanceGHWithFallback(origin: RealLocation, destination: RealLocation) : Double {
-        val rslt = calcDistanceGH(origin, destination, hopper!!)
-        return if (rslt == null) {
-            logger.warn(
-                "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."
-            )
-            calcDistanceBeeline(origin, destination)
-        } else {
-            rslt
+    private fun calcDistance(origin: LocationOption, destination: LocationOption) : Double {
+        if (origin == destination) {
+            return origin.avgDistanceToSelf // 0.0 for Buildings
+        }
+        when (mode) {
+            RoutingMode.BEELINE -> return calcDistanceBeeline(origin, destination)
+            RoutingMode.GRAPHHOPPER -> {
+                // Check if possible
+                if (origin in unRoutableLocs) { return calcDistanceBeeline(origin, destination) }
+                if (destination in unRoutableLocs) { return calcDistanceBeeline(origin, destination) }
+
+                val rsp = calcDistanceGH(origin as RealLocation, destination as RealLocation, hopper!!)
+                if (rsp.hasErrors()) {
+                    logger.warn(
+                        "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."
+                    )
+
+                    for (error in rsp.errors) {
+                        if (error is PointNotFoundException) {
+                            if (error.pointIndex == 0) {
+                                unRoutableLocs.add(origin)
+                                logger.warn(
+                                    "Because Point ${origin.latlonCoord} is unreachable."
+                                )
+                            } else {
+                                unRoutableLocs.add(destination)
+                                logger.warn(
+                                    "Because Point ${destination.latlonCoord} is unreachable."
+                                )
+                            }
+                        }
+                    }
+
+                    return calcDistanceBeeline(origin, destination)
+                } else {
+                    return rsp.best.distance
+                }
+            }
         }
     }
 
-    private fun toOOMCache (cachePath: Path) {
-        Files.createDirectories(cachePath.parent)
-        val fos = FileOutputStream(cachePath.toFile())
-        val oos = ObjectOutputStream(fos)
-        oos.writeObject(formatForCache(table))
-        oos.close()
+    fun toOOMCache () {
+        if (cachePath != null) {
+            Files.createDirectories(cachePath!!.parent)
+            val fos = FileOutputStream(cachePath!!.toFile())
+            val oos = ObjectOutputStream(fos)
+            oos.writeObject(formatForCache(table))
+            oos.close()
+        } else {
+            if (mode != RoutingMode.BEELINE) {
+                logger.warn("Couldn't save routed distances because routing cache has not store path.")
+            }
+        }
     }
 
     private fun fillFromOOMCache (cachePath: Path, locations: List<LocationOption>) {
