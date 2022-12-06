@@ -7,14 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class PopulationDef (
-    val homogenousGroup: Map<String, Double>,
-    val mobilityGroup: Map<String, Double>,
-    val age: Map<String, Double>
+    val homogenousGroup: Map<HomogeneousGrp, Double>,
+    val mobilityGroup: Map<MobilityGrp, Double>,
+    val age: Map<AgeGrp, Double>
 )
-fun PopulationDef(map: Map<String, Map<String, Double>>): PopulationDef {
-    require(map.containsKey("homogenousGroup"))
-    require(map.containsKey("mobilityGroup"))
-    require(map.containsKey("age"))
-
-    return PopulationDef(map["homogenousGroup"]!!, map["mobilityGroup"]!!, map["age"]!!)
-}

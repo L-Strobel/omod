@@ -2,7 +2,9 @@ package de.uniwuerzburg.omod.core
 
 import com.graphhopper.GraphHopper
 import com.graphhopper.config.CHProfile
-import com.graphhopper.config.Profile
+import com.graphhopper.jackson.Jackson
+import com.graphhopper.routing.weighting.custom.CustomProfile
+import com.graphhopper.util.CustomModel
 import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
 import de.uniwuerzburg.omod.io.buildArea
 import de.uniwuerzburg.omod.io.json
@@ -42,6 +44,7 @@ class Omod(
     seed: Long? = null,
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
+    homeOnlyFocus: Boolean = true
 ) {
     val kdTree: KdTree
     val buildings: List<Building>
@@ -57,7 +60,6 @@ class Omod(
     private val routingCache: RoutingCache
     private val geometryFactory: GeometryFactory = GeometryFactory()
     private val transformer: CRSTransformer
-    private val homeOnlyInside = false
 
     init {
         // Get population distribution
@@ -72,7 +74,7 @@ class Omod(
         // Get distance distributions
         val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
         val mutLocChoiceFuns: MutableMap<ActivityType, LocationChoiceDCWeightFun> = Json.decodeFromString(distrTxt)
-        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation(homeOnlyInside)
+        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation(homeOnlyFocus)
         mutLocChoiceFuns[ActivityType.BUSINESS] = mutLocChoiceFuns[ActivityType.OTHER]!!
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
@@ -220,8 +222,16 @@ class Omod(
         val hopper = GraphHopper()
         hopper.osmFile = osmLoc
         hopper.graphHopperLocation = cacheLoc
-        hopper.setProfiles(Profile("car").setVehicle("car").setWeighting("fastest").setTurnCosts(false))
-        hopper.chPreparationHandler.setCHProfiles(CHProfile("car"))
+
+        // Custom Profile
+        val cp = CustomProfile("custom_car")
+        val configURL = Omod::class.java.classLoader.getResource("ghConfig.json")!!
+        val cm: CustomModel = Jackson.newObjectMapper().readValue(configURL, CustomModel::class.java)
+        cp.customModel = cm
+
+        hopper.setProfiles(cp)
+        hopper.chPreparationHandler.setCHProfiles(CHProfile("custom_car"))
+
         hopper.importOrLoad()
         return hopper
     }
@@ -371,23 +381,17 @@ class Omod(
 
     /**
      * Initialize population by assigning home and work locations
-     * @param n number of agents in focus area
-     * @param inputPopDef sociodemographic distribution of the agents. If null the distributions in Population.json are used.
+     * @param n number of agents in focus areas
      */
-    fun createAgents(n: Int, inputPopDef: Map<String, Map<String, Double>>? = null): List<MobiAgent> {
+    fun createAgents(n: Int): List<MobiAgent> {
         val agents = mutableListOf<MobiAgent>()
 
         // Get sociodemographic features
-        val usedPopDef = if (inputPopDef == null) {
-            populationDef
-        } else {
-            PopulationDef(inputPopDef)
-        }
-        val features = mutableListOf<Triple<String, String, String>>()
+        val features = mutableListOf<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>()
         val jointProbability = mutableListOf<Double>()
-        for ((hom, p_hom) in usedPopDef.homogenousGroup) {
-            for ((mob, p_mob) in usedPopDef.mobilityGroup) {
-                for ((age, p_age) in usedPopDef.age) {
+        for ((hom, p_hom) in populationDef.homogenousGroup) {
+            for ((mob, p_mob) in populationDef.mobilityGroup) {
+                for ((age, p_age) in populationDef.age) {
                     features.add(Triple(hom, mob, age))
                     jointProbability.add(p_hom*p_mob*p_age)
                 }
@@ -411,7 +415,7 @@ class Omod(
         // Create agent until n life in the focus area
         var id = 0
         var agentsInFocusArea = 0
-        while (agentsInFocusArea < n) {
+        while (agentsInFocusArea < n) { // TODO without infinite loop
             // Sociodemographic features
             val agentFeatures = sampleCumDist(featureDistribution, rng)
             val homogenousGroup = features[agentFeatures].first
@@ -478,8 +482,7 @@ class Omod(
     /**
      * Get the location of an activity with flexible location with a given current location
      * @param location Coordinates of current location
-     * @param type Activity type
-     */
+     * @param type Activity type     */
     fun findFlexibleLoc(location: LocationOption, type: ActivityType): LocationOption {
         // Home, Work, School are not flexible
         require(type != ActivityType.HOME)
@@ -516,7 +519,8 @@ class Omod(
     /**
      * Get the activity chain
      */
-    fun getActivityChain(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME) : List<ActivityType> {
+    fun getActivityChain(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
+                         from: ActivityType = ActivityType.HOME) : List<ActivityType> {
         val data = activityDataMap.get(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
         val i = sampleCumDist(data.distr, rng)
         return data.chains[i]
@@ -525,7 +529,7 @@ class Omod(
     /**
      * Get the stay times given an activity chain
      */
-    fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: String = "undefined",
+    fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
                      from: ActivityType = ActivityType.HOME
     ) : List<Double?> {
         return if (activityChain.size == 1) {
@@ -573,7 +577,7 @@ class Omod(
     /**
      * Get the mobility profile for the given agent.
      */
-    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined",
+    fun getMobilityProfile(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
                            from: ActivityType = ActivityType.HOME
     ): List<Activity> {
         val location = when(from) {
@@ -584,7 +588,7 @@ class Omod(
         }
         return getMobilityProfile(agent, weekday, from, location)
     }
-    fun getMobilityProfile(agent: MobiAgent, weekday: String = "undefined", from: ActivityType = ActivityType.HOME,
+    fun getMobilityProfile(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED, from: ActivityType = ActivityType.HOME,
                            start: LocationOption
     ): List<Activity> {
         val activityChain = getActivityChain(agent, weekday, from)
@@ -599,16 +603,11 @@ class Omod(
      * Determine the demand of the area for n agents at one day.
      * Optionally safe to json.
      */
-    fun run(n_agents: Int, start_wd: String = "mo", n_days: Int = 1) : List<MobiAgent> {
+    fun run(n_agents: Int, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
         val agents = createAgents(n_agents)
-        val offset = weekdays.indexOf(start_wd)
+        var weekday = start_wd
 
         for (i in 0..n_days) {
-            val weekday = if (start_wd =="undefined") {
-                "undefined"
-            } else {
-                weekdays[(i + offset) % weekdays.size]
-            }
             for (agent in agents) {
                 if (agent.profile == null) {
                     agent.profile = getMobilityProfile(agent, weekday)
@@ -622,7 +621,9 @@ class Omod(
                     )
                 }
             }
+            weekday = weekday.next()
         }
+        routingCache.toOOMCache() // Save routing cache
         return agents
     }
 
