@@ -23,6 +23,7 @@ sealed interface LocationOption {
  */
 interface RealLocation : LocationOption {
     val population: Double
+    val populationInFocus: Double
 
     val nBuilding: Double
     val nOffices: Double
@@ -67,6 +68,8 @@ class Building  (
 
     var cell: Cell? = null
 ) : RealLocation {
+    override val populationInFocus = population * inFocusArea.toDouble()
+
     override val avgDistanceToSelf = 0.0
 
     override val nBuilding = 1.0
@@ -77,6 +80,8 @@ class Building  (
     override val areaCommercial: Double
     override val areaIndustrial: Double
     override val areaOther: Double
+
+
 
     init {
         var nIndustrial = 0.0
@@ -164,6 +169,7 @@ data class Cell (
     // Sum
     override val inFocusArea = buildings.any { it.inFocusArea }
     override val population = buildings.sumOf { it.population }
+    override val populationInFocus = buildings.sumOf { it.populationInFocus }
 
     override val nBuilding = buildings.sumOf { it.nBuilding }
     override val nOffices = buildings.sumOf { it.nOffices }
