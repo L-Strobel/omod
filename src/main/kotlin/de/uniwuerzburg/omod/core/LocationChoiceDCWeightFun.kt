@@ -48,9 +48,7 @@ sealed class LocationChoiceDCWeightFun {
 }
 
 @Suppress("unused")
-class ByPopulation(
-    private val homeOnlyInside: Boolean
-) : LocationChoiceDCWeightFun () {
+object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffResidentialArea: Double get() { throw NotImplementedError() }
     override val coeffCommercialArea: Double get() { throw NotImplementedError() }
     override val coeffIndustrialArea: Double get() { throw NotImplementedError() }
@@ -63,11 +61,7 @@ class ByPopulation(
     override val coeffIndustrialUnits: Double get() { throw NotImplementedError() }
 
     override fun calcForNoOrigin(destination: RealLocation): Double {
-        return if (homeOnlyInside){
-            destination.population * destination.inFocusArea.toDouble()
-        } else {
-            destination.population
-        }
+        return destination.population
     }
 
     override fun deterrenceFunction(distance: Double): Double {
