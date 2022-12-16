@@ -1,4 +1,17 @@
 {
+    "HOME": {
+        "type": "PureAttraction",
+        "coeffResidentialArea": 2.6847861925202695e-05,
+        "coeffCommercialArea": 1.2053882004543279e-05,
+        "coeffIndustrialArea": 0.0,
+        "coeffOtherArea": 1.3353991081140706e-05,
+        "coeffOfficeUnits": 0.0,
+        "coeffShopUnits": 0.0,
+        "coeffSchoolUnits": 0.0,
+        "coeffUniUnits": 0.0,
+        "coeffCommercialUnits": 0.0,
+        "coeffIndustrialUnits": 0.0
+    },
     "WORK": {
         "type": "CombinedPowerExpon",
         "coeffResidentialArea": 2.7774393864607218e-05,

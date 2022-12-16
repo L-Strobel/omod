@@ -17,7 +17,7 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
-import org.locationtech.jts.io.WKTReader
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,7 +33,7 @@ import java.util.*
 
 @Suppress("MemberVisibilityCanBePrivate")
 class Omod(
-    areaWKT: String,
+    areaFile: File,
     osmFile: File,
     mode: RoutingMode = RoutingMode.BEELINE,
     cache: Boolean = true,
@@ -43,7 +43,8 @@ class Omod(
     seed: Long? = null,
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
-    private val populateBufferArea: Boolean = true
+    private val populateBufferArea: Boolean = true,
+    distanceCacheSize: Int = 20_000
 ) {
     val kdTree: KdTree
     val buildings: List<Building>
@@ -59,6 +60,7 @@ class Omod(
     private val routingCache: RoutingCache
     private val geometryFactory: GeometryFactory = GeometryFactory()
     private val transformer: CRSTransformer
+    private val logger = LoggerFactory.getLogger(Omod::class.java)
 
     init {
         // Get population distribution
@@ -73,14 +75,16 @@ class Omod(
         // Get distance distributions
         val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
         val mutLocChoiceFuns: MutableMap<ActivityType, LocationChoiceDCWeightFun> = Json.decodeFromString(distrTxt)
-        mutLocChoiceFuns[ActivityType.HOME] = ByPopulation
+        if (censusFile != null) {
+            mutLocChoiceFuns[ActivityType.HOME] = ByPopulation
+        }
         mutLocChoiceFuns[ActivityType.BUSINESS] = mutLocChoiceFuns[ActivityType.OTHER]!!
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
         // Get spatial data
-        transformer = CRSTransformer()
-        buildings = getBuildings(areaWKT, geometryFactory, transformer, osmFile, cacheDir, bufferRadius,
-                                     censusFile, cache)
+        transformer = CRSTransformer
+        buildings = getBuildings(areaFile, geometryFactory, transformer, osmFile, cacheDir,
+                                 bufferRadius, censusFile, cache)
 
         // Create KD-Tree for faster access
         kdTree = KdTree()
@@ -105,7 +109,7 @@ class Omod(
         }
 
         // Create routing cache
-        routingCache = RoutingCache(mode, hopper)
+        routingCache = RoutingCache(mode, hopper, distanceCacheSize)
         if (mode == RoutingMode.GRAPHHOPPER) {
             val priorityValues = getWeightsNoOrigin(grid, ActivityType.OTHER) // Priority of cells for caching
             routingCache.load(grid, cacheDir, priorityValues)
@@ -113,6 +117,7 @@ class Omod(
 
         // Calibration
         if (odFile != null) {
+            logger.info("Calibrating with OD-Matrix...")
             // Read OD-Matrix that is used for calibration
             val odZones = ODZone.readODMatrix(odFile, geometryFactory, transformer)
             // Add TAZ to buildings and cells
@@ -123,6 +128,7 @@ class Omod(
             firstOrderCFactors[kfo] = vfo
             val (kso, vso) =  calcSecondOrderScaling(odZones)
             secondOrderCFactors[kso] = vso
+            logger.info("Calibration done!")
         } else {
             zones = grid
         }
@@ -134,18 +140,24 @@ class Omod(
          * Run quick and easy without any additional information
          */
         @Suppress("unused")
-        fun defaultFactory(areaWKT: String, osmFile: File): Omod {
-            return Omod(areaWKT, osmFile)
+        fun defaultFactory(areaFile: File, osmFile: File): Omod {
+            return Omod(areaFile, osmFile)
         }
     }
 
     /**
      * Get the buildings.
      */
-    fun getBuildings(areaWKT: String, geometryFactory: GeometryFactory, transformer: CRSTransformer,
+    fun getBuildings(areaFile: File, geometryFactory: GeometryFactory, transformer: CRSTransformer,
                      osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
                      cache: Boolean) : List<Building> {
-        val area = WKTReader(geometryFactory).read( areaWKT )
+        // Read area geojson
+        val areaColl: GeoJsonFeatureCollection = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
+        val area = geometryFactory.createGeometryCollection(
+            areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
+        ).union()
+
+        // Is cached?
         val bound = area.envelopeInternal
         val cachePath = Paths.get(cacheDir.toString(),
             "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
@@ -218,6 +230,8 @@ class Omod(
     }
 
     private fun createGraphHopper(osmLoc: String, cacheLoc: String) : GraphHopper {
+        logger.info("Initializing GraphHopper... (If the osm.pbf is large this can take some time. " +
+                    "Change routing_mode to BEELINE for fast results.)")
         val hopper = GraphHopper()
         hopper.osmFile = osmLoc
         hopper.graphHopperLocation = cacheLoc
@@ -230,8 +244,8 @@ class Omod(
 
         hopper.setProfiles(cp)
         hopper.chPreparationHandler.setCHProfiles(CHProfile("custom_car"))
-
         hopper.importOrLoad()
+        logger.info("GraphHopper initialized!")
         return hopper
     }
 
@@ -609,8 +623,12 @@ class Omod(
         val agents = createAgents(n_agents)
         var weekday = start_wd
 
-        for (i in 0..n_days) {
+        var jobsDone = 0
+        val totalJobs = (agents.size * n_days).toDouble()
+        for (i in 0 until n_days) {
             for (agent in agents) {
+                print( "Running model: ${ProgressBar.show( jobsDone / totalJobs )}\r" )
+
                 if (agent.profile == null) {
                     agent.profile = getMobilityProfile(agent, weekday)
                 } else {
@@ -622,9 +640,11 @@ class Omod(
                         start = lastActivity.location
                     )
                 }
+                jobsDone += 1
             }
             weekday = weekday.next()
         }
+        println("Running model: " + ProgressBar.done())
         routingCache.toOOMCache() // Save routing cache
         return agents
     }
