@@ -52,8 +52,9 @@ class Run : CliktCommand() {
         help="Path to an OD-Matrix in geojson format that will be used for calibration"
     ).file(mustExist = true, mustBeReadable = true)
     private val census by option(
-        help="Path to population census in geojson format. For example see regional_inputs/." +
-             "Should cover the entire area, but can cover more"
+        help="Path to population census in geojson format. See python_tools/format_zensus2011.py." +
+             "For an example of how to create such a file." +
+             "Should cover the entire area, but can cover more."
     ).file(mustExist = true, mustBeReadable = true)
     private val grid_res by option(
         help="Size of the grid cells used for quicker sampling. The 500m default is suitable in most cases. Unit: meters"
