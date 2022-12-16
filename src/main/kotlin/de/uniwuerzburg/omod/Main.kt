@@ -20,14 +20,11 @@ import kotlin.time.measureTimedValue
 @Suppress("PrivatePropertyName")
 class Run : CliktCommand() {
     // Arguments
-    private val area_wkt by argument(
-        help = "The area you want OMOD to generate mobility demand for. " +
-                "Must be a WKT string in lat/lon coordinates. " +
-                "See: https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry. " +
-                "These strings can get very long, it can be helpful to store all command line arguments " +
-                "in a file and use the @argfile syntax. " +
-                "See: https://ajalt.github.io/clikt/advanced/#command-line-argument-files-argfiles"
-    )
+    private val area_geojson by argument(
+        help = "Path to the area you want OMOD to generate mobility demand for. " +
+                "Must be a geojson. " +
+                "Helpful sides for geojson generation: geojson.io, polygons.openstreetmap.fr"
+    ).file(mustExist = true, mustBeReadable = true)
     private val osm_file by argument(
         help = "Path to osm.pbf file that includes the area completely. " +
                "Must cover the entire area, but can cover more. " +
@@ -56,7 +53,7 @@ class Run : CliktCommand() {
     ).file(mustExist = true, mustBeReadable = true)
     private val census by option(
         help="Path to population census in geojson format. For example see regional_inputs/." +
-              "Should cover the entire area, but can cover more"
+             "Should cover the entire area, but can cover more"
     ).file(mustExist = true, mustBeReadable = true)
     private val grid_res by option(
         help="Size of the grid cells used for quicker sampling. The 500m default is suitable in most cases. Unit: meters"
@@ -73,27 +70,24 @@ class Run : CliktCommand() {
     private val populate_buffer_area by option(
         help = "Set if agents can life in the buffer area?"
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(true)
-
+    private val distance_matrix_cache_size by option(
+        help = "Size of the distance matrix to precompute if routing_mode is GRAPHHOPPER. " +
+               "Size will be distance_matrix_cache_size x distance_matrix_cache_size. " +
+               "A high value will lead to high RAM usage and long initialization times " +
+               "but overall significant speed gains. Especially then rerunning the same area."
+    ).int().default(20_000)
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
     override fun run() {
-        /*
-        val omod = Omod.fromPG(
-            db_url, db_user, db_password, area_osm_ids,
-            odFile = od, censusFile = census,
-            gridResolution = grid_res, bufferRadius = buffer, seed = seed,
-            cache = cache, cachePath = cache_path
-        )
-        val agents = omod.run(n_agents, start_wd, n_days)
-        */
         val (omod, timeRead) = measureTimedValue {
             Omod(
-                area_wkt, osm_file,
+                area_geojson, osm_file,
                 mode = routing_mode,
                 odFile = od, censusFile = census,
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
                 cache = true, cacheDir = cache_dir,
-                populateBufferArea = populate_buffer_area
+                populateBufferArea = populate_buffer_area,
+                distanceCacheSize = distance_matrix_cache_size
             )
         }
         println("Loading data took: $timeRead")

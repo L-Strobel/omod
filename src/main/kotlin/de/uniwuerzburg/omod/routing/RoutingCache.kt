@@ -3,9 +3,9 @@ package de.uniwuerzburg.omod.routing
 import com.graphhopper.GraphHopper
 import com.graphhopper.util.exceptions.PointNotFoundException
 import de.uniwuerzburg.omod.core.LocationOption
+import de.uniwuerzburg.omod.core.ProgressBar
 import de.uniwuerzburg.omod.core.RealLocation
 import org.locationtech.jts.geom.Coordinate
-import org.slf4j.LoggerFactory
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.ObjectInputStream
@@ -36,13 +36,13 @@ class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
  */
 class RoutingCache(
     private val mode: RoutingMode,
-    private val hopper: GraphHopper?
+    private val hopper: GraphHopper?,
+    cacheSize: Int = 20_000
 ) {
-    private val sizeLimit = 20_000 // This value caps the memory consumption roughly at 5 GB (I hope)
-    private val prefillSize = 20_000 // Should be smaller than sizeLimit
-    private val sizeLimitSecTable = sizeLimit
+    private val sizeLimit = cacheSize // This value caps the memory consumption roughly at 5 GB (I hope)
+    private val prefillSize = cacheSize // Should be smaller than sizeLimit
+    private val sizeLimitSecTable = cacheSize
     private var table: HashMap<LocationOption, HashMap<LocationOption, Float>> = MaxSizeHashMap(sizeLimit)
-    private val logger = LoggerFactory.getLogger(RoutingCache::class.java)
     private var cachePath: Path? = null
     private val unRoutableLocs = mutableSetOf<LocationOption>()
 
@@ -69,22 +69,22 @@ class RoutingCache(
     }
 
     private fun fill(locations: List<LocationOption>, priorityValues: List<Double>) {
-        val modeInfo = if (mode == RoutingMode.GRAPHHOPPER) {
-            "Routing mode is GRAPHHOPPER so this will take a while. If you want to run quick tests use BEELINE."
+        if (mode == RoutingMode.GRAPHHOPPER) {
+            logger.info("Calculating distance matrix. Routing mode is GRAPHHOPPER so this will take a while. " +
+                        "If you want to run quick tests use BEELINE."
+            )
         } else {
-            ""
+            logger.info("Calculating distance matrix.")
         }
-        logger.info("Calculating distance matrix. $modeInfo")
 
         val nLocations = min(locations.size, prefillSize)
         val highestPriorities = priorityValues.mapIndexed {i, it -> i to it}.sortedBy { it.second }.takeLast(nLocations)
         val relevantLocations = highestPriorities.map { locations[it.first] }
 
-        var progress = 0
+        var locsDone = 0
         for (origin in relevantLocations) {
-            if (progress % 100 == 0) {
-                logger.info("Progress: ${ "%.2f".format(null, 100.0 * progress / nLocations) } %")
-            }
+            // Progressbar
+            print( "Calculating distance matrix: ${ProgressBar.show(locsDone / nLocations.toDouble() )}\r" )
 
             if (origin !is RealLocation) { continue }
 
@@ -116,8 +116,9 @@ class RoutingCache(
                     }
                 }
             }
-            progress += 1
+            locsDone += 1
         }
+        println("Calculating distance matrix: " + ProgressBar.done())
     }
 
     fun getDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {

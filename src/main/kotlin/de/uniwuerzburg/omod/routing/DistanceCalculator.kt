@@ -15,10 +15,6 @@ import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.RealLocation
-import org.slf4j.LoggerFactory
-
-
-private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.routing.DistanceCalculator")
 
 /**
  * Calculate the euclidean distance between two locations

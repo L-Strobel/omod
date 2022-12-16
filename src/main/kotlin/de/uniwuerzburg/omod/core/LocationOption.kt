@@ -23,7 +23,6 @@ sealed interface LocationOption {
  */
 interface RealLocation : LocationOption {
     val population: Double
-    val populationInFocus: Double
 
     val nBuilding: Double
     val nOffices: Double
@@ -68,8 +67,6 @@ class Building  (
 
     var cell: Cell? = null
 ) : RealLocation {
-    override val populationInFocus = population * inFocusArea.toDouble()
-
     override val avgDistanceToSelf = 0.0
 
     override val nBuilding = 1.0
@@ -127,14 +124,14 @@ class Building  (
                 }
 
                 val properties = it.properties
-                val point = it.geometry.toJTS(geometryFactory, transformer).centroid
+                val point = transformer.toModelCRS( it.geometry.toJTS(geometryFactory) ).centroid
 
                 Building(
                     osmID = properties.osm_id,
                     coord = point.coordinate,
                     latlonCoord = transformer.toLatLon(point).coordinate,
                     area = properties.area,
-                    population = properties.population ?: 1.0,
+                    population = properties.population ?: 0.0,
                     landuse = properties.landuse,
                     nShops = properties.number_shops,
                     nOffices = properties.number_offices,
@@ -169,7 +166,6 @@ data class Cell (
     // Sum
     override val inFocusArea = buildings.any { it.inFocusArea }
     override val population = buildings.sumOf { it.population }
-    override val populationInFocus = buildings.sumOf { it.populationInFocus }
 
     override val nBuilding = buildings.sumOf { it.nBuilding }
     override val nOffices = buildings.sumOf { it.nOffices }

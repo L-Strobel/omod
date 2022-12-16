@@ -26,3 +26,16 @@ fun semiOpenDoubleRange(start: Double, end: Double, step: Double): Iterable<Doub
 @Suppress("unused")
 fun Boolean.toInt() = if (this) 1 else 0
 fun Boolean.toDouble() = if (this) 1.0 else 0.0
+
+object ProgressBar {
+    fun show(progress: Double) : String {
+        val ticks = (50 * progress).toInt()
+        val bar = "[${"=".repeat(ticks)}${" ".repeat(50 - ticks)}]"
+        val number = "%.2f".format(null, 100.0 * progress)
+        return "$bar $number %"
+    }
+    fun done() : String {
+        val bar = "[${"=".repeat(50)}]"
+        return "$bar Done!"
+    }
+}
