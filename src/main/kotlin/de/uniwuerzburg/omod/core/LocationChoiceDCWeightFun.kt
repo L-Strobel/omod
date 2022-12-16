@@ -74,6 +74,31 @@ object ByPopulation: LocationChoiceDCWeightFun () {
 }
 
 @Serializable
+@SerialName("PureAttraction")
+@Suppress("unused")
+class PureAttraction (
+    override val coeffResidentialArea: Double,
+    override val coeffCommercialArea: Double,
+    override val coeffIndustrialArea: Double,
+    override val coeffOtherArea: Double,
+    override val coeffOfficeUnits: Double,
+    override val coeffShopUnits: Double,
+    override val coeffSchoolUnits: Double,
+    override val coeffUniUnits: Double,
+    override val coeffCommercialUnits: Double,
+    override val coeffIndustrialUnits: Double,
+    ) : LocationChoiceDCWeightFun( ) {
+
+    override fun deterrenceFunction(distance: Double): Double {
+        throw NotImplementedError()
+    }
+
+    override fun calcFor(destination: RealLocation, distance: Double): Double {
+        throw NotImplementedError()
+    }
+}
+
+@Serializable
 @SerialName("LogNorm")
 @Suppress("unused")
 class LogNormDCUtil (

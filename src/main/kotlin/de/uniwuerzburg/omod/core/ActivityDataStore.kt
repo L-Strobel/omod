@@ -33,7 +33,7 @@ class GaussianMixture(
  */
 class ActivityDataStore(activityGroups: List<ActivityGroup>) {
     private val nodes: Map<Int, GroupData>
-    private val thresh = 280 // Minimum number of samples that a valid activity chain distribution needs
+    private val thresh = 30 // Minimum number of samples that a valid activity chain distribution needs
 
     private val cHom = Weekday.values().size
     private val cMob = cHom * HomogeneousGrp.values().size

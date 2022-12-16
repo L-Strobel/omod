@@ -5,17 +5,23 @@ import kotlinx.serialization.decodeFromString
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
+import org.slf4j.LoggerFactory
 import java.io.File
+
+private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.io")
 
 /**
  * @param area in latitude longitude format
  */
 fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: CRSTransformer,
               geometryFactory: GeometryFactory, censusFile: File? = null) : GeoJsonFeatureCollection {
+    logger.info("Start reading OSM-File... (If this is too slow use smaller .osm.pbf file)")
     val osmBuildings = readOSM(area, osmFile, bufferRadius, geometryFactory, transformer)
+    logger.info("OSM-File read!")
 
     // Add census data if available
     if (censusFile != null) {
+        logger.info("Start reading census data...")
         // Spatial index
         val buildingsTree = HPRtree()
         for (building in osmBuildings) {
@@ -26,7 +32,7 @@ fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: 
 
         for (censusEntree in censusData.features) {
             val population = (censusEntree.properties as GeoJsonCensusProperties).population
-            val censusZone = censusEntree.geometry.toJTS(geometryFactory, transformer)
+            val censusZone = CRSTransformer.toModelCRS( censusEntree.geometry.toJTS(geometryFactory) )
 
             val intersectingBuildings = buildingsTree.query(censusZone.envelopeInternal)
                 .map { it as BuildingData }
@@ -36,6 +42,7 @@ fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: 
                 building.population = population / intersectingBuildings.count().toDouble()
             }
         }
+        logger.info("Census data read!")
     }
 
     val collection = GeoJsonFeatureCollection(

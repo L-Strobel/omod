@@ -5,13 +5,23 @@ import org.geotools.referencing.CRS
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.math.*
+
+
 
 /**
  * Use this class to transform from lat lon to the CRS used in OMOD and back.
  * Currently, OMOD uses web mercator.
  */
-class CRSTransformer() {
+
+object CRSTransformer {
+    init {
+        System.setProperty("hsqldb.reconfig_logging", "false") // Silence hsqldb
+        Logger.getLogger("hsqldb.db").level = Level.WARNING
+    }
+
     private val latlonCRS = CRS.decode("EPSG:4326")
     private val utmCRS = CRS.decode("EPSG:3857")
     private val transformerToLatLon = CRS.findMathTransform(utmCRS, latlonCRS)
