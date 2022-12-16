@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "de.uniwuerzburg.omod"
-version = "0.6"
+version = "0.7"
 
 repositories {
     mavenLocal()
@@ -28,7 +28,7 @@ dependencies {
     implementation("org.apache.commons:commons-math3:3.6.1")
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.graphhopper:graphhopper-core:6.2")
-    implementation("org.slf4j:slf4j-simple:2.0.5")
+    implementation("ch.qos.logback:logback-classic:1.4.5")
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.3")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.3")
     implementation("org.geotools:gt-main:27.1")

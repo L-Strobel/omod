@@ -1,7 +1,6 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.core.ActivityType
-import de.uniwuerzburg.omod.core.CRSTransformer
 import de.uniwuerzburg.omod.core.Landuse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,7 +11,7 @@ import org.locationtech.jts.geom.GeometryFactory
 // Expected geometries
 @Serializable
 sealed class GeoJsonGeom {
-    abstract fun toJTS(factory: GeometryFactory, transformer: CRSTransformer) : Geometry
+    abstract fun toJTS(factory: GeometryFactory) : Geometry
 }
 
 @Serializable
@@ -20,10 +19,54 @@ sealed class GeoJsonGeom {
 data class GeoJsonPoint(
     val coordinates: List<Double>
 ) : GeoJsonGeom() {
-    override fun toJTS(factory: GeometryFactory, transformer: CRSTransformer): Geometry {
+    override fun toJTS(factory: GeometryFactory): Geometry {
         val coord = Coordinate(coordinates[1], coordinates[0])
-        val point = factory.createPoint(coord)
-        return transformer.toModelCRS(point)
+        return factory.createPoint(coord)
+    }
+}
+
+@Serializable
+@SerialName("MultiPoint")
+@Suppress("unused")
+data class GeoJsonMultiPoint(
+    val coordinates: List<List<Double>>
+) : GeoJsonGeom() {
+    override fun toJTS(factory: GeometryFactory): Geometry {
+        val points = coordinates.map{ coord ->
+            factory.createPoint( Coordinate(coord[1], coord[0]) )
+        }.toTypedArray()
+        return factory.createMultiPoint(points)
+    }
+}
+
+@Serializable
+@SerialName("LineString")
+@Suppress("unused")
+data class GeoJsonLineString(
+    val coordinates: List<List<Double>>
+) : GeoJsonGeom() {
+    override fun toJTS(factory: GeometryFactory): Geometry {
+        val coords = coordinates.map{ coord ->
+            Coordinate(coord[1], coord[0])
+        }.toTypedArray()
+        return factory.createLineString(coords)
+    }
+}
+
+@Serializable
+@SerialName("MultiLineString")
+@Suppress("unused")
+data class GeoJsonMultiLineString(
+    val coordinates: List<List<List<Double>>>
+) : GeoJsonGeom() {
+    override fun toJTS(factory: GeometryFactory): Geometry {
+        val lines = coordinates.map{ line ->
+            val coords = line.map{ coord ->
+                Coordinate(coord[1], coord[0])
+            }
+            factory.createLineString(coords.toTypedArray())
+        }.toTypedArray()
+        return factory.createMultiLineString(lines)
     }
 }
 
@@ -33,13 +76,12 @@ data class GeoJsonPoint(
 data class GeoJsonPoly(
     val coordinates: List<List<List<Double>>>
 ) : GeoJsonGeom() {
-    override fun toJTS(factory: GeometryFactory, transformer: CRSTransformer): Geometry {
+    override fun toJTS(factory: GeometryFactory): Geometry {
         val rings = coordinates.map { ring ->
             val coords = ring.map { coord -> Coordinate(coord[1], coord[0]) }
             factory.createLinearRing(coords.toTypedArray())
         }
-        val polygon = factory.createPolygon(rings.first(), rings.drop(1).toTypedArray())
-        return transformer.toModelCRS(polygon)
+        return factory.createPolygon(rings.first(), rings.drop(1).toTypedArray())
     }
 }
 
@@ -49,7 +91,7 @@ data class GeoJsonPoly(
 data class GeoJsonMultiPoly(
     val coordinates: List<List<List<List<Double>>>>
 ) : GeoJsonGeom() {
-    override fun toJTS(factory: GeometryFactory, transformer: CRSTransformer): Geometry {
+    override fun toJTS(factory: GeometryFactory): Geometry {
         val polys = coordinates.map { polys ->
             val rings = polys.map { ring ->
                 val coords = ring.map { coord -> Coordinate(coord[1], coord[0]) }
@@ -57,10 +99,24 @@ data class GeoJsonMultiPoly(
             }
             factory.createPolygon(rings.first(), rings.drop(1).toTypedArray())
         }
-        val multiPoly = factory.createMultiPolygon(polys.toTypedArray())
-        return transformer.toModelCRS(multiPoly)
+        return factory.createMultiPolygon(polys.toTypedArray())
     }
 }
+
+@Serializable
+@SerialName("GeometryCollection")
+@Suppress("unused")
+data class GeoJsonGeometryCollection(
+    val geometries: List<GeoJsonGeom>
+) : GeoJsonGeom() {
+    override fun toJTS(factory: GeometryFactory): Geometry {
+        val geoms = geometries.map { geom ->
+            geom.toJTS(factory)
+        }.toTypedArray()
+        return factory.createGeometryCollection(geoms)
+    }
+}
+
 
 // Expected meta information
 @Serializable
