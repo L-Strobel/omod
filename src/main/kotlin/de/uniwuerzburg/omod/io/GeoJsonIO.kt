@@ -120,7 +120,7 @@ data class GeoJsonGeometryCollection(
 
 // Expected meta information
 @Serializable
-sealed class GeoJsonProperties
+sealed class GeoJsonProperties ()
 
 @Serializable
 @SerialName("BuildingEntree")
@@ -163,4 +163,17 @@ data class GeoJsonFeature (
 data class GeoJsonFeatureCollection (
     val type: String = "FeatureCollection",
     val features: List<GeoJsonFeature>
+)
+
+// Work around structure for json objects with empty properties = {}
+@Serializable
+data class GeoJsonFeatureNoProperties (
+    val type: String = "Feature",
+    val geometry: GeoJsonGeom
+)
+
+@Serializable
+data class GeoJsonFeatureCollectionNoProperties (
+    val type: String = "FeatureCollection",
+    val features: List<GeoJsonFeatureNoProperties>
 )
