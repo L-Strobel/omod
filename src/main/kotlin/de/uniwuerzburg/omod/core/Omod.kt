@@ -5,9 +5,7 @@ import com.graphhopper.config.CHProfile
 import com.graphhopper.jackson.Jackson
 import com.graphhopper.routing.weighting.custom.CustomProfile
 import com.graphhopper.util.CustomModel
-import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
-import de.uniwuerzburg.omod.io.buildArea
-import de.uniwuerzburg.omod.io.json
+import de.uniwuerzburg.omod.io.*
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.decodeFromString
@@ -152,7 +150,7 @@ class Omod(
                      osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
                      cache: Boolean) : List<Building> {
         // Read area geojson
-        val areaColl: GeoJsonFeatureCollection = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
+        val areaColl: GeoJsonFeatureCollectionNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
         val area = geometryFactory.createGeometryCollection(
             areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
         ).union()
