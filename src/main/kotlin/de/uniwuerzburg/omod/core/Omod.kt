@@ -623,6 +623,7 @@ class Omod(
 
         var jobsDone = 0
         val totalJobs = (agents.size * n_days).toDouble()
+        //TODO Shouldn't the profile be appended?
         for (i in 0 until n_days) {
             for (agent in agents) {
                 print( "Running model: ${ProgressBar.show( jobsDone / totalJobs )}\r" )

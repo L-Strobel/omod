@@ -35,8 +35,8 @@ def format_zensus2011(census_path: str, grid_path: str, nuts_shape_path: str, nu
     grid.to_crs(4326).to_file(f"Census{'-'.join(nuts)}.geojson", index=False)
 
 if __name__ == "__main__":
-    cpath = "Path/to/Census.csv"
-    gpath = "Path/to/inspire/grid100m.gpkg"
-    npath = "Path/to/NUTS.shp"
-    nutsList  = []
+    cpath = "Path/To/Census.csv"
+    gpath = "Path/To/Grid.gpkg"
+    npath = "Path/To/NUTS.shp"
+    nutsList  = ["DE25", "DE24", "DE23"]
     format_zensus2011(cpath, gpath, npath, nutsList)
