@@ -623,22 +623,22 @@ class Omod(
 
         var jobsDone = 0
         val totalJobs = (agents.size * n_days).toDouble()
-        //TODO Shouldn't the profile be appended?
         for (i in 0 until n_days) {
             for (agent in agents) {
                 print( "Running model: ${ProgressBar.show( jobsDone / totalJobs )}\r" )
 
-                if (agent.profile == null) {
-                    agent.profile = getMobilityProfile(agent, weekday)
+                val profile = if (agent.profile.isEmpty()) {
+                    getMobilityProfile(agent, weekday)
                 } else {
-                    val lastActivity = agent.profile!!.last()
-                    agent.profile = getMobilityProfile(
+                    val lastActivity = agent.profile.last()
+                    getMobilityProfile(
                         agent,
                         weekday,
                         from = lastActivity.type,
                         start = lastActivity.location
                     )
                 }
+                agent.profile.addAll( profile )
                 jobsDone += 1
             }
             weekday = weekday.next()
