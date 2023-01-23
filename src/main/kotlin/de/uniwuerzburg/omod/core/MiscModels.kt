@@ -69,7 +69,7 @@ data class MobiAgent (
     val home: LocationOption,
     val work: LocationOption,
     val school: LocationOption,
-    var profile: List<Activity>? = null
+    val profile: MutableList<Activity> = mutableListOf()
 )
 
 /**
