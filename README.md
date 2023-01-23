@@ -5,7 +5,7 @@ for a user-defined location.
 The generated demand is in the form of daily activity diaries
 in the following format:
 
-```json
+```
 [
     {
         "id": 0,
