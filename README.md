@@ -1,7 +1,8 @@
 # OMOD (Open-Street-Maps Mobility Demand Generator)
 
 OMOD is a mobility demand generator that creates synthetic mobility demand based on Open-Street-Maps data
-for a user defined location in form of daily activity diaries
+for a user-defined location.
+The generated demand is in the form of daily activity diaries
 in the following format:
 
 ```json
@@ -38,36 +39,52 @@ in the following format:
 The output describes what each agent did at which location.
 It does not say how the agent moved from one location to another.
 
-OMOD can be used for any location on earth.
-However, the calibration was conducted using data from the German national household travel survey
+OMOD is applicable for any location on earth.
+However, we calibrated the model using data from the German national household travel survey
 (https://www.mobilitaet-in-deutschland.de/publikationen2017.html).
 Therefore, the model's performance outside of Germany and especially
 in nations with conditions very different to Germany is uncertain.
 Additionally, the region must be mapped reasonably well in Open-Street-Maps.
-
-To run OMOD an Open-Street-Maps file of the region and a definition of the region in GeoJson format are necessary.
+Especially important is mapping information about the location and size of buildings, landuse zones,
+and the road network.
+To run OMOD an Open-Street-Maps file of the region and a definition of the region of interest
+(in GeoJson format) are necessary.
 Additionally, zensus information of the region is helpful
 (see python_tools/format_zensus2011.py for an example of how to correctly format zensus data for OMOD).
 
+## Get Started
 
-## Get started
-
-1. Download OSM data of the region you are interested in as an osm.pbf.
-Your file can contain more but to large files slow down initialization.
-Recommended download side: https://download.geofabrik.de/
-2. Get a GeoJson of the region you want to simulate.
-This region must be included in the osm.pbf file.
-With https://geojson.io you can easily create a geojson of an arbitrary region.
-Administrative areas can be obtained quickly with https://polygons.openstreetmap.fr/.
-3. Run OMOD:
+1. Download the latest release of OMOD
+2. Download OSM data of the region you are interested in as an osm.pbf.
+Your file can contain more, but too large files slow down initialization.
+Recommended download site: https://download.geofabrik.de/
+3. Get a GeoJson of the region you want to simulate.
+This region must be covered in the osm.pbf file.
+With https://geojson.io, you can easily create a geojson of an arbitrary region.
+Geojsons for administrative areas can be obtained quickly with https://polygons.openstreetmap.fr/.
+4. Run OMOD:
    ```
    java -jar omod-1.0-all.jar Path/to/GeoJson Path/to/osm.pbf 
    ```
 
-The first run will take some time. Subsequent runs should only take a few minutes.
-For optional an explanation of optional parameters run --help.
+Run --help for an explanation of optional parameters, such as the number of agents, weekday, or routing mode.
 
-## Usage as java library
+## Routing Mode
+OMOD determines the destination choice of agents based on a gravity model.
+The necessary distances from A to B can be calculated with the 
+routing mode GraphHopper and Beeline.
+The first calculates the distance by car using the open-source router GraphHopper
+(https://github.com/graphhopper/graphhopper).
+This mode leads to the best result.
+However, it also takes significantly longer to compute.
+Luckily, most heavy computations can be cached.
+Therefore, the first run is slow, but subsequent runs are fast.
+The second mode uses the euclidean distance
+and is significantly faster but less precise.
+
+Change the routing mode with the CLI flag *--routing_mode* to either *GRAPHHOPPER* or *BEELINE*.
+
+## Usage as Java library
 
 First, add the jar to your classpath.
 
@@ -81,30 +98,32 @@ import de.uniwuerzburg.omod.core.Activity;
 import de.uniwuerzburg.omod.core.ActivityType;
 
 import java.util.LinkedList;
+import java.io.File;
+import java.util.List;
 
-public class App {
-    public static void main(String[] args) {
-        File areaFile = File("Path/to/GeoJson");
-        File osmFile = File("Path/to/osm.pbf");
+class App {
+   public static void main (String[] args) {
+      File areaFile = new File("Path/to/GeoJson");
+      File osmFile = new File("Path/to/osm.pbf");
 
-        // Create a simulator
-        Omod omod = Omod.defaultFactory(areaFile, osmFile);
+      // Create a simulator
+      Omod omod = Omod.Companion.defaultFactory(areaFile, osmFile);
 
-        // Run for 1000 agents, an undefined start day, and 1 day
-        List<MobiAgent> agents = omod.run(1000, Weekday.UNDEFINED, 1);
+      // Run for 1000 agents, an undefined start day, and 1 day
+      List<MobiAgent> agents = omod.run(1000, Weekday.UNDEFINED, 1);
 
-        // Do something with the result. E.g. get activities conducted
-        List<ActivityType> activities = new LinkedList<ActivityType>();
-        for (MobiAgent agent : agents) {
-            for (Activity activity : agent.profile) {
-                activities.add( activity.type );
-            }
-        }
-    }
+      // Do something with the result. E.g. get conducted activities 
+      List<ActivityType> activities = new LinkedList<ActivityType>();
+      for (MobiAgent agent : agents) {
+         for (Activity activity : agent.getProfile()) {
+            activities.add( activity.getType() );
+         }
+      }
+   }
 }
 ```
 
-## Acknowledgement
+## Acknowledgment
 
-This model was created as part of the ESM-Regio project (https://www.bayern-innovativ.de/de/seite/esm-regio)
-and was made possible through funding of the  	German Federal Ministry for Economic Affairs and Climate Action.
+This model is created as part of the ESM-Regio project (https://www.bayern-innovativ.de/de/seite/esm-regio)
+and is made possible through funding from the German Federal Ministry for Economic Affairs and Climate Action.
