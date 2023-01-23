@@ -19,7 +19,7 @@ in the following format:
                 "lat": 51.14376165369229,       // Latitude
                 "lon": 6.649319080237429,       // Longitude
                 "dummyLoc": false,              // Placeholder: currently always false
-                "inFocusArea": true             // Is the location in the area defined by the GeoJson?
+                "inFocusArea": true             // Is that location inside the area defined by the GeoJson?
             },
             {
                 "type": "OTHER",
