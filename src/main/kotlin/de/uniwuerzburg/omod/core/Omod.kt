@@ -638,7 +638,7 @@ class Omod(
                         start = lastActivity.location
                     )
                 }
-                agent.mobilityDemand.add( Dairy(i, weekday, activities) )
+                agent.mobilityDemand.add( Diary(i, weekday, activities) )
                 jobsDone += 1
             }
             weekday = weekday.next()

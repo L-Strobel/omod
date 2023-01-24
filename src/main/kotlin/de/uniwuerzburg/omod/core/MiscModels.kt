@@ -69,13 +69,13 @@ data class MobiAgent (
     val home: LocationOption,
     val work: LocationOption,
     val school: LocationOption,
-    val mobilityDemand: MutableList<Dairy> = mutableListOf()
+    val mobilityDemand: MutableList<Diary> = mutableListOf()
 )
 
 /**
  * Daily activity dairy
  */
-data class Dairy (
+data class Diary (
     val day: Int,
     val dayType: Weekday,
     val activities: List<Activity>

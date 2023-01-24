@@ -16,7 +16,7 @@ data class OutputActivity (
     val inFocusArea: Boolean
 )
 @Serializable
-data class OutputDairy (
+data class OutputDiary (
     val day: Int,
     val dayType: Weekday,
     val activities: List<OutputActivity>
@@ -28,7 +28,7 @@ data class OutputEntry (
     val homogenousGroup: HomogeneousGrp,
     val mobilityGroup: MobilityGrp,
     val age: AgeGrp,
-    val mobilityDemand: List<OutputDairy>
+    val mobilityDemand: List<OutputDiary>
 )
 
 fun formatOutput(agent: MobiAgent) : OutputEntry {
@@ -37,7 +37,7 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
             OutputActivity(activity.type, activity.stayTime, activity.lat, activity.lon,
                            activity.location is DummyLocation, activity.location.inFocusArea)
         }
-        OutputDairy(dairy.day, dairy.dayType, activities)
+        OutputDiary(dairy.day, dairy.dayType, activities)
     }
     return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, mobilityDemand)
 }
