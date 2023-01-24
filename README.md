@@ -9,25 +9,32 @@ in the following format:
 [
     {
         "id": 0,
-        "homogenousGroup": "undefined",         // Socio-demographic features:
-        "mobilityGroup": "undefined",           // Distribution only changeable in code
-        "age": "undefined",                     // under src/main/kotlin/resources/Population.json
-        "profile": [  // Activities conducted in the simulation time window
+        "homogenousGroup": "UNDEFINED",      // Socio-demographic features:
+        "mobilityGroup": "UNDEFINED",        // Distribution only changeable in code
+        "age": "UNDEFINED",                  // under src/main/kotlin/resources/Population.json
+        "mobilityDemand": [
             {
-                "type": "HOME",                 // Options: HOME, WORK, SCHOOL, SHOPPING, OTHER
-                "stayTime": 327.07311000373426, // Time spent at loction. Unit: Minutes
-                "lat": 51.14376165369229,       // Latitude
-                "lon": 6.649319080237429,       // Longitude
-                "dummyLoc": false,              // Placeholder: currently always false
-                "inFocusArea": true             // Is that location inside the area defined by the GeoJson?
-            },
-            {
-                "type": "OTHER",
-                "stayTime": null,               // null means until 00:00
-                "lat": 50.95655629837191,
-                "lon": 12.399130369888487,
-                "dummyLoc": false,
-                "inFocusArea": true
+                "day": 0,                    // Index of the day
+                "dayType": "UNDEFINED",      // Options: MO, TU, WE, TH, FR, SA, SO, HO, UNDEFINED
+                "activities": [
+                    {
+                        "type": "HOME",                  // Options: HOME, WORK, SCHOOL, SHOPPING, OTHER
+                        "stayTime": 1133.4945922475808,  // Time spent at loction. Unit: Minutes
+                        "lat": 53.61571111201344,        // Latitude
+                        "lon": 10.107296996943852,       // Longitude
+                        "dummyLoc": false,               // Placeholder: currently always false
+                        "inFocusArea": true              // Is that location inside the area defined by the GeoJson?
+                    },
+                    {
+                        "type": "OTHER",
+                        "stayTime": null,                // null means until 00:00. Always the case for the last activity of a day.
+                        "lat": 53.52566194346696,
+                        "lon": 9.895169199404203,
+                        "dummyLoc": false,
+                        "inFocusArea": true
+                    },
+                    ...
+                ]
             },
             ...
         ]
@@ -93,6 +100,7 @@ Basic example:
 ```java
 import de.uniwuerzburg.omod.core.Omod;
 import de.uniwuerzburg.omod.core.MobiAgent;
+import de.uniwuerzburg.omod.core.Diary;
 import de.uniwuerzburg.omod.core.Weekday;
 import de.uniwuerzburg.omod.core.Activity;
 import de.uniwuerzburg.omod.core.ActivityType;
@@ -105,18 +113,20 @@ class App {
    public static void main (String[] args) {
       File areaFile = new File("Path/to/GeoJson");
       File osmFile = new File("Path/to/osm.pbf");
-
+   
       // Create a simulator
       Omod omod = Omod.Companion.defaultFactory(areaFile, osmFile);
-
+   
       // Run for 1000 agents, an undefined start day, and 1 day
       List<MobiAgent> agents = omod.run(1000, Weekday.UNDEFINED, 1);
-
+   
       // Do something with the result. E.g. get conducted activities 
       List<ActivityType> activities = new LinkedList<ActivityType>();
       for (MobiAgent agent : agents) {
-         for (Activity activity : agent.getProfile()) {
-            activities.add( activity.getType() );
+         for (Diary diary : agent.getMobilityDemand()) {
+            for (Activity activity : diary.getActivities()) {
+                activities.add(activity.getType());
+            }
          }
       }
    }
