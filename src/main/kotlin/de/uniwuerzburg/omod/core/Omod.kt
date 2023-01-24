@@ -627,10 +627,10 @@ class Omod(
             for (agent in agents) {
                 print( "Running model: ${ProgressBar.show( jobsDone / totalJobs )}\r" )
 
-                val profile = if (agent.profile.isEmpty()) {
+                val activities = if (agent.mobilityDemand.isEmpty()) {
                     getMobilityProfile(agent, weekday)
                 } else {
-                    val lastActivity = agent.profile.last()
+                    val lastActivity = agent.mobilityDemand.last().activities.last()
                     getMobilityProfile(
                         agent,
                         weekday,
@@ -638,7 +638,7 @@ class Omod(
                         start = lastActivity.location
                     )
                 }
-                agent.profile.addAll( profile )
+                agent.mobilityDemand.add( Dairy(i, weekday, activities) )
                 jobsDone += 1
             }
             weekday = weekday.next()
