@@ -1,4 +1,4 @@
-# OMOD (Open-Street-Maps Mobility Demand Generator)
+# OMOD (OpenStreetMap Mobility Demand Generator)
 
 OMOD is a tool that creates synthetic mobility demand based on Open-Street-Maps data
 for a user-defined location.
