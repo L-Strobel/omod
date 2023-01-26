@@ -8,7 +8,7 @@ in the following format:
 ```
 [
     {
-        "id": 0,
+        "id": 0,                             // ID of the agent/person
         "homogenousGroup": "UNDEFINED",      // Socio-demographic features:
         "mobilityGroup": "UNDEFINED",        // Distribution only changeable in code
         "age": "UNDEFINED",                  // under src/main/kotlin/resources/Population.json
@@ -63,7 +63,7 @@ Additionally, zensus information of the region is helpful
 
 1. Download the latest release of OMOD
 2. Download OSM data of the region you are interested in as an osm.pbf.
-Your file can contain more, but too large files slow down initialization.
+The file can cover a larger area, but too large files slow down initialization.
 Recommended download site: https://download.geofabrik.de/
 3. Get a GeoJson of the region you want to simulate.
 This region must be covered in the osm.pbf file.

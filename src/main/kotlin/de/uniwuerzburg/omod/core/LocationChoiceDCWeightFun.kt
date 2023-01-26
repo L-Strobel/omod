@@ -16,6 +16,8 @@ sealed class LocationChoiceDCWeightFun {
     abstract val coeffShopUnits: Double
     abstract val coeffSchoolUnits: Double
     abstract val coeffUniUnits: Double
+    abstract val coeffBuildingUnits: Double
+    abstract val coeffResidentialUnits: Double
     abstract val coeffCommercialUnits: Double
     abstract val coeffIndustrialUnits: Double
 
@@ -42,6 +44,8 @@ sealed class LocationChoiceDCWeightFun {
                coeffShopUnits * destination.nShops +
                coeffSchoolUnits * destination.nSchools +
                coeffUniUnits * destination.nUnis +
+               coeffBuildingUnits * destination.nBuilding +
+               coeffResidentialUnits * destination.nResidential +
                coeffCommercialUnits * destination.nCommercial +
                coeffIndustrialUnits * destination.nIndustrial
     }
@@ -57,6 +61,8 @@ object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffShopUnits: Double get() { throw NotImplementedError() }
     override val coeffSchoolUnits: Double get() { throw NotImplementedError() }
     override val coeffUniUnits: Double get() { throw NotImplementedError() }
+    override val coeffBuildingUnits: Double get() { throw NotImplementedError() }
+    override val coeffResidentialUnits: Double get() { throw NotImplementedError() }
     override val coeffCommercialUnits: Double get() { throw NotImplementedError() }
     override val coeffIndustrialUnits: Double get() { throw NotImplementedError() }
 
@@ -85,6 +91,8 @@ class PureAttraction (
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffBuildingUnits: Double,
+    override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
     override val coeffIndustrialUnits: Double,
     ) : LocationChoiceDCWeightFun( ) {
@@ -110,6 +118,8 @@ class LogNormDCUtil (
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffBuildingUnits: Double,
+    override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
     override val coeffIndustrialUnits: Double,
     // For deterrence function
@@ -134,6 +144,8 @@ class LogNormPowerDCUtil (
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffBuildingUnits: Double,
+    override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
     override val coeffIndustrialUnits: Double,
     // For deterrence function
@@ -159,6 +171,8 @@ data class CombinedDCUtil(
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffBuildingUnits: Double,
+    override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
     override val coeffIndustrialUnits: Double,
     // For deterrence function

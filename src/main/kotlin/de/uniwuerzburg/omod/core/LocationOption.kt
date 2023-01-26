@@ -29,6 +29,7 @@ interface RealLocation : LocationOption {
     val nShops: Double
     val nSchools: Double
     val nUnis: Double
+    val nResidential: Double
     val nCommercial: Double
     val nIndustrial: Double
 
@@ -70,6 +71,7 @@ class Building  (
     override val avgDistanceToSelf = 0.0
 
     override val nBuilding = 1.0
+    override val nResidential: Double
     override val nIndustrial: Double
     override val nCommercial: Double
 
@@ -81,6 +83,7 @@ class Building  (
 
 
     init {
+        var nResidential = 0.0
         var nIndustrial = 0.0
         var nCommercial = 0.0
 
@@ -91,6 +94,7 @@ class Building  (
 
         when(landuse) {
             Landuse.RESIDENTIAL -> {
+                nResidential += 1.0
                 areaResidential = area
             }
             Landuse.COMMERCIAL -> {
@@ -106,6 +110,7 @@ class Building  (
             }
         }
 
+        this.nResidential = nResidential
         this.nIndustrial = nIndustrial
         this.nCommercial = nCommercial
 
@@ -172,6 +177,7 @@ data class Cell (
     override val nSchools = buildings.sumOf { it.nSchools }
     override val nUnis = buildings.sumOf { it.nUnis }
     override val nShops = buildings.sumOf { it.nShops }
+    override val nResidential = buildings.sumOf { it.nResidential }
     override val nIndustrial = buildings.sumOf { it.nIndustrial }
     override val nCommercial = buildings.sumOf { it.nCommercial }
 
