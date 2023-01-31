@@ -2,6 +2,7 @@ package de.uniwuerzburg.omod.core
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlin.math.exp
 import kotlin.math.ln
 
@@ -153,9 +154,36 @@ class LogNormPowerDCUtil (
     private val coeff1: Double,
     private val coeff2: Double
 ) : LocationChoiceDCWeightFun( ) {
+    @Transient
+    private var maxValidDistance: Double = Double.MAX_VALUE
+
+    init {
+        // Determine minimum of deterrence function
+        val earthCircumference = 40_075.017 // Unit: km
+        var previousValue = Double.MAX_VALUE
+        for (distance in 1 until (earthCircumference / 2).toInt()) {
+            val value = deterrenceFunction(distance.toDouble())
+
+            // Check if minimum found
+            if (previousValue < value) {
+                maxValidDistance = (distance - 1).toDouble()
+                break
+            } else {
+                previousValue = value
+            }
+        }
+    }
 
     override fun deterrenceFunction(distance: Double) : Double {
         return coeff0 * ln(distance) * ln(distance) + coeff1 * ln(distance) + coeff2 * distance
+    }
+
+    override fun calcFor(destination: RealLocation, distance: Double): Double {
+        return  if (distance / 1000 > maxValidDistance) {
+            return 0.0
+        } else {
+            super.calcFor(destination, distance)
+        }
     }
 }
 
