@@ -48,7 +48,7 @@ fun sampleNDGaussian(means: DoubleArray, covariances: Array<DoubleArray>, rng: R
 
     // Get Cholesky decomposition; Symmetry tolerance is quite high ... Maybe I should investigate why scikit-learn
     // returns such asymmetric matrices
-    val l = CholeskyDecomposition(Array2DRowRealMatrix(covariances), 0.01, 1.0E-10).l
+    val l = CholeskyDecomposition(Array2DRowRealMatrix(covariances), 0.1, 1.0E-10).l
 
     // Get independent gaussians
     val u = DoubleArray(dim) { rng.nextGaussian() }
