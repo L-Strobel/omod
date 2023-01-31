@@ -10,8 +10,9 @@ def format_zensus2011(census_path: str, grid_path: str, nuts_shape_path: str, nu
     Due to the size of this data only the specified NUTS area is formated.
 
     :param census_path:         Path to population file of the german census (zensus2011).
+                                File name: Zensus_Bevoelkerung_100m-Gitter.csv
                                 Download page: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
-    :param grid_path:           Path to the inspire grid geo data (100m cells)
+    :param grid_path:           Path to the inspire grid geo data (100m cells). Use the file in .gpkg format.
                                 Download page: https://gdz.bkg.bund.de/index.php/default/geographische-gitter-fur-deutschland-in-lambert-projektion-geogitter-inspire.html?___SID=U
     :param nuts_shape_path:     Path to NUTS area geodata (.shp).
                                 Download page: https://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units/nuts
