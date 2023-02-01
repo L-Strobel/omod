@@ -46,6 +46,7 @@ class Omod(
 ) {
     val kdTree: KdTree
     val buildings: List<Building>
+    val hopper: GraphHopper?
     private val grid: List<Cell>
     private val zones: List<LocationOption> // Grid + DummyLocations for commuting locations
     private val firstOrderCFactors = mutableMapOf<ActivityType, Map<ODZone, Double>>()
@@ -54,7 +55,6 @@ class Omod(
     private val activityDataStore: ActivityDataStore
     private val locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
     private val rng: Random = if (seed != null) Random(seed) else Random()
-    private val hopper: GraphHopper?
     private val routingCache: RoutingCache
     private val geometryFactory: GeometryFactory = GeometryFactory()
     private val transformer: CRSTransformer
