@@ -4,7 +4,7 @@ package de.uniwuerzburg.omod.core
 Possible days.
  */
 enum class Weekday {
-    MO, TU, WE, TH, FR, SA, SO, HO, UNDEFINED;
+    MO, TU, WE, TH, FR, SA, SU, HO, UNDEFINED;
 
     fun next() : Weekday {
         return when(this) {
@@ -13,8 +13,8 @@ enum class Weekday {
             WE -> TH
             TH -> FR
             FR -> SA
-            SA -> SO
-            SO -> MO
+            SA -> SU
+            SU -> MO
             HO -> UNDEFINED
             UNDEFINED -> UNDEFINED
         }
