@@ -16,6 +16,7 @@ import com.graphhopper.storage.index.Snap
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.RealLocation
 
+
 /**
  * Calculate the euclidean distance between two locations
  */
@@ -24,7 +25,7 @@ fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : D
 }
 
 /**
- * Calculate the distance between two locations using a car
+ * Determine the shortest path between two locations using a car
  */
 fun routeWithCar (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
     val req = GHRequest(

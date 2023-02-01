@@ -81,7 +81,6 @@ data class Diary (
     val activities: List<Activity>
 )
 
-
 /**
  * Activity
  */
