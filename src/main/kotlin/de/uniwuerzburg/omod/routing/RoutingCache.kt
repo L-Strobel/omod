@@ -164,7 +164,7 @@ class RoutingCache(
                 if (origin in unRoutableLocs) { return calcDistanceBeeline(origin, destination) }
                 if (destination in unRoutableLocs) { return calcDistanceBeeline(origin, destination) }
 
-                val rsp = calcDistanceGH(origin as RealLocation, destination as RealLocation, hopper!!)
+                val rsp = routeWithCar(origin as RealLocation, destination as RealLocation, hopper!!)
                 if (rsp.hasErrors()) {
                     logger.warn(
                         "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."

@@ -80,8 +80,6 @@ class Building  (
     override val areaIndustrial: Double
     override val areaOther: Double
 
-
-
     init {
         var nResidential = 0.0
         var nIndustrial = 0.0

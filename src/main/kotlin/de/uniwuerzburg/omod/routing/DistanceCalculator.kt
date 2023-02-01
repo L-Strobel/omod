@@ -26,7 +26,7 @@ fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : D
 /**
  * Calculate the distance between two locations using a car
  */
-fun calcDistanceGH (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
+fun routeWithCar (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
     val req = GHRequest(
         origin.latlonCoord.x,
         origin.latlonCoord.y,
