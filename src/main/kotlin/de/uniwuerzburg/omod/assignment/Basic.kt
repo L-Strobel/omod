@@ -17,4 +17,3 @@ fun route(origin: LocationOption, destination: LocationOption, hopper: GraphHopp
         Route.fromGH(routeWithCar(origin as RealLocation, destination as RealLocation, hopper), withPath)
     }
 }
-
