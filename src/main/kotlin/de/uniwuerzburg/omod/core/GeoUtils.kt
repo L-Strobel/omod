@@ -5,8 +5,8 @@ import org.geotools.referencing.CRS
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import java.util.logging.Level
-import java.util.logging.Logger
+import org.opengis.referencing.crs.CoordinateReferenceSystem
+import org.opengis.referencing.operation.MathTransform
 import kotlin.math.*
 
 
@@ -17,15 +17,21 @@ import kotlin.math.*
  */
 
 object CRSTransformer {
-    init {
-        System.setProperty("hsqldb.reconfig_logging", "false") // Silence hsqldb
-        Logger.getLogger("hsqldb.db").level = Level.WARNING
-    }
+    private val latlonCRS: CoordinateReferenceSystem
+    private val mercatorCRS: CoordinateReferenceSystem
+    private val transformerToLatLon: MathTransform
+    private val transformerToUTM: MathTransform
 
-    private val latlonCRS = CRS.decode("EPSG:4326")
-    private val utmCRS = CRS.decode("EPSG:3857")
-    private val transformerToLatLon = CRS.findMathTransform(utmCRS, latlonCRS)
-    private val transformerToUTM = CRS.findMathTransform(latlonCRS, utmCRS)
+    init {
+        // Get CRS
+        val latlonWKT = {}.javaClass.classLoader.getResource("EPSG_4326.wkt")!!.readText(Charsets.UTF_8)
+        latlonCRS = CRS.parseWKT(latlonWKT)
+        val mercatorWKT = {}.javaClass.classLoader.getResource("EPSG_3857.wkt")!!.readText(Charsets.UTF_8)
+        mercatorCRS = CRS.parseWKT(mercatorWKT)
+        // Get transformations
+        transformerToLatLon = CRS.findMathTransform(mercatorCRS, latlonCRS)
+        transformerToUTM = CRS.findMathTransform(latlonCRS, mercatorCRS)
+    }
 
     fun toLatLon(geometry: Geometry) : Geometry {
         return JTS.transform(geometry, transformerToLatLon)

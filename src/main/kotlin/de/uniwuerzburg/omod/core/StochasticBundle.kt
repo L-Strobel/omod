@@ -11,6 +11,7 @@ fun createCumDist(weights: IntArray): DoubleArray {
 }
 fun createCumDist(weights: DoubleArray): DoubleArray {
     assert(weights.all { it >= 0 })
+
     val cumDist = DoubleArray(weights.size)
     var cumSum = 0.0
     for (i in weights.indices) {
