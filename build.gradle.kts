@@ -32,6 +32,7 @@ dependencies {
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.3")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.3")
     implementation("org.geotools:gt-main:27.1")
+    implementation("org.geotools:gt-epsg-hsql:27.1")
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
 }
 
@@ -43,11 +44,10 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-
+/*
 tasks.shadowJar {
     relocate("com.graphhopper", "com.graphhopper.shadow")
-    relocate("org.geotools", "org.geotools.shadow")
-}
+}*/
 
 application {
     mainClass.set("de.uniwuerzburg.omod.MainKt")
