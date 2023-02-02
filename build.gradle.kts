@@ -44,11 +44,6 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-/*
-tasks.shadowJar {
-    relocate("com.graphhopper", "com.graphhopper.shadow")
-}*/
-
 application {
     mainClass.set("de.uniwuerzburg.omod.MainKt")
 }
