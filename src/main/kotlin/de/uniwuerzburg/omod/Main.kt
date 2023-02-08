@@ -79,10 +79,14 @@ class Run : CliktCommand() {
                "but overall significant speed gains. Especially then rerunning the same area."
     ).int().default(20_000)
     private val assign_trips by option(
-        help = "Experimental. Assign trips to routes using an all or nothing approach. " +
+        help = "Experimental. Assign trips to routes using an all-or-nothing approach. " +
                "All trips are driven by car."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
-
+    private val assign_with_path by option(
+        help = "Experimental. Output the path each trip is assigned to; " +
+                "otherwise only time and distance is returned in the assignment output. " +
+                "Only relevant if assign_trips == y."
+    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
     override fun run() {
@@ -113,7 +117,9 @@ class Run : CliktCommand() {
             if (hopper == null) {
                 println("Assignment only possible in GRAPHHOPPER mode.")
             } else {
-                val assignment = allOrNothing(agents, hopper)
+                val (assignment, timeAssign) = measureTimedValue { allOrNothing(agents, hopper, assign_with_path) }
+                println("Assignment took: $timeAssign")
+
                 File("assignment.json").writeText(Json.encodeToString(assignment))
             }
         }
