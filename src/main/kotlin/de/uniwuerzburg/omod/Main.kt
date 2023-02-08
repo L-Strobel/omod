@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
+import de.uniwuerzburg.omod.assignment.allOrNothing
 import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.core.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
@@ -49,7 +50,7 @@ class Run : CliktCommand() {
         help = "Method of distance calculation. Either with euclidean distance (BEELINE) or routed using a car (GRAPHHOPPER)"
     ).enum<RoutingMode>().default(RoutingMode.BEELINE)
     private val od by option(
-        help="Path to an OD-Matrix in geojson format that will be used for calibration"
+        help="Experimental. Path to an OD-Matrix in geojson format that will be used for calibration"
     ).file(mustExist = true, mustBeReadable = true)
     private val census by option(
         help="Path to population census in geojson format. See python_tools/format_zensus2011.py." +
@@ -77,6 +78,11 @@ class Run : CliktCommand() {
                "A high value will lead to high RAM usage and long initialization times " +
                "but overall significant speed gains. Especially then rerunning the same area."
     ).int().default(20_000)
+    private val assign_trips by option(
+        help = "Experimental. Assign trips to routes using an all or nothing approach. " +
+               "All trips are driven by car."
+    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
+
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
     override fun run() {
@@ -93,12 +99,24 @@ class Run : CliktCommand() {
         }
         println("Loading data took: $timeRead")
 
+        // Mobility demand
         val (agents, timeSim) = measureTimedValue {
             omod.run(n_agents, start_wd, n_days)
         }
         println("Simulation took: $timeSim")
-
         out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
+
+        // Assignment
+        if (assign_trips) {
+            val hopper = omod.hopper
+
+            if (hopper == null) {
+                println("Assignment only possible in GRAPHHOPPER mode.")
+            } else {
+                val assignment = allOrNothing(agents, hopper)
+                File("assignment.json").writeText(Json.encodeToString(assignment))
+            }
+        }
     }
 }
 

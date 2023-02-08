@@ -58,7 +58,7 @@ fun makeRoutingGrid(agents: List<MobiAgent>, resolution: Double) : Map<LocationO
     }
 }
 
-fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean = false, resolution: Double = 100.0) :
+fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean = true, resolution: Double = 100.0) :
     List<OutputTEntry> {
     // Performance parameter: If there are more than threshTree trips starting at one location route with SPT.
     val threshTree = 10
