@@ -11,13 +11,13 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.math.*
 
-
+// Global factory
+val geometryFactory = GeometryFactory()
 
 /**
  * Use this class to transform from lat lon to the CRS used in OMOD and back.
  * Currently, OMOD uses web mercator.
  */
-
 object CRSTransformer {
     init {
         System.setProperty("hsqldb.reconfig_logging", "false") // Silence hsqldb

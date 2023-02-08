@@ -56,7 +56,7 @@ class Omod(
     private val rng: Random = if (seed != null) Random(seed) else Random()
     private val routingCache: RoutingCache
     private val geometryFactory: GeometryFactory = GeometryFactory()
-    private val transformer: CRSTransformer
+    private val transformer: CRSTransformer = CRSTransformer
     private val logger = LoggerFactory.getLogger(Omod::class.java)
 
     init {
@@ -79,7 +79,6 @@ class Omod(
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
         // Get spatial data
-        transformer = CRSTransformer
         buildings = getBuildings(areaFile, geometryFactory, transformer, osmFile, cacheDir,
                                  bufferRadius, censusFile, cache)
 
