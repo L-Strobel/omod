@@ -57,7 +57,7 @@ data class OutputTrip (
 @Serializable
 data class OutputTDiary (
     val day: Int,
-    val activities: List<OutputTrip>
+    val trips: List<OutputTrip>
 )
 
 @Serializable
