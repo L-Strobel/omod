@@ -89,7 +89,11 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean
 
     // Assign
     val routes = mutableMapOf<LocationOption, Map<LocationOption, Route>>()
+    var jobsDone = 0
+    val totalJobs = odMatrix.size.toDouble()
     for ((origin, destinations) in odMatrix.entries) {
+        print( "Assigning routes: ${ProgressBar.show( jobsDone / totalJobs )}\r" )
+
         if ((origin !is RealLocation) or (destinations.size <= threshTree) or (withPath)) {
             // Route point to point
             routes[origin] = destinations.associateWith { route(origin, it, hopper, withPath) }
@@ -110,7 +114,9 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean
                 destination to route
             }.toMap()
         }
+        jobsDone += 1
     }
+    println("Assigning routes: " + ProgressBar.done())
 
     // Create output
     val output = mutableListOf<OutputTEntry>()
@@ -143,7 +149,7 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean
             }
             outDiary.add( OutputTDiary(diary.day, trips) )
         }
-        output.add( OutputTEntry(agent.id, outDiary) )
+        output.add(OutputTEntry(agent.id, outDiary))
     }
     return output
 }
