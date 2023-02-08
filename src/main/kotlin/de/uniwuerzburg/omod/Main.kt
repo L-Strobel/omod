@@ -119,8 +119,8 @@ class Run : CliktCommand() {
             } else {
                 val (assignment, timeAssign) = measureTimedValue { allOrNothing(agents, hopper, assign_with_path) }
                 println("Assignment took: $timeAssign")
-
-                File("assignment.json").writeText(Json.encodeToString(assignment))
+                File(out.parent, out.nameWithoutExtension  + "_trips.json")
+                    .writeText(Json.encodeToString(assignment))
             }
         }
     }
