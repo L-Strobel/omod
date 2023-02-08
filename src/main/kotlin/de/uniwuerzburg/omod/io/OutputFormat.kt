@@ -4,7 +4,7 @@ import de.uniwuerzburg.omod.core.*
 import kotlinx.serialization.Serializable
 
 /**
- * Output format
+ * Output format mobility demand
  */
 @Serializable
 data class OutputActivity (
@@ -41,3 +41,27 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
     }
     return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, mobilityDemand)
 }
+
+/**
+ * Output format assignment
+ */
+@Serializable
+data class OutputTrip (
+    val distance: Double,   // Unit: Meter
+    val time: Double,       // Unit: Second
+    val lats: List<Double>?,
+    val lons: List<Double>?,
+    val isReal: Boolean
+)
+
+@Serializable
+data class OutputTDiary (
+    val day: Int,
+    val activities: List<OutputTrip>
+)
+
+@Serializable
+data class OutputTEntry (
+    val id: Int,
+    val days: List<OutputTDiary>
+)

@@ -74,7 +74,7 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
 }
 
 data class SPTResult (
-    val distance: Double, // Unit: Meter
+    val distance: Double,   // Unit: Meter
     val time: Double        // Unit: Milliseconds
 )
 
