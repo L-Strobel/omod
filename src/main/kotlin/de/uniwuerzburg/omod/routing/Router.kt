@@ -16,7 +16,6 @@ import com.graphhopper.storage.index.Snap
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.RealLocation
 
-
 /**
  * Calculate the euclidean distance between two locations
  */
@@ -74,7 +73,12 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
     return PreparedQGraph(queryGraph, weighting, locNodes, snapNodes)
 }
 
-fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<Double?> {
+data class SPTResult (
+    val distance: Double, // Unit: Meter
+    val time: Double        // Unit: Milliseconds
+)
+
+fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<SPTResult?> {
     val originNode = preparedQGraph.locNodes[origin]
 
     // Origin node must be in graph
@@ -98,25 +102,26 @@ fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations:
     tree.setDistanceLimit(maxDistanceBeeline * 2)
 
     // Query
-    val treeDistances = mutableMapOf<Int, Double>()
+    val treeResults = mutableMapOf<Int, SPTResult>()
     tree.search(originNode) { label ->
         if (label.node in preparedQGraph.snapNodes) {
-            treeDistances[label.node] = label.distance
+            val result = SPTResult(label.distance, label.time.toDouble())
+            treeResults[label.node] = result
         }
     }
 
     // Format information
-    val distances = mutableListOf<Double?>()
+    val results = mutableListOf<SPTResult?>()
     for (destination in destinations) {
         val destinationNode = preparedQGraph.locNodes[destination]
 
-        val distance = if (origin == destination) {
-            origin.avgDistanceToSelf
+        val result = if (origin == destination) {
+            SPTResult(origin.avgDistanceToSelf, 0.0)
         } else {
-            treeDistances[destinationNode]
+            treeResults[destinationNode]
         }
 
-        distances.add(distance)
+        results.add(result)
     }
-    return distances
+    return results
 }

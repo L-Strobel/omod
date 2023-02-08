@@ -105,13 +105,13 @@ class RoutingCache(
                 }
                 RoutingMode.GRAPHHOPPER -> {
                     val qGraph = prepareQGraph(hopper!!, relevantLocations.filterIsInstance<RealLocation>())
-                    val distances = querySPT(qGraph, origin, relevantLocations)
+                    val sptResults = querySPT(qGraph, origin, relevantLocations)
 
                     for ((i, destination) in relevantLocations.withIndex()) {
                         if (destination !is RealLocation) { continue }
                         if (oTable[destination] != null)  { continue }
 
-                        val sptDistance = distances[i]?.toFloat()
+                        val sptDistance = sptResults[i]?.distance?.toFloat()
                         oTable[destination] = sptDistance ?: calcDistance(origin, destination).toFloat()
                     }
                 }
