@@ -11,7 +11,6 @@ import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
@@ -91,7 +90,7 @@ class Omod(
         }
 
         // Create grid (used for speed up)
-        grid = makeGrid(gridResolution)
+        grid = makeGrid(gridResolution, buildings, geometryFactory, transformer)
         for (cell in grid) {
             cell.buildings.forEach { it.cell = cell }
         }
@@ -186,45 +185,6 @@ class Omod(
             }
         }
         return Building.fromGeoJson(collection, geometryFactory, transformer)
-    }
-
-    /**
-     * Group buildings with a regular grid for faster sampling.
-     */
-    fun makeGrid(gridResolution: Double) : List<Cell> {
-        val grid = mutableListOf<Cell>()
-        val xMin = buildings.minOfOrNull { it.coord.x } ?:0.0
-        val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
-        val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
-        val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
-
-        var id = 0
-        for (x in semiOpenDoubleRange(xMin, xMax, gridResolution)) {
-            for (y in semiOpenDoubleRange(yMin, yMax, gridResolution)) {
-                val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
-                val cellBuildings = kdTree.query(envelope).map { ((it as KdNode).data as Building) }
-                if (cellBuildings.isEmpty()) continue
-
-                // Centroid of all contained buildings
-                val featureCentroid = geometryFactory.createMultiPoint(
-                    cellBuildings.map { it.point }.toTypedArray()
-                ).centroid.coordinate
-
-                val latlonCoord = transformer.toLatLon( geometryFactory.createPoint(featureCentroid) ).coordinate
-
-                val cell = Cell(
-                    id = id,
-                    coord = featureCentroid,
-                    latlonCoord = latlonCoord,
-                    envelope = envelope,
-                    buildings = cellBuildings,
-                )
-
-                grid.add(cell)
-                id += 1
-            }
-        }
-        return grid.toList()
     }
 
     private fun createGraphHopper(osmLoc: String, cacheLoc: String) : GraphHopper {
