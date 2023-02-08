@@ -61,7 +61,7 @@ fun makeRoutingGrid(agents: List<MobiAgent>, resolution: Double) : Map<LocationO
 fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean = true, resolution: Double = 100.0) :
     List<OutputTEntry> {
     // Performance parameter: If there are more than threshTree trips starting at one location route with SPT.
-    val threshTree = 10
+    val threshTree = 10_000
     val routingGrid = makeRoutingGrid(agents, resolution)
 
     // Get all od-Pairs that have to be routed
@@ -99,9 +99,8 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean
             routes[origin] = destinations.associateWith { route(origin, it, hopper, withPath) }
         } else {
             // Route one to many with SPT
-            val relevantLocations = (destinations + origin).toList()
-            val qGraph = prepareQGraph(hopper, relevantLocations.filterIsInstance<RealLocation>())
-            val sptResults = querySPT(qGraph, origin as RealLocation, relevantLocations)
+            val qGraph = prepareQGraph(hopper, (destinations + origin).filterIsInstance<RealLocation>())
+            val sptResults = querySPT(qGraph, origin as RealLocation, destinations.filterIsInstance<RealLocation>())
 
             routes[origin] = sptResults.mapIndexed { i, it ->
                 val destination = destinations[i]
