@@ -124,27 +124,25 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean
         for (diary in agent.mobilityDemand) {
             val trips = mutableListOf<OutputTrip>()
 
-            if (diary.activities.size <= 1) {
-                continue
-            }
+            if (diary.activities.size > 1) {
+                var origin = routingGrid[diary.activities.first().location]!!
+                for (activity in diary.activities.drop(0)) {
+                    val destination = routingGrid[activity.location]!!
 
-            var origin = routingGrid[diary.activities.first().location]!!
-            for (activity in diary.activities.drop(0)) {
-                val destination = routingGrid[activity.location]!!
-
-                // Find the route
-                val route = routes[origin]!![destination]!!
-                trips.add(
-                    OutputTrip(
-                        route.distance,
-                        route.time,
-                        route.path?.map { it.x },
-                        route.path?.map { it.y },
-                        route.isReal
+                    // Find the route
+                    val route = routes[origin]!![destination]!!
+                    trips.add(
+                        OutputTrip(
+                            route.distance,
+                            route.time,
+                            route.path?.map { it.x },
+                            route.path?.map { it.y },
+                            route.isReal
+                        )
                     )
-                )
 
-                origin = destination
+                    origin = destination
+                }
             }
             outDiary.add( OutputTDiary(diary.day, trips) )
         }
