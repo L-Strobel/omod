@@ -135,5 +135,5 @@ class App {
 
 ## Acknowledgment
 
-This model is created as part of the ESM-Regio project (https://www.bayern-innovativ.de/de/seite/esm-regio)
+This model is created as part of the ESM-Regio project (https://www.bayern-innovativ.de/de/seite/esm-regio-en)
 and is made possible through funding from the German Federal Ministry for Economic Affairs and Climate Action.
