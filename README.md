@@ -19,7 +19,7 @@ in the following format:
                 "activities": [
                     {
                         "type": "HOME",                  // Options: HOME, WORK, SCHOOL, SHOPPING, OTHER
-                        "stayTime": 1133.4945922475808,  // Time spent at loction. Unit: Minutes
+                        "stayTime": 1133.4945922475808,  // Time spent at location. Unit: Minutes
                         "lat": 53.61571111201344,        // Latitude
                         "lon": 10.107296996943852,       // Longitude
                         "dummyLoc": false,               // Placeholder: currently always false
