@@ -11,9 +11,9 @@ class Route (
     val isReal: Boolean             // Between real locations?
 ) {
     companion object {
-        fun fromGH(response: GHResponse, withPath: Boolean): Route {
+        fun fromGH(response: GHResponse, withPath: Boolean): Route? {
             if (response.hasErrors()) {
-                throw response.errors[0]
+                return null
             }
             val path = if (withPath) {
                 response.best.points.map {

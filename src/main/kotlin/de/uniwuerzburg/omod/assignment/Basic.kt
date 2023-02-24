@@ -10,15 +10,19 @@ import de.uniwuerzburg.omod.routing.prepareQGraph
 import de.uniwuerzburg.omod.routing.querySPT
 import de.uniwuerzburg.omod.routing.routeWithCar
 
+fun beelineRoute(origin: LocationOption, destination: LocationOption, speedBeeline: Double = 130.0 / 3.6) : Route {
+    val distance = calcDistanceBeeline(origin, destination)
+    val time = distance / speedBeeline
+    return Route(distance, time, null, false)
+}
+
 @Suppress("unused")
-fun route(origin: LocationOption, destination: LocationOption, hopper: GraphHopper, withPath: Boolean = false,
-          speedBeeline: Double = 130.0 / 3.6) : Route {
+fun route(origin: LocationOption, destination: LocationOption, hopper: GraphHopper, withPath: Boolean = false) : Route {
     return if ((origin !is RealLocation) or (destination !is RealLocation)) {
-        val distance = calcDistanceBeeline(origin, destination)
-        val time = distance / speedBeeline
-        Route(distance, time, null, false)
+        beelineRoute(origin, destination)
     } else {
-        Route.fromGH(routeWithCar(origin as RealLocation, destination as RealLocation, hopper), withPath)
+        val route = Route.fromGH(routeWithCar(origin as RealLocation, destination as RealLocation, hopper), withPath)
+        route ?: beelineRoute(origin, destination) // Fallback to beeline
     }
 }
 
@@ -126,7 +130,7 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean
 
             if (diary.activities.size > 1) {
                 var origin = routingGrid[diary.activities.first().location]!!
-                for (activity in diary.activities.drop(0)) {
+                for (activity in diary.activities.drop(1)) {
                     val destination = routingGrid[activity.location]!!
 
                     // Find the route
