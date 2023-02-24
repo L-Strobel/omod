@@ -33,7 +33,7 @@ sealed class LocationChoiceDCWeightFun {
         }
         val fd = deterrenceFunction(distanceAdj)
         val attraction = calcForNoOrigin(destination)
-        return exp(attraction + fd)
+        return attraction * exp(fd)
     }
 
     open fun calcForNoOrigin(destination: RealLocation) : Double {
