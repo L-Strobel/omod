@@ -37,7 +37,7 @@ sealed class LocationChoiceDCWeightFun {
     }
 
     open fun calcForNoOrigin(destination: RealLocation) : Double {
-        return coeffResidentialArea * destination.areaResidential +
+        return 1 + coeffResidentialArea * destination.areaResidential +
                coeffCommercialArea * destination.areaCommercial +
                coeffIndustrialArea * destination.areaIndustrial +
                coeffOtherArea * destination.areaOther +
