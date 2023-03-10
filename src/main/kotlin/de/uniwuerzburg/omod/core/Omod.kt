@@ -87,6 +87,7 @@ class Omod(
 
         // Create grid (used for speed up)
         grid = makeGrid(gridResolution, buildings, geometryFactory, transformer)
+        //grid = makeClusterGrid(50, buildings, geometryFactory, transformer)
         for (cell in grid) {
             cell.buildings.forEach { it.cell = cell }
         }

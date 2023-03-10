@@ -2,8 +2,8 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
 import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
+import org.apache.commons.math3.ml.clustering.Clusterable
 import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Point
 
@@ -67,7 +67,7 @@ class Building  (
     val landuse: Landuse,
 
     var cell: Cell? = null
-) : RealLocation {
+) : RealLocation, Clusterable {
     override val avgDistanceToSelf = 0.0
 
     override val nBuilding = 1.0
@@ -147,6 +147,10 @@ class Building  (
             }
         }
     }
+
+    override fun getPoint(): DoubleArray {
+        return arrayOf(coord.x, coord.y).toDoubleArray()
+    }
 }
 
 /**
@@ -157,7 +161,6 @@ data class Cell (
     val id: Int,
     override val coord: Coordinate,
     override val latlonCoord: Coordinate ,
-    val envelope: Envelope,
     val buildings: List<Building>,
 ) : RealLocation {
     // From LocationOption
@@ -198,7 +201,6 @@ data class Cell (
         if (id != other.id) return false
         if (coord != other.coord) return false
         if (latlonCoord != other.latlonCoord) return false
-        if (envelope != other.envelope) return false
         if (buildings != other.buildings) return false
         if (avgDistanceToSelf != other.avgDistanceToSelf) return false
         if (odZone != other.odZone) return false
