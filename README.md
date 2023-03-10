@@ -1,6 +1,6 @@
 # OMOD (OpenStreetMap Mobility Demand Generator)
 
-OMOD is a tool that creates synthetic mobility demand based on Open-Street-Maps data
+OMOD is a tool that creates synthetic mobility demand based on OpenStreetMap data
 for a user-defined location.
 The generated demand is in the form of daily activity diaries
 in the following format:
@@ -51,10 +51,10 @@ However, we calibrated the model using data from the German national household t
 (https://www.mobilitaet-in-deutschland.de/publikationen2017.html).
 Therefore, the model's performance outside of Germany and especially
 in nations with conditions very different to Germany is uncertain.
-Additionally, the region must be mapped reasonably well in Open-Street-Maps.
+Additionally, the region must be mapped reasonably well in OpenStreetMap.
 Especially important is mapping information about the location and size of buildings, landuse zones,
 and the road network.
-To run OMOD an Open-Street-Maps file of the region and a definition of the region of interest
+To run OMOD an OpenStreetMap file of the region and a definition of the region of interest
 (in GeoJson format) are necessary.
 Additionally, zensus information of the region is helpful
 (see python_tools/format_zensus2011.py for an example of how to correctly format zensus data for OMOD).
@@ -71,7 +71,7 @@ With https://geojson.io, you can easily create a geojson of an arbitrary region.
 Geojsons for administrative areas can be obtained quickly with https://polygons.openstreetmap.fr/.
 4. Run OMOD:
    ```
-   java -jar omod-1.4-all.jar Path/to/GeoJson Path/to/osm.pbf 
+   java -jar omod-1.4.1-all.jar Path/to/GeoJson Path/to/osm.pbf 
    ```
 
 Run --help for an explanation of optional parameters, such as the number of agents, weekday, or routing mode.
