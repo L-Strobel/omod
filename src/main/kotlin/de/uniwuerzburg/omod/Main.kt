@@ -22,70 +22,68 @@ import kotlin.time.measureTimedValue
 class Run : CliktCommand() {
     // Arguments
     private val area_geojson by argument(
-        help = "Path to the area you want OMOD to generate mobility demand for. " +
-                "Must be a geojson. " +
-                "Helpful sides for geojson generation: geojson.io, polygons.openstreetmap.fr"
+        help = "Path to the GeoJSON file that defines the area for which you want to generate mobility demand. " +
+                "Helpful websites for GeoJSON generation: https://geojson.io, https://polygons.openstreetmap.fr"
     ).file(mustExist = true, mustBeReadable = true)
     private val osm_file by argument(
-        help = "Path to osm.pbf file that includes the area completely. " +
-               "Must cover the entire area, but can cover more. " +
-               "However, Large files can slow down initialisation. " +
+        help = "Path to an osm.pbf file that covers the area completely. " +
                "Recommended download platform: https://download.geofabrik.de/"
     ).file(mustExist = true, mustBeReadable = true)
     // Options
     private val n_agents by option(
-        help="Number of agents in focus area to simulate." +
-             "The buffer area and in-commuting sources are populated proportionally if populate_buffer_area = y."
+        help="Number of agents to simulate. " +
+             "If populate_buffer_area = y, additional agents are created to populate the buffer area"
     ).int().default(1000)
     private val n_days by option(
         help="Number of days to simulate"
     ).int().default(1)
     private val start_wd by option(
-        help="First weekday to simulate. IF undefined n undefined days are simulated."
+        help="First weekday to simulate. If the value is set to UNDEFINED, all simulated days will be UNDEFINED."
     ).enum<Weekday>().default(Weekday.UNDEFINED)
     private val out by option (
-        help="Output file, must end on .json"
+        help="Output file. Should end with '.json'"
     ).file().default(File("output.json"))
     private val routing_mode by option(
-        help = "Method of distance calculation. Either with euclidean distance (BEELINE) or routed using a car (GRAPHHOPPER)"
+        help = "Distance calculation method. Either euclidean distance (BEELINE) or routed distance by car (GRAPHHOPPER)"
     ).enum<RoutingMode>().default(RoutingMode.BEELINE)
     private val od by option(
-        help="Experimental. Path to an OD-Matrix in geojson format that will be used for calibration"
+        help="[Experimental] Path to an OD-Matrix in GeoJSON format. " +
+             "The matrix is used to further calibrate the model to the area using k-factors."
     ).file(mustExist = true, mustBeReadable = true)
     private val census by option(
-        help="Path to population census in geojson format. See python_tools/format_zensus2011.py." +
-             "For an example of how to create such a file." +
+        help="Path to population data in GeoJSON format. " +
+             "For an example of how to create such a file see python_tools/format_zensus2011.py. " +
              "Should cover the entire area, but can cover more."
     ).file(mustExist = true, mustBeReadable = true)
     private val grid_res by option(
-        help="Size of the grid cells used for quicker sampling. The 500m default is suitable in most cases. Unit: meters"
+        help="Size of the grid cells used as TAZ. The default is 500m and suitable in most cases. Unit: meters"
     ).double().default(500.0)
     private val buffer by option(
-        help="Size of the buffer area that is simulated in addition to the specified focus area" +
-              " to allow for short distance commutes. Unit: meters"
+        help="Size of the buffer area that is simulated in addition to the area specified in the GeoJSON. Unit: meters"
     ).double().default(0.0)
-    private val seed by option(help = "Random seed to use. Like java.util.Random()").long()
+    private val seed by option(help = "RNG seed.").long()
     // private val cache by option(help = "Defines if the program caches the model area.")
     //     .choice("true" to true, "false" to false).default(true)
-    private val cache_dir by option(help = "Location of cache.")
+    private val cache_dir by option(help = "Cache directory")
         .path(canBeDir = true, canBeFile = false).default(Paths.get("omod_cache/"))
     private val populate_buffer_area by option(
-        help = "Set if agents can life in the buffer area?"
+        help = "Determines if home locations of agents can be in the buffer area. " +
+               "If set to 'y' additional agents will be created so that the proportion of agents in and " +
+               "outside the focus area is the same as in the census data. " +
+               "The focus area will always be populated by n_agents agents."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(true)
     private val distance_matrix_cache_size by option(
-        help = "Size of the distance matrix to precompute if routing_mode is GRAPHHOPPER. " +
-               "Size will be distance_matrix_cache_size x distance_matrix_cache_size. " +
+        help = "Size of the distance matrix to precompute (only if routing_mode is GRAPHHOPPER). " +
                "A high value will lead to high RAM usage and long initialization times " +
                "but overall significant speed gains. Especially then rerunning the same area."
     ).int().default(20_000)
     private val assign_trips by option(
-        help = "Experimental. Assign trips to routes using an all-or-nothing approach. " +
+        help = "[Experimental] Assign trips to routes using an all-or-nothing approach. " +
                "All trips are driven by car."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     private val assign_with_path by option(
-        help = "Experimental. Output the path each trip is assigned to; " +
-                "otherwise only time and distance is returned in the assignment output. " +
-                "Only relevant if assign_trips == y."
+        help = "[Experimental] Output the path coordinates of each trip. " +
+               "Only relevant if assign_trips == y."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
