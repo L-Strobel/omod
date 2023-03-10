@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.core
 
-import de.uniwuerzburg.omod.routing.calcDistanceBeeline
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
 import org.apache.commons.math3.ml.distance.EuclideanDistance
 import org.apache.commons.math3.random.JDKRandomGenerator
@@ -61,7 +60,6 @@ fun makeGrid(gridResolution: Double,  buildings: List<Building>, geometryFactory
     val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
 
     var id = 0
-    val distances = mutableListOf<Double>()
     for (x in semiOpenDoubleRange(xMin, xMax, gridResolution)) {
         for (y in semiOpenDoubleRange(yMin, yMax, gridResolution)) {
             val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
@@ -81,14 +79,11 @@ fun makeGrid(gridResolution: Double,  buildings: List<Building>, geometryFactory
                 latlonCoord = latlonCoord,
                 buildings = cellBuildings,
             )
-            for (b in cellBuildings) {
-                distances.add(calcDistanceBeeline(cell, b))
-            }
+
             grid.add(cell)
             id += 1
         }
     }
-    print(distances.average())
     return grid.toList()
 }
 
