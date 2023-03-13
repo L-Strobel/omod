@@ -38,7 +38,8 @@ class Omod(
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
     private val populateBufferArea: Boolean = true,
-    distanceCacheSize: Int = 20_000
+    distanceCacheSize: Int = 20_000,
+    populationFile: File? = null
 ) {
     val kdTree: KdTree
     val buildings: List<Building>
@@ -58,7 +59,11 @@ class Omod(
 
     init {
         // Get population distribution
-        val popTxt = Omod::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
+        val popTxt = if (populationFile?.isFile != null) {
+            populationFile.readText(Charsets.UTF_8)
+        } else {
+            Omod::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
+        }
         populationDef = Json.decodeFromString(popTxt)
 
         // Get activity chain data

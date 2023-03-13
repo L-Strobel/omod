@@ -85,6 +85,10 @@ class Run : CliktCommand() {
         help = "[Experimental] Output the path coordinates of each trip. " +
                "Only relevant if assign_trips == y."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
+    private val population_file by option(
+        help="Path to file that describes the socio-demographic makeup of the population. " +
+             "Must be formatted like omod/src/main/resources/Population.json."
+    ).file(mustExist = true, mustBeReadable = true)
     //@OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalTime::class)
     override fun run() {
@@ -96,7 +100,8 @@ class Run : CliktCommand() {
                 gridResolution = grid_res, bufferRadius = buffer, seed = seed,
                 cache = true, cacheDir = cache_dir,
                 populateBufferArea = populate_buffer_area,
-                distanceCacheSize = distance_matrix_cache_size
+                distanceCacheSize = distance_matrix_cache_size,
+                populationFile = population_file
             )
         }
         println("Loading data took: $timeRead")
