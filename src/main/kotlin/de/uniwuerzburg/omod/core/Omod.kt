@@ -59,11 +59,8 @@ class Omod(
 
     init {
         // Get population distribution
-        val popTxt = if (populationFile?.isFile != null) {
-            populationFile.readText(Charsets.UTF_8)
-        } else {
-            Omod::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
-        }
+        val popTxt = populationFile?.readText(Charsets.UTF_8)
+            ?: Omod::class.java.classLoader.getResource("Population.json")!!.readText(Charsets.UTF_8)
         populationDef = Json.decodeFromString(popTxt)
 
         // Get activity chain data
