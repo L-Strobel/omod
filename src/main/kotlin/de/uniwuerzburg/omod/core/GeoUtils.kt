@@ -16,15 +16,17 @@ val geometryFactory = GeometryFactory()
  * Use this class to transform from lat lon to the CRS used in OMOD and back.
  * Currently, OMOD uses web mercator.
  */
-object CRSTransformer {
+class CRSTransformer (
+    centerLat: Double,
+    centerLon: Double
+) {
     init {
         System.setProperty("hsqldb.reconfig_logging", "false") // Silence hsqldb
         Logger.getLogger("hsqldb.db").level = Level.WARNING
     }
 
     private val latlonCRS = CRS.decode("EPSG:4326")
-    private val utmCRS = CRS.decode("EPSG:3857")
-    //private val utmCRS = CRS.decode("AUTO:42001,11.07868,49.45313")
+    private val utmCRS = CRS.decode("AUTO:42001,${centerLon},${centerLat}")
     private val transformerToLatLon = CRS.findMathTransform(utmCRS, latlonCRS)
     private val transformerToUTM = CRS.findMathTransform(latlonCRS, utmCRS)
 
@@ -36,51 +38,6 @@ object CRSTransformer {
         return JTS.transform(geometry, transformerToUTM)
     }
 }
-
-/**
- * Group buildings with a regular grid for faster sampling.
- */
-/* fun makeGrid(gridResolution: Double,  buildings: List<Building>, geometryFactory: GeometryFactory,
-             transformer: CRSTransformer) : List<Cell> {
-    // Create KD-Tree for faster access
-    val kdTree = KdTree()
-    buildings.forEach { building ->
-        kdTree.insert(building.coord, building)
-    }
-
-    val grid = mutableListOf<Cell>()
-    val xMin = buildings.minOfOrNull { it.coord.x } ?:0.0
-    val yMin = buildings.minOfOrNull { it.coord.y } ?:0.0
-    val xMax = buildings.maxOfOrNull { it.coord.x } ?:0.0
-    val yMax = buildings.maxOfOrNull { it.coord.y } ?:0.0
-
-    var id = 0
-    for (x in semiOpenDoubleRange(xMin, xMax, gridResolution)) {
-        for (y in semiOpenDoubleRange(yMin, yMax, gridResolution)) {
-            val envelope = Envelope(x, x+gridResolution, y, y+gridResolution)
-            val cellBuildings = kdTree.query(envelope).map { ((it as KdNode).data as Building) }
-            if (cellBuildings.isEmpty()) continue
-
-            // Centroid of all contained buildings
-            val featureCentroid = geometryFactory.createMultiPoint(
-                cellBuildings.map { it.point }.toTypedArray()
-            ).centroid.coordinate
-
-            val latlonCoord = transformer.toLatLon( geometryFactory.createPoint(featureCentroid) ).coordinate
-
-            val cell = Cell(
-                id = id,
-                coord = featureCentroid,
-                latlonCoord = latlonCoord,
-                buildings = cellBuildings,
-            )
-
-            grid.add(cell)
-            id += 1
-        }
-    }
-    return grid.toList()
-} */
 
 /**
  * Find envelops that are covered by a geometry quickly

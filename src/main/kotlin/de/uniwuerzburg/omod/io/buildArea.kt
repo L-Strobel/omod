@@ -32,7 +32,7 @@ fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: 
 
         for (censusEntree in censusData.features) {
             val population = (censusEntree.properties as GeoJsonCensusProperties).population
-            val censusZone = CRSTransformer.toModelCRS( censusEntree.geometry.toJTS(geometryFactory) )
+            val censusZone = transformer.toModelCRS( censusEntree.geometry.toJTS(geometryFactory) )
 
             val intersectingBuildings = buildingsTree.query(censusZone.envelopeInternal)
                 .map { it as BuildingData }
