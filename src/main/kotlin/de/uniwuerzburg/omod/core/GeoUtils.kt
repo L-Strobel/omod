@@ -1,16 +1,10 @@
 package de.uniwuerzburg.omod.core
 
-import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
-import org.apache.commons.math3.ml.distance.EuclideanDistance
-import org.apache.commons.math3.random.JDKRandomGenerator
 import org.geotools.geometry.jts.JTS
 import org.geotools.referencing.CRS
-import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.index.kdtree.KdNode
-import org.locationtech.jts.index.kdtree.KdTree
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.math.*
@@ -30,6 +24,7 @@ object CRSTransformer {
 
     private val latlonCRS = CRS.decode("EPSG:4326")
     private val utmCRS = CRS.decode("EPSG:3857")
+    //private val utmCRS = CRS.decode("AUTO:42001,11.07868,49.45313")
     private val transformerToLatLon = CRS.findMathTransform(utmCRS, latlonCRS)
     private val transformerToUTM = CRS.findMathTransform(latlonCRS, utmCRS)
 
@@ -45,7 +40,7 @@ object CRSTransformer {
 /**
  * Group buildings with a regular grid for faster sampling.
  */
-fun makeGrid(gridResolution: Double,  buildings: List<Building>, geometryFactory: GeometryFactory,
+/* fun makeGrid(gridResolution: Double,  buildings: List<Building>, geometryFactory: GeometryFactory,
              transformer: CRSTransformer) : List<Cell> {
     // Create KD-Tree for faster access
     val kdTree = KdTree()
@@ -85,86 +80,7 @@ fun makeGrid(gridResolution: Double,  buildings: List<Building>, geometryFactory
         }
     }
     return grid.toList()
-}
-
-fun cluster(nBuildingsPerCluster: Int,  buildings: List<Building>, geometryFactory: GeometryFactory,
-            transformer: CRSTransformer
-) : List<Cell> {
-    val clusterer = KMeansPlusPlusClusterer<Building>(
-        buildings.size / nBuildingsPerCluster,
-        3,
-        EuclideanDistance(),
-        JDKRandomGenerator(1) // Fixed seed ensures the cells in a run are the same as in the cached routing data.
-    )
-
-    val centroids = clusterer.cluster(buildings)
-    var id = 0
-    val grid = mutableListOf<Cell>()
-    for (centroid in centroids) {
-        val cellBuildings = centroid.points
-        val featureCentroid = Coordinate(centroid.center.point[0], centroid.center.point[1])
-
-        val latlonCoord = transformer.toLatLon( geometryFactory.createPoint(featureCentroid) ).coordinate
-
-        val cell = Cell(
-            id = id,
-            coord = featureCentroid,
-            latlonCoord = latlonCoord,
-            buildings = cellBuildings,
-        )
-
-        grid.add(cell)
-        id += 1
-    }
-    return grid.toList()
-}
-
-/**
- * Group buildings with k-Means clustering for faster sampling
- *
- * Not used right now because it takes to long for an unbuffered area.
- */
-@Suppress("unused")
-fun makeClusterGrid(nBuildingsPerCluster: Int,  buildings: List<Building>, geometryFactory: GeometryFactory,
-                    transformer: CRSTransformer
-) : List<Cell> {
-    // Get cluster in focus area
-    val focusAreaBuildings = buildings.filter { it.inFocusArea }
-    val cells = cluster(nBuildingsPerCluster, buildings.filter { it.inFocusArea }, geometryFactory, transformer)
-        .toMutableList()
-
-    // Get cluster in buffer area with gradually declining resolution
-    val bufferBuildings = buildings.filter { !it.inFocusArea }
-
-    // Boundary of focus area
-    val faBoundary = geometryFactory.createMultiPoint(
-        focusAreaBuildings.map { it.point }.toTypedArray()
-    ).boundary
-
-    // Determine distance to focus area and level of detail
-    val buildingGroups = mutableMapOf<Int, MutableList<Building>>()
-    for (building in bufferBuildings) {
-        val distance = faBoundary.distance(building.point).toInt()
-
-        // Quadratic decrease by distance of number of clusters in 5km chunks
-        val nClusterDivisor = (distance / 5000 + 1).toDouble().pow(2).toInt()
-
-        if(buildingGroups.containsKey(nClusterDivisor)) {
-            buildingGroups[nClusterDivisor]!!.add(building)
-        } else {
-            buildingGroups[nClusterDivisor] = mutableListOf(building)
-        }
-    }
-
-    for ((nClusterDivisor, buildingsAtDistance) in buildingGroups) {
-        cells.addAll(
-            cluster(
-                nBuildingsPerCluster*nClusterDivisor, buildingsAtDistance,
-                geometryFactory, transformer)
-        )
-    }
-    return cells.toList()
-}
+} */
 
 /**
  * Find envelops that are covered by a geometry quickly

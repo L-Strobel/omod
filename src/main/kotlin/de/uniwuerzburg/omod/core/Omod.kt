@@ -24,7 +24,6 @@ import java.util.*
  *
  * Creates daily mobility profiles in the form of activity chains and dwell times.
  */
-
 @Suppress("MemberVisibilityCanBePrivate")
 class Omod(
     areaFile: File,
@@ -33,7 +32,7 @@ class Omod(
     cache: Boolean = true,
     cacheDir: Path = Paths.get("omod_cache/"),
     odFile: File? = null,
-    gridResolution: Double = 500.0,
+    gridPrecision: Double = 200.0,
     seed: Long? = null,
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
@@ -88,8 +87,7 @@ class Omod(
         }
 
         // Create grid (used for speed up)
-        grid = makeGrid(gridResolution, buildings, geometryFactory, transformer)
-        //grid = makeClusterGrid(50, buildings, geometryFactory, transformer)
+        grid = makeClusterGrid(gridPrecision, buildings, geometryFactory, transformer)
         for (cell in grid) {
             cell.buildings.forEach { it.cell = cell }
         }

@@ -55,9 +55,12 @@ class Run : CliktCommand() {
              "For an example of how to create such a file see python_tools/format_zensus2011.py. " +
              "Should cover the entire area, but can cover more."
     ).file(mustExist = true, mustBeReadable = true)
-    private val grid_res by option(
-        help="Size of the grid cells used as TAZ. The default is 500m and suitable in most cases. Unit: meters"
-    ).double().default(500.0)
+    private val grid_precision by option(
+        help="Allowed average distance between focus area building and its corresponding TAZ center. " +
+             "The default is 200m and suitable in most cases." +
+             "In the buffer area the allowed distance increases quadratically with distance. " +
+             "Unit: meters"
+    ).double().default(200.0)
     private val buffer by option(
         help="Size of the buffer area that is simulated in addition to the area specified in the GeoJSON. Unit: meters"
     ).double().default(0.0)
@@ -97,7 +100,7 @@ class Run : CliktCommand() {
                 area_geojson, osm_file,
                 mode = routing_mode,
                 odFile = od, censusFile = census,
-                gridResolution = grid_res, bufferRadius = buffer, seed = seed,
+                gridPrecision = grid_precision, bufferRadius = buffer, seed = seed,
                 cache = true, cacheDir = cache_dir,
                 populateBufferArea = populate_buffer_area,
                 distanceCacheSize = distance_matrix_cache_size,
