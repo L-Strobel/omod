@@ -81,7 +81,7 @@ fun getCRSTransformer(agents: List<MobiAgent>): CRSTransformer {
         points.toTypedArray()
     ).union().centroid
 
-    return CRSTransformer( center.coordinate.x, center.coordinate.y)
+    return CRSTransformer( center.coordinate.x )
 }
 
 fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean = true,

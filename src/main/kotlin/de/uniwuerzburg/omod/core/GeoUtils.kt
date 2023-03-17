@@ -2,9 +2,19 @@ package de.uniwuerzburg.omod.core
 
 import org.geotools.geometry.jts.JTS
 import org.geotools.referencing.CRS
+import org.geotools.referencing.ReferencingFactoryFinder
+import org.geotools.referencing.crs.DefaultGeographicCRS
+import org.geotools.referencing.cs.DefaultCartesianCS
+import org.geotools.referencing.factory.ReferencingFactoryContainer
+import org.geotools.referencing.operation.DefaultCoordinateOperationFactory
+import org.geotools.referencing.operation.projection.TransverseMercator
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import org.opengis.referencing.crs.GeographicCRS
+import org.opengis.referencing.crs.ProjectedCRS
+import org.opengis.referencing.cs.CartesianCS
+import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.math.*
@@ -17,7 +27,6 @@ val geometryFactory = GeometryFactory()
  * Currently, OMOD uses web mercator.
  */
 class CRSTransformer (
-    centerLat: Double,
     centerLon: Double
 ) {
     init {
@@ -26,7 +35,7 @@ class CRSTransformer (
     }
 
     private val latlonCRS = CRS.decode("EPSG:4326")
-    private val utmCRS = CRS.decode("AUTO:42001,${centerLon},${centerLat}")
+    private val utmCRS = getModelCRS(centerLon)
     private val transformerToLatLon = CRS.findMathTransform(utmCRS, latlonCRS)
     private val transformerToUTM = CRS.findMathTransform(latlonCRS, utmCRS)
 
@@ -36,6 +45,26 @@ class CRSTransformer (
 
     fun toModelCRS(geometry: Geometry) : Geometry {
         return JTS.transform(geometry, transformerToUTM)
+    }
+
+    private fun getModelCRS(centerLon: Double): ProjectedCRS {
+        val mtFactory = ReferencingFactoryFinder.getMathTransformFactory(null)
+        val factories = ReferencingFactoryContainer(null)
+
+        val geoCRS: GeographicCRS = DefaultGeographicCRS.WGS84
+        val cartCS: CartesianCS = DefaultCartesianCS.GENERIC_2D
+
+        val parameters = mtFactory.getDefaultParameters("Transverse_Mercator")
+        parameters.parameter("central_meridian").setValue(centerLon)
+        parameters.parameter("latitude_of_origin").setValue(0.0)
+        parameters.parameter("scale_factor").setValue(0.9996)
+        parameters.parameter("false_easting").setValue(500000.0)
+        parameters.parameter("false_northing").setValue(0.0)
+
+        val properties = Collections.singletonMap<String, Any>("name", "OMOD-Model-CRS")
+        val conversion = DefaultCoordinateOperationFactory()
+            .createDefiningConversion(properties, TransverseMercator.Provider(), parameters)
+        return factories.crsFactory.createProjectedCRS(properties, geoCRS, conversion, cartCS)
     }
 }
 

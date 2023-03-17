@@ -82,7 +82,7 @@ class Omod(
 
         // Get CRSTransformer
         val center = focusArea.centroid
-        transformer = CRSTransformer( center.coordinate.x, center.coordinate.y)
+        transformer = CRSTransformer( center.coordinate.x )
 
         // Get spatial data
         buildings = getBuildings(focusArea, geometryFactory, transformer, osmFile, cacheDir,
