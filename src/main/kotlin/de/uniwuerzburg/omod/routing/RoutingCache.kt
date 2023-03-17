@@ -126,7 +126,7 @@ class RoutingCache(
             RoutingMode.BEELINE -> return destinations.map { calcDistance(origin, it).toFloat() }.toFloatArray()
             RoutingMode.GRAPHHOPPER -> {
                 if (origin !is RealLocation) {
-                    return destinations.map { calcDistance(origin, it).toFloat() }.toFloatArray()
+                    return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
                 }
                 val oTable  = if (!table.containsKey(origin)) {
                     table[origin] = MaxSizeHashMap(sizeLimitSecTable)
@@ -137,7 +137,7 @@ class RoutingCache(
                 return FloatArray(destinations.size) {
                     val destination = destinations[it]
                     if (destination !is RealLocation) {
-                        calcDistance(origin, destination).toFloat()
+                        calcDistanceBeeline(origin, destination).toFloat()
                     } else {
                         val entry = oTable[destination]
                         if (entry == null) {

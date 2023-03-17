@@ -113,6 +113,7 @@ class Run : CliktCommand() {
         val (agents, timeSim) = measureTimedValue {
             omod.run(n_agents, start_wd, n_days)
         }
+
         println("Simulation took: $timeSim")
         out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
 

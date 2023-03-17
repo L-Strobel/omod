@@ -613,7 +613,10 @@ class Omod(
         val homeWeights = getWeightsNoOrigin(zones, ActivityType.HOME)
         val totalHomeWeight = homeWeights.sum()
         val homeProbs = homeWeights.map { it / totalHomeWeight }.toDoubleArray()
-        if (activityType == ActivityType.HOME) { return homeProbs }
+        if (activityType == ActivityType.HOME) {
+            return homeProbs
+        }
+
         // Work distribution
         val workProbs = DoubleArray(zones.size) { 0.0 }
         for (zone in zones) {
@@ -659,9 +662,9 @@ class Omod(
             when(destination) {
                 is DummyLocation -> {
                     if (activityType !in destination.transferActivities) {
-                        1.0
-                    } else {
                         0.0
+                    } else {
+                        1.0
                     }
                 }
                 is RealLocation -> {
@@ -690,9 +693,9 @@ class Omod(
             when (destination) {
                 is DummyLocation -> {
                     if (activityType !in destination.transferActivities) {
-                        1.0
-                    } else {
                         0.0
+                    } else {
+                        1.0
                     }
                 }
                 is RealLocation -> {
