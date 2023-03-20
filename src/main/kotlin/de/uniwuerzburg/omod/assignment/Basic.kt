@@ -9,7 +9,6 @@ import de.uniwuerzburg.omod.routing.calcDistanceBeeline
 import de.uniwuerzburg.omod.routing.prepareQGraph
 import de.uniwuerzburg.omod.routing.querySPT
 import de.uniwuerzburg.omod.routing.routeWithCar
-import org.locationtech.jts.geom.Point
 
 fun beelineRoute(origin: LocationOption, destination: LocationOption, speedBeeline: Double = 130.0 / 3.6) : Route {
     val distance = calcDistanceBeeline(origin, destination)
