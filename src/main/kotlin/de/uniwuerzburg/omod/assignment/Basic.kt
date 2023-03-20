@@ -64,31 +64,11 @@ fun makeRoutingGrid(agents: List<MobiAgent>, precision: Double, transformer: CRS
     }
 }
 
-fun getCRSTransformer(agents: List<MobiAgent>): CRSTransformer {
-    val points = mutableSetOf<Point>()
-    for (agent in agents) {
-        for (diary in agent.mobilityDemand) {
-            for (activity in diary.activities.drop(0)) {
-                val coord = (activity.location as? Building)?.latlonCoord
-                if (coord != null) {
-                    points.add( geometryFactory.createPoint(coord) )
-                }
-            }
-        }
-    }
-
-    val center = geometryFactory.createGeometryCollection(
-        points.toTypedArray()
-    ).union().centroid
-
-    return CRSTransformer( center.coordinate.x )
-}
-
-fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, withPath: Boolean = true,
-                 precision: Double = 50.0) : List<OutputTEntry> {
+fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, transformer: CRSTransformer,
+                 withPath: Boolean = true, precision: Double = 50.0) : List<OutputTEntry> {
     // Performance parameter: If there are more than threshTree trips starting at one location route with SPT.
     val threshTree = 10_000
-    val routingGrid = makeRoutingGrid(agents, precision, getCRSTransformer(agents))
+    val routingGrid = makeRoutingGrid(agents, precision, transformer)
 
     // Get all od-Pairs that have to be routed
     val odMatrix = mutableMapOf<LocationOption, MutableList<LocationOption>>()

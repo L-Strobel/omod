@@ -124,7 +124,9 @@ class Run : CliktCommand() {
             if (hopper == null) {
                 println("Assignment only possible in GRAPHHOPPER mode.")
             } else {
-                val (assignment, timeAssign) = measureTimedValue { allOrNothing(agents, hopper, assign_with_path) }
+                val (assignment, timeAssign) = measureTimedValue {
+                    allOrNothing(agents, hopper, omod.transformer, assign_with_path)
+                }
                 println("Assignment took: $timeAssign")
                 File(out.parent, out.nameWithoutExtension  + "_trips.json")
                     .writeText(Json.encodeToString(assignment))
