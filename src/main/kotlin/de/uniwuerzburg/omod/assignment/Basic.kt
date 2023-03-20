@@ -79,7 +79,7 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, transformer: CRST
             }
 
             var origin = routingGrid[diary.activities.first().location]!!
-            for (activity in diary.activities.drop(0)) {
+            for (activity in diary.activities.drop(1)) {
                 val destination = routingGrid[activity.location]!!
 
                 if (odMatrix.containsKey(origin)) {
