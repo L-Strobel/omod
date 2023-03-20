@@ -88,7 +88,7 @@ fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations:
     }
 
     // Get estimate of max distance for speed up
-    val maxDistanceBeeline = destinations.maxOf { calcDistanceBeeline(origin, it) }
+    val maxDistanceBeeline = destinations.filterIsInstance<RealLocation>().maxOf { calcDistanceBeeline(origin, it) }
 
     // Build shortest path tree
     val tree = ShortestPathTree(

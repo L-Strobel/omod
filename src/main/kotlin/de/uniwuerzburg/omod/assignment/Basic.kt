@@ -106,7 +106,7 @@ fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, transformer: CRST
         } else {
             // Route one to many with SPT
             val qGraph = prepareQGraph(hopper, (destinations + origin).filterIsInstance<RealLocation>())
-            val sptResults = querySPT(qGraph, origin as RealLocation, destinations.filterIsInstance<RealLocation>())
+            val sptResults = querySPT(qGraph, origin as RealLocation, destinations)
 
             routes[origin] = sptResults.mapIndexed { i, it ->
                 val destination = destinations[i]
