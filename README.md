@@ -46,7 +46,7 @@ in the following format:
 The output describes what each agent did at which location.
 It does not say how the agent moved from one location to another.
 
-OMOD is applicable for any location on earth.
+Technically, OMOD is applicable for any location on earth.
 However, we calibrated the model using data from the German national household travel survey
 (https://www.mobilitaet-in-deutschland.de/publikationen2017.html).
 Therefore, the model's performance outside of Germany and especially
