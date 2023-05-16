@@ -56,8 +56,8 @@ Especially important is mapping information about the location and size of build
 and the road network.
 To run OMOD an OpenStreetMap file of the region and a definition of the region of interest
 (in GeoJson format) are necessary.
-Additionally, zensus information of the region is helpful
-(see python_tools/format_zensus2011.py for an example of how to correctly format zensus data for OMOD).
+Additionally, census information of the region is helpful
+(see python_tools/format_zensus2011.py for an example of how to correctly format census data for OMOD).
 
 ## Get Started
 
