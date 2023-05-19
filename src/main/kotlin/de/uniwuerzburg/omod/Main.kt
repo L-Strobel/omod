@@ -74,7 +74,7 @@ class Run : CliktCommand() {
                "If set to 'y' additional agents will be created so that the proportion of agents in and " +
                "outside the focus area is the same as in the census data. " +
                "The focus area will always be populated by n_agents agents."
-    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(true)
+    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     private val distance_matrix_cache_size by option(
         help = "Size of the distance matrix to precompute (only if routing_mode is GRAPHHOPPER). " +
                "A high value will lead to high RAM usage and long initialization times " +
