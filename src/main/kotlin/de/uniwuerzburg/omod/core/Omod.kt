@@ -19,7 +19,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
-
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
  *
@@ -103,8 +102,8 @@ class Omod(
         // Create graphhopper
         hopper = if (mode == RoutingMode.GRAPHHOPPER) {
             createGraphHopper(
-                osmFile.toString(),
-                Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
+                    osmFile.toString(),
+                    Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
             )
         } else {
             null
@@ -344,6 +343,7 @@ class Omod(
      * @param nFocus number of agents in focus areas
      */
     fun createAgents(nFocus: Int): List<MobiAgent> {
+        println("Creating Population...")
         val agents = mutableListOf<MobiAgent>()
 
         // Get sociodemographic features
@@ -431,6 +431,7 @@ class Omod(
             // Add the agent to the population
             agents.add(MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school))
         }
+        agents.shuffle(rng)
         return agents
     }
 

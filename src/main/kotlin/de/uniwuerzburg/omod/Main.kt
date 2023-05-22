@@ -117,6 +117,7 @@ class Run : CliktCommand() {
         }
 
         println("Simulation took: $timeSim")
+        println("Saving results...")
 
         // Store output
         FileOutputStream(out).use { f ->
