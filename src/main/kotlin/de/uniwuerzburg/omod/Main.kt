@@ -10,9 +10,11 @@ import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.core.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
 import de.uniwuerzburg.omod.routing.RoutingMode
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
@@ -93,7 +95,7 @@ class Run : CliktCommand() {
              "Must be formatted like omod/src/main/resources/Population.json."
     ).file(mustExist = true, mustBeReadable = true)
     //@OptIn(ExperimentalTime::class)
-    @OptIn(ExperimentalTime::class)
+    @OptIn(ExperimentalTime::class, ExperimentalSerializationApi::class)
     override fun run() {
         val (omod, timeRead) = measureTimedValue {
             Omod(
@@ -115,7 +117,11 @@ class Run : CliktCommand() {
         }
 
         println("Simulation took: $timeSim")
-        out.writeText(Json.encodeToString(agents.map { formatOutput(it) }))
+
+        // Store output
+        FileOutputStream(out).use { f ->
+            Json.encodeToStream(agents.map { formatOutput(it) }, f)
+        }
 
         // Assignment
         if (assign_trips) {
@@ -128,8 +134,11 @@ class Run : CliktCommand() {
                     allOrNothing(agents, hopper, omod.transformer, assign_with_path)
                 }
                 println("Assignment took: $timeAssign")
-                File(out.parent, out.nameWithoutExtension  + "_trips.json")
-                    .writeText(Json.encodeToString(assignment))
+                // Store assignment output
+                val assignOut = File(out.parent, out.nameWithoutExtension  + "_trips.json")
+                FileOutputStream(assignOut).use { f ->
+                    Json.encodeToStream(assignment, f)
+                }
             }
         }
     }
