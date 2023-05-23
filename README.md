@@ -46,7 +46,7 @@ in the following format:
 The output describes what each agent did at which location.
 It does not say how the agent moved from one location to another.
 
-OMOD is applicable for any location on earth.
+Technically, OMOD is applicable for any location on earth.
 However, we calibrated the model using data from the German national household travel survey
 (https://www.mobilitaet-in-deutschland.de/publikationen2017.html).
 Therefore, the model's performance outside of Germany and especially
@@ -56,8 +56,8 @@ Especially important is mapping information about the location and size of build
 and the road network.
 To run OMOD an OpenStreetMap file of the region and a definition of the region of interest
 (in GeoJson format) are necessary.
-Additionally, zensus information of the region is helpful
-(see python_tools/format_zensus2011.py for an example of how to correctly format zensus data for OMOD).
+Additionally, census information of the region is helpful
+(see python_tools/format_zensus2011.py for an example of how to correctly format census data for OMOD).
 
 ## Get Started
 
