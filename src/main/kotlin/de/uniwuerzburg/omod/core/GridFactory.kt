@@ -8,6 +8,7 @@ import org.apache.commons.math3.ml.distance.EuclideanDistance
 import org.apache.commons.math3.random.JDKRandomGenerator
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
+import kotlin.math.min
 import kotlin.math.pow
 
 /**
@@ -40,10 +41,14 @@ private class CentroidContainer<T: Clusterable>(
     }
 }
 
-fun <T: Clusterable> bisectingKMeans(precision: Double, points: Collection<T>): List<CentroidCluster<T>> {
+fun <T: Clusterable> bisectingKMeans(precision: Double, points: Collection<T>, minCluster: Int = 4)
+    : List<CentroidCluster<T>> {
     val distanceMeasure = EuclideanDistance()
     // Fixed seed ensures the cells in a run are the same as in the cached routing data.
     val rng = JDKRandomGenerator(1)
+
+    // Minimum number of clusters
+    val minClusterAdj = min(points.size, minCluster)
 
     // Initial cluster
     val centroids = KMeansPlusPlusClusterer<T>(1, Int.MAX_VALUE, distanceMeasure, rng)
@@ -51,7 +56,7 @@ fun <T: Clusterable> bisectingKMeans(precision: Double, points: Collection<T>): 
 
     // Split clusters until precision is reached
     val clusterer = KMeansPlusPlusClusterer<T>(2, Int.MAX_VALUE, distanceMeasure, rng)
-    while (centroids.sumOf { it.sumDist } / points.size > precision) {
+    while ((centroids.size < minClusterAdj) || (centroids.sumOf { it.sumDist } / points.size > precision)) {
         // Find cluster with max sse
         val nextSplit = centroids.maxByOrNull { it.sse } ?: break
 
@@ -69,11 +74,11 @@ fun <T: Clusterable> bisectingKMeans(precision: Double, points: Collection<T>): 
  * than the desired precision.
  */
 fun cluster(precision: Double, buildings: List<Building>, geometryFactory: GeometryFactory,
-            transformer: CRSTransformer
+            transformer: CRSTransformer, startID: Int = 0
 ) : List<Cell> {
     val centroids = bisectingKMeans(precision, buildings)
 
-    var id = 0
+    var id = startID
     val grid = mutableListOf<Cell>()
     for (centroid in centroids) {
         val cellBuildings = centroid.points
@@ -131,9 +136,10 @@ fun makeClusterGrid(focusAreaPrecision: Double, buildings: List<Building>,
     }
 
     for ((nClusterDivisor, buildingsAtDistance) in buildingGroups) {
+        val startID = cells.maxOf { it.id } + 1
         cells.addAll(
             cluster(
-                focusAreaPrecision*nClusterDivisor, buildingsAtDistance, geometryFactory, transformer)
+                focusAreaPrecision*nClusterDivisor, buildingsAtDistance, geometryFactory, transformer, startID)
         )
     }
 
