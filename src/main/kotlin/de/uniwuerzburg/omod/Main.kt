@@ -87,8 +87,9 @@ class Run : CliktCommand() {
                "All trips are driven by car."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     private val assign_with_path by option(
-        help = "[Experimental] Output the path coordinates of each trip. " +
-               "Only relevant if assign_trips == y."
+        help = "[Experimental] Output the path coordinates of each trip." +
+                "Output unit of distance: meter. Output unit of time: seconds. " +
+                "Only relevant if assign_trips == y."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     private val population_file by option(
         help="Path to file that describes the socio-demographic makeup of the population. " +
