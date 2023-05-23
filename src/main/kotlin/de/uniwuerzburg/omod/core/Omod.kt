@@ -150,10 +150,14 @@ class Omod(
      * Read area geojson
      */
     fun getFocusArea(areaFile: File): Geometry {
-        val areaColl: GeoJsonFeatureCollectionNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
-        return geometryFactory.createGeometryCollection(
-            areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
-        ).union()
+        val areaColl: GeoJsonNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
+        return if (areaColl is GeoJsonFeatureCollectionNoProperties) {
+            geometryFactory.createGeometryCollection(
+                areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
+            ).union()
+        } else {
+            (areaColl as GeoJsonGeometryCollection).toJTS(geometryFactory).union()
+        }
     }
 
     /**

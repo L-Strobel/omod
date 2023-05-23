@@ -108,7 +108,7 @@ data class GeoJsonMultiPoly(
 @Suppress("unused")
 data class GeoJsonGeometryCollection(
     val geometries: List<GeoJsonGeom>
-) : GeoJsonGeom() {
+) : GeoJsonGeom(), GeoJsonNoProperties {
     override fun toJTS(factory: GeometryFactory): Geometry {
         val geoms = geometries.map { geom ->
             geom.toJTS(factory)
@@ -126,6 +126,20 @@ sealed class GeoJsonProperties ()
 @SerialName("BuildingEntree")
 data class GeoJsonBuildingProperties (
     val osm_id: Long,
+    val in_focus_area: Boolean,
+    val area: Double,
+    val population: Double?,
+    val landuse: Landuse,
+    val number_shops: Double,
+    val number_offices: Double,
+    val number_schools: Double,
+    val number_universities: Double,
+) : GeoJsonProperties()
+
+@Serializable
+@SerialName("BuildingEntreeTest")
+data class GeoJsonBuildingPropertiesTest (
+    val cellID: Int,
     val in_focus_area: Boolean,
     val area: Double,
     val population: Double?,
@@ -165,7 +179,11 @@ data class GeoJsonFeatureCollection (
     val features: List<GeoJsonFeature>
 )
 
-// Work around structure for json objects with empty properties = {}
+// Work around structure for json objects with empty properties = {} and raw GeometryCollections
+// Expected meta information
+@Serializable
+sealed interface GeoJsonNoProperties
+
 @Serializable
 data class GeoJsonFeatureNoProperties (
     val type: String = "Feature",
@@ -173,7 +191,7 @@ data class GeoJsonFeatureNoProperties (
 )
 
 @Serializable
+@SerialName("FeatureCollection")
 data class GeoJsonFeatureCollectionNoProperties (
-    val type: String = "FeatureCollection",
     val features: List<GeoJsonFeatureNoProperties>
-)
+) : GeoJsonNoProperties
