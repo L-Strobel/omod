@@ -62,7 +62,7 @@ class Run : CliktCommand() {
              "The default is 200m and suitable in most cases." +
              "In the buffer area the allowed distance increases quadratically with distance. " +
              "Unit: meters"
-    ).double().default(200.0)
+    ).double().default(150.0)
     private val buffer by option(
         help="Size of the buffer area that is simulated in addition to the area specified in the GeoJSON. Unit: meters"
     ).double().default(0.0)
