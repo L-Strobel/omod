@@ -13,7 +13,10 @@ import kotlin.math.pow
 
 /**
  * Centroid container for bisecting KMeans.
- * Stores the centroid, and the split and stop metrics
+ * Stores the centroid as well as the associated sum of squared errors (sse) and distance sum.
+ *
+ * @param centroid the centroid that will be stored in the container
+ * @param distanceMeasure the distance metric to use for sse and distance sum calculation
  */
 private class CentroidContainer<T: Clusterable>(
     val centroid: CentroidCluster<T>,
@@ -41,6 +44,15 @@ private class CentroidContainer<T: Clusterable>(
     }
 }
 
+/**
+ * Runs the bisecting k-means algorithm
+ *
+ * @param precision determines at what average distance between point and associated centroid the algorithm stops
+ * @param points the points to cluster
+ * @param minCluster minimum number of clusters (will be ignored if minCluster < number points)
+ *
+ * @return centroids of the clusters
+ */
 fun <T: Clusterable> bisectingKMeans(precision: Double, points: Collection<T>, minCluster: Int = 4)
     : List<CentroidCluster<T>> {
     val distanceMeasure = EuclideanDistance()
@@ -72,6 +84,15 @@ fun <T: Clusterable> bisectingKMeans(precision: Double, points: Collection<T>, m
 /**
  * Assign each building a routing cell so that the average distance between a building and its cell is less
  * than the desired precision.
+ * Assignment is done with the bisecting k-means algorithm.
+ *
+ * @param precision determines at what average distance between point and associated centroid the algorithm stops
+ * @param buildings the buildings for which routing cells are determined
+ * @param geometryFactory the geometry factory  used to create new geometries
+ * @param transformer the CRS transformation method
+ * @param startID The ids/hash-keys of the routing cells are [startID, startID+1, ..., startID+buildings.size]
+ *
+ * @return routing cells
  */
 fun cluster(precision: Double, buildings: List<Building>, geometryFactory: GeometryFactory,
             transformer: CRSTransformer, startID: Int = 0
@@ -100,8 +121,17 @@ fun cluster(precision: Double, buildings: List<Building>, geometryFactory: Geome
 }
 
 /**
- * Group buildings with bisecting-k-Means clustering for faster sampling
- * The precision decreases quadratically with distance to the focus area.
+ * Group buildings into routing cells with bisecting-k-Means clustering for faster sampling.
+ * The resolution of the routing grid is cut in half with every 10km distance from the focus area.
+ *
+ * @param focusAreaPrecision determines at what average distance between point and associated centroid the algorithm
+ * stops. This value will only count for buildings in the focus area. Buildings in the buffer area are clustered to
+ * cells with less precision.
+ * @param buildings the buildings for which routing cells are determined
+ * @param geometryFactory geometry factory to use to create new geometries
+ * @param transformer CRS transformer to use
+ *
+ * @return routing cells
  */
 @Suppress("unused")
 fun makeClusterGrid(focusAreaPrecision: Double, buildings: List<Building>,
