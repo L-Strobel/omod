@@ -13,11 +13,11 @@ jobs:
       - name: Checkout project sources
         uses: actions/checkout@v2
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@2.4.2
+        uses: gradle/gradle-build-action@v2.4.2
       - name: Create doc
         run: ./gradlew dokkaHtml
       - name: Publish doc
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          BRANCH: docs
+          BRANCH: gh-pages
           FOLDER: build/dokka/html
