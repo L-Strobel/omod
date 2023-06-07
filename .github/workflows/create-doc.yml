@@ -3,9 +3,6 @@ name: Build and publish dokka doc
 on:
   push:
 
-permissions:
-  contents: write
-
 jobs:
   build-gradle-project:
     runs-on: ubuntu-latest
