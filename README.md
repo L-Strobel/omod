@@ -133,6 +133,10 @@ class App {
 }
 ```
 
+## Documentation
+
+An API reference is available at: https://L-Strobel.github.io/omod
+
 ## Acknowledgment
 
 This model is created as part of the ESM-Regio project (https://www.bayern-innovativ.de/de/seite/esm-regio-en)
