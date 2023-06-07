@@ -3,6 +3,9 @@ name: Build and publish dokka doc
 on:
   push:
 
+permissions:
+  contents: write
+
 jobs:
   build-gradle-project:
     runs-on: ubuntu-latest
@@ -10,11 +13,11 @@ jobs:
       - name: Checkout project sources
         uses: actions/checkout@v2
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v2.4.2
       - name: Create doc
         run: ./gradlew dokkaHtml
       - name: Publish doc
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          BRANCH: gh-pages
+          BRANCH: docs
           FOLDER: build/dokka/html
