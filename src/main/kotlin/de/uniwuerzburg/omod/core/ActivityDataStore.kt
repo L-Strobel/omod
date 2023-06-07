@@ -3,7 +3,8 @@ package de.uniwuerzburg.omod.core
 import kotlinx.serialization.Serializable
 
 /**
- * Json format of data
+ * Json storage format.
+ * For activity chain probability distribution container.
  */
 @Serializable
 data class ActivityGroup(
@@ -14,12 +15,22 @@ data class ActivityGroup(
     val sampleSize: Int,
     val activityChains: List<ActivityChain>
 )
+/**
+ * Json storage format.
+ * For activity chain.
+ * Contains the corresponding weight in the probability distribution and
+ * the Gaussian Mixture of the dwell time distribution.
+ */
 @Serializable
 data class ActivityChain(
     val chain: List<ActivityType>,
     val weight: Double,
     val gaussianMixture: GaussianMixture?
 )
+/**
+ * Json storage format.
+ * Gaussian Mixture of dwell time distribution.
+ */
 @Serializable
 class GaussianMixture(
     val weights: List<Double>,
@@ -28,8 +39,13 @@ class GaussianMixture(
 )
 
 /**
- * Holds activity data.
- * Structure is designed for fast access. Where possible data is already processed.
+ * Data structure for the activity chain probability distributions.
+ * Structure is designed for fast access.
+ *
+ * For every combination of the features weekday, homogeneous group, mobility group, and age
+ * *ActivityDataStore* contains on element of *ActivityGroup*.
+ *
+ * @param activityGroups A list of all possible activity groups
  */
 class ActivityDataStore(activityGroups: List<ActivityGroup>) {
     private val nodes: Map<Int, GroupData>
@@ -46,17 +62,28 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
         )
     }
 
+    /**
+     * Get hash key based on a combination of features
+     */
     private fun getKey(wd: Weekday, homGrp: HomogeneousGrp, mobGrp: MobilityGrp, age: AgeGrp) : Int {
         return wd.ordinal + cHom * homGrp.ordinal + cMob * mobGrp.ordinal + cAge * age.ordinal
     }
 
     /**
-     * Get the activity distributions for the specified day and agent.
-     * Also ensures that the sample size is adequate (above 280 persons as recommended in the MID contract).
-     * If not enough samples exist set the features to undefined in this order:
-     * age -> mobility Group -> homogenous group -> weekday
+     * Get the probability distributions for the specified combination of features.
      *
-     * If givenChain != null the function will also ensure that there are parameters for the gaussian mixture
+     * A probability distributions must have at least *thresh* samples, if this is not the case the features are set
+     * to *UNDEFINED* in this order:
+     *
+     * age -> mobility group -> homogeneous group -> weekday
+     *
+     * @param weekday weekday
+     * @param homogenousGroup homogeneous group of the agent
+     * @param mobilityGroup mobility group of the agent
+     * @param age age group of the agent
+     * @param from the first activity in the chain
+     *
+     * @return probability distribution over possible activity chains
      */
     fun getChain(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
                  from: ActivityType): ChainData {
@@ -71,6 +98,22 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
         return groupData.chainsFrom[from]!!
     }
 
+    /**
+     * Get the gaussian mixture for a combination of features and a given activity chain.
+     *
+     * A mixture must have at least *thresh* samples, if this is not the case the features are set
+     * to *UNDEFINED* in this order:
+     *
+     * age -> mobility group -> homogeneous group -> weekday
+     *
+     * @param weekday weekday
+     * @param homogenousGroup homogeneous group of the agent
+     * @param mobilityGroup mobility group of the agent
+     * @param age age group of the agent
+     * @param chain activity chain
+     *
+     * @return gaussian mixture of the dwell times
+     */
     fun getMixture(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
                     chain: List<ActivityType>) : Mixture {
         val from = chain.first()
@@ -82,6 +125,9 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
         return groupData.chainsFrom[from]?.mixtures?.get(chain)!!
     }
 
+    /**
+     * Search for the data with the given combination of features.
+     */
     private fun searchFor(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
                           predicate: (GroupData) -> Boolean) : GroupData {
         // Relax conditions of probability distribution in this order
@@ -101,7 +147,10 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
         throw Exception("Couldn't find desired data for group: $weekday, $homogenousGroup, $mobilityGroup, $age")
     }
 
-    class GroupData(activityGroup: ActivityGroup) {
+    /**
+     * Internal data container
+     */
+    private class GroupData(activityGroup: ActivityGroup) {
         val sampleSize: Int
         val chainsFrom: Map<ActivityType, ChainData>
 
@@ -117,6 +166,11 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
         }
     }
 
+    /**
+     * Output format of the probability distribution
+     *
+     * @param activityChains list of all possible activity chains
+     */
     class ChainData(activityChains: List<ActivityChain>) {
         val chains: List<List<ActivityType>>
         val distr: DoubleArray
@@ -142,6 +196,10 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
             )
         }
     }
+
+    /**
+     * Gaussian mixture
+     */
     class Mixture(
         val distr: DoubleArray,
         val means: List<DoubleArray>,
