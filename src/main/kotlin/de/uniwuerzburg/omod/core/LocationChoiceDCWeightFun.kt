@@ -6,7 +6,9 @@ import kotlinx.serialization.Transient
 import kotlin.math.exp
 import kotlin.math.ln
 
-// Expected meta information
+/**
+ * Destination choice model. Parent class.
+ */
 @Serializable
 sealed class LocationChoiceDCWeightFun {
     abstract val coeffResidentialArea: Double
@@ -22,8 +24,21 @@ sealed class LocationChoiceDCWeightFun {
     abstract val coeffCommercialUnits: Double
     abstract val coeffIndustrialUnits: Double
 
+    /**
+     * Calculates the natural logarithm of the deterrence function given the distance from the origin.
+     *
+     * @param distance The distance between origin and destination
+     * @return ln(f(d))
+     */
     abstract fun deterrenceFunction(distance: Double) : Double
 
+    /**
+     * Calculates the probabilistic weight of a destination given the distance from the origin.
+     *
+     * @param destination The destination the weight will be calculated for
+     * @param distance The distance between origin and destination
+     * @return probabilistic weight
+     */
     open fun calcFor(destination: RealLocation, distance: Double) : Double {
         // Log is undefined for 0
         val distanceAdj = if (distance == 0.0) {
@@ -36,6 +51,14 @@ sealed class LocationChoiceDCWeightFun {
         return attraction * exp(fd)
     }
 
+    /**
+     * Calculates the probabilistic weight of a destination without knowledge of the origin.
+     * Used for the distribution of HOME locations and for destination choice within a routing cell,
+     * where the distance difference between the buildings is neglected.
+     *
+     * @param destination The destination the weight will be calculated for
+     * @return probabilistic weight
+     */
     open fun calcForNoOrigin(destination: RealLocation) : Double {
         return 1 + coeffResidentialArea * destination.areaResidential +
                coeffCommercialArea * destination.areaCommercial +
@@ -52,6 +75,9 @@ sealed class LocationChoiceDCWeightFun {
     }
 }
 
+/**
+ * Destination choice function implementation for the HOME location distribution when census data is given.
+ */
 @Suppress("unused")
 object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffResidentialArea: Double get() { throw NotImplementedError() }
@@ -80,6 +106,9 @@ object ByPopulation: LocationChoiceDCWeightFun () {
     }
 }
 
+/**
+ * Destination choice function implementation for the HOME location distribution when census data is not given.
+ */
 @Serializable
 @SerialName("PureAttraction")
 @Suppress("unused")
@@ -107,6 +136,12 @@ class PureAttraction (
     }
 }
 
+/**
+ * Destination choice function with log-normal functional form.
+ *
+ * Deterrence function:
+ * ln(f(d)) = a ln^2(d) + b ln(d)
+ */
 @Serializable
 @SerialName("LogNorm")
 @Suppress("unused")
@@ -133,6 +168,12 @@ class LogNormDCUtil (
     }
 }
 
+/**
+ * Destination choice function with log-normal functional form.
+ *
+ * Deterrence function:
+ * ln(f(d)) = a*ln^2(d) + b*ln(d) + c*d
+ */
 @Serializable
 @SerialName("LogNormPower")
 @Suppress("unused")
@@ -187,6 +228,12 @@ class LogNormPowerDCUtil (
     }
 }
 
+/**
+ * Destination choice function with power-expon functional form.
+ *
+ * Deterrence function:
+ * ln(f(d)) = a*d + b*ln(d)
+ */
 @Serializable
 @SerialName("CombinedPowerExpon")
 @Suppress("unused")
