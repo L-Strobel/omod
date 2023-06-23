@@ -1,11 +1,16 @@
 package de.uniwuerzburg.omod.core
 
 /**
-Possible days.
+ * Day types supported by OMOD
  */
 enum class Weekday {
     MO, TU, WE, TH, FR, SA, SU, HO, UNDEFINED;
 
+    /**
+     * Order of days. Note:
+     *  - the day after a Holiday is undefined.
+     *  - the day after an undefined day is undefined.
+     */
     fun next() : Weekday {
         return when(this) {
             MO -> TU
@@ -44,7 +49,7 @@ enum class AgeGrp {
 }
 
 /**
- * Landuse categories. For work and home probabilities
+ * Landuse categories.
  */
 enum class Landuse {
     RESIDENTIAL, INDUSTRIAL, COMMERCIAL, NONE;
@@ -59,7 +64,16 @@ enum class ActivityType {
 }
 
 /**
- * Agent
+ * Agent.
+ *
+ * @param id ID
+ * @param homogenousGroup Hom. group of agent (Working person etc.)
+ * @param mobilityGroup Mob. group of agent (Car user etc.)
+ * @param age Age group of agent
+ * @param home Home location of agent
+ * @param work Work location of agent (Is also defined if the agent does not work)
+ * @param school School location of agent (Is also defined if the agent does not go to school)
+ * @param mobilityDemand Simulation result of agent
  */
 data class MobiAgent (
     val id: Int,
@@ -73,7 +87,11 @@ data class MobiAgent (
 )
 
 /**
- * Daily activity dairy
+ * Simulation result. Daily activity dairy.
+ *
+ * @param day Number of the day the diary is for
+ * @param dayType Type of day
+ * @param activities Activities that the agent wants to conduct on the day
  */
 data class Diary (
     val day: Int,
@@ -82,7 +100,13 @@ data class Diary (
 )
 
 /**
- * Activity
+ * Activity.
+ *
+ * @param type Type of the activity (HOME, WORK, SCHOOL, etc.)
+ * @param stayTime Preferred duration of the activity. Unit: Minutes.
+ * @param location Location where the activity takes place
+ * @param lat Latitude of location
+ * @param lon Longitude of location
  */
 data class Activity (
     val type: ActivityType,
