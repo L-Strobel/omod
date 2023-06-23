@@ -8,7 +8,8 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Point
 
 /**
- * Interface for cells and buildings
+ * Interface for all objects that can be the location of an activity.
+ * Currently: routing cells, buildings, and dummy locations
  */
 sealed interface LocationOption {
     val coord: Coordinate
@@ -40,9 +41,13 @@ interface RealLocation : LocationOption {
 }
 
 /**
- * Model for a building
+ * A building. Can be the location of an activity.
  *
- * @param coord coordinates in meters
+ * @param osmID OpenStreetMap ID
+ * @param coord Coordinates of centroid in model CRS (Distance unit: meters)
+ * @param latlonCoord coordinates in lat-lon
+ * @param odZone origin-destination zone (TAZ). Only relevant if OD-data is provided.
+ * @param inFocusArea is the building inside the focus area?
  * @param area area of the building in meters
  * @param population population of building. Can be non-integer.
  * @param landuse OSM-Landuse of the building
@@ -119,6 +124,13 @@ class Building  (
     }
 
     companion object {
+        /**
+         * Create a list of buildings from a GeoJSON object.
+         *
+         * @param collection GeoJSON object
+         * @param geometryFactory GeometryFactory
+         * @param transformer Used for CRS conversion
+         */
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
                         transformer: CRSTransformer): List<Building> {
             return collection.features.map {
@@ -154,8 +166,12 @@ class Building  (
 }
 
 /**
- * Group of buildings. For faster 2D distribution sampling.
- * Method: Sample from Cells -> Sample from buildings in cell
+ * Routing cell. Group of buildings used to faster calculate the approximate distance by car.
+ *
+ * @param id ID used for hashing
+ * @param coord Coordinates of centroid in model CRS (Distance unit: meters)
+ * @param latlonCoord Coordinates of centroid in lat-lon
+ * @param buildings Buildings associated with the cell
  */
 data class Cell (
     val id: Int,
@@ -217,13 +233,20 @@ data class Cell (
 }
 
 /**
- * Dummy location for far away locations. Used for commuting flows.
+ * Dummy location. Used for locations outside the model area (focus area + buffer area).
+ * These locations are introduced if an odFile is provided that contains TAZs that don't intersect the model area.
+ *
+ * @param coord Coordinates of centroid in model CRS (Distance unit: meters)
+ * @param latlonCoord Coordinates of centroid in lat-lon
+ * @param odZone The od-zone associated with the location
+ * @param transferActivities Activities which can cause arrival and departure here.
+ * Only activities defined in the odFile can cause an agent to arrive at a dummy location or leave it.
  */
 data class DummyLocation (
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
     override var odZone: ODZone?,
-    val transferActivities: Set<ActivityType> // Activities which can cause arrival and departure here
+    val transferActivities: Set<ActivityType>
 ) : LocationOption {
     override val inFocusArea = false
     override val avgDistanceToSelf = 1.0
