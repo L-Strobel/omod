@@ -11,7 +11,15 @@ import java.io.File
 private val json = Json { ignoreUnknownKeys = true }
 
 /**
- * Zone of the OD-Matrix
+ * Zone of the OD-Matrix, i.e. TAZ. Used for calibrating OMOD then an od-file is provided.
+ * OD-Matrices are defined with a specific origin destination activity relationship.
+ * For example, Home -> Work.
+ *
+ * @param name Name of the zone
+ * @param originActivity Activity that is conducted at the origin.
+ * @param destinationActivity Activity conducted at the destination.
+ * @param geometry The geometry of the zone
+ * @param inFocusArea Zone inside the focus area?
  */
 data class ODZone (
     val name: String,
@@ -26,6 +34,14 @@ data class ODZone (
     val aggLocs: MutableList<LocationOption> = mutableListOf()
 
     companion object {
+        /**
+         * Read od-file
+         *
+         * @param odFile GeoJSON file containing the od-matrix
+         * @param factory GeometryFactory
+         * @param transformer Transformer for CRS conversion
+         * @return list of OD-Zones
+         */
         fun readODMatrix(odFile: File, factory: GeometryFactory, transformer: CRSTransformer) : List<ODZone> {
             // Read OD
             val geoJson: GeoJsonFeatureCollection = json.decodeFromString(odFile.readText(Charsets.UTF_8))
