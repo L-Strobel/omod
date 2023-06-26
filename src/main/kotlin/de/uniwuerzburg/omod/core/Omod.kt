@@ -21,10 +21,22 @@ import java.util.*
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
+ * Creates daily activity schedules in the form of activity chains and dwell times.
  *
- * Creates daily mobility profiles in the form of activity chains and dwell times.
+ * @param areaFile GeoJSON of the focus area
+ * @param osmFile osm.pbf file that covers at least the focus area and buffer area
+ * @param mode Method of distance calculation used in the simulation
+ * @param cache Option to cache the routing matrix for subsequent runs
+ * @param cacheDir Directory where the cache should be located
+ * @param odFile Origin-Destination Matrix in GeoJSON format. Optional input used for calibration.
+ * @param gridPrecision Precision of the routing grid
+ * @param seed Random number seed
+ * @param bufferRadius Distance with which the focus area is buffered to obtain the buffer area
+ * @param censusFile GeoJSON containing census information (Population distribution in the model area)
+ * @param populateBufferArea Option to populate the buffer area with agents
+ * @param distanceCacheSize Maximum size of the routing matrix cache
+ * @param populationFile File that defines the distribution of socio-demographic features for the agent population
  */
-@Suppress("MemberVisibilityCanBePrivate")
 class Omod(
     areaFile: File,
     osmFile: File,
@@ -40,7 +52,9 @@ class Omod(
     distanceCacheSize: Int = 20_000,
     populationFile: File? = null
 ) {
+    @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
+    @Suppress("MemberVisibilityCanBePrivate")
     val buildings: List<Building>
     val hopper: GraphHopper?
     private val grid: List<Cell>
@@ -138,7 +152,10 @@ class Omod(
     // Factories
     companion object {
         /**
-         * Run quick and easy without any additional information
+         * Create OMOD object with default parameters
+         *
+         * @param areaFile GeoJSON of the focus area
+         * @param osmFile osm.pbf file that covers at least the focus area and buffer area
          */
         @Suppress("unused")
         fun defaultFactory(areaFile: File, osmFile: File): Omod {
@@ -147,9 +164,9 @@ class Omod(
     }
 
     /**
-     * Read area geojson
+     * Parse the areaFile
      */
-    fun getFocusArea(areaFile: File): Geometry {
+    private fun getFocusArea(areaFile: File): Geometry {
         val areaColl: GeoJsonNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
         return if (areaColl is GeoJsonFeatureCollectionNoProperties) {
             geometryFactory.createGeometryCollection(
@@ -161,9 +178,9 @@ class Omod(
     }
 
     /**
-     * Get the buildings.
+     * Obtain buildings from input data
      */
-    fun getBuildings(focusArea: Geometry, geometryFactory: GeometryFactory, transformer: CRSTransformer,
+    private fun getBuildings(focusArea: Geometry, geometryFactory: GeometryFactory, transformer: CRSTransformer,
                      osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
                      cache: Boolean) : List<Building> {
         // Is cached?
@@ -199,6 +216,9 @@ class Omod(
         return Building.fromGeoJson(collection, geometryFactory, transformer)
     }
 
+    /**
+     * Determine the OD-Zone of each building and cell. Creates dummy locations if necessary.
+     */
     private fun addODZoneInfo(odZones: List<ODZone>) : List<DummyLocation> {
         val dummyZones = mutableListOf<DummyLocation>()
 
@@ -253,6 +273,12 @@ class Omod(
         return dummyZones
     }
 
+    /**
+     * Calculate calibration factors from the od-matrix.
+     * First-order factor changes the probability of a destination without taking the origin into account.
+     *
+     * P_calibrated(destination | activity) = P_base(destination | activity) * k_firstOrder(activity, destination)
+     */
     private fun calcFirstOrderScaling(odZones: List<ODZone>) : Pair<ActivityType, Map<ODZone, Double>> {
         val activity = odZones.first().originActivity
         require(activity in listOf(ActivityType.HOME, ActivityType.WORK, ActivityType.SCHOOL))
@@ -290,8 +316,14 @@ class Omod(
         }
        return Pair(activity, factors)
     }
-    
-    // Aka k factors
+
+    /**
+     * Calculate calibration factors from the od-matrix.
+     * Second-order factor changes the probability of a destination with taking the origin into account.
+     *
+     * P_calibrated(destination | activity, origin) =
+     * P_base(destination | activity, origin) * k_firstOrder(activity, destination) * k_secondOrder(activity, destination, origin)
+     */
     private fun calcSecondOrderScaling(odZones: List<ODZone>)
     : Pair<Pair<ActivityType, ActivityType> ,Map<Pair<ODZone, ODZone> , Double>> {
         val activities = Pair(odZones.first().originActivity, odZones.first().destinationActivity)
@@ -343,9 +375,12 @@ class Omod(
     }
 
     /**
-     * Initialize population by assigning home and work locations
+     * Initialize population. Assigns socio-demographic features, and home, work, and school locations.
+     *
      * @param nFocus number of agents in focus areas
+     * @return Population of agents
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun createAgents(nFocus: Int): List<MobiAgent> {
         println("Creating Population...")
         val agents = mutableListOf<MobiAgent>()
@@ -439,6 +474,13 @@ class Omod(
         return agents
     }
 
+    /**
+     * Get the home weights of all destinations in the focus area and set the others to zero; or the other way around.
+     *
+     * @param destinations Destination options
+     * @param inside True: Only the weights inside the focus area. False: Only those outside.
+     * @return List of weights
+     */
     private fun getHomeWeightsRestricted(destinations: List<LocationOption>, inside: Boolean) : List<Double> {
         val originalWeights = getWeightsNoOrigin(destinations, ActivityType.HOME)
         return if (inside) {
@@ -449,9 +491,12 @@ class Omod(
     }
 
     /**
-     * Get the location of an activity with flexible location with a given current location
+     * Get the location of an activity with flexible location a given current location
      * @param location Coordinates of current location
-     * @param type Activity type     */
+     * @param type Activity type
+     * @return Destination
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun findFlexibleLoc(location: LocationOption, type: ActivityType): LocationOption {
         // Home, Work, School are not flexible
         require(type != ActivityType.HOME)
@@ -486,8 +531,14 @@ class Omod(
     }
 
     /**
-     * Get the activity chain
+     * Determine the activity chain of an agent.
+     *
+     * @param agent The agent
+     * @param weekday The weekday
+     * @param from The yesterday's last activity
+     * @return List of activities conducted by the agent today
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun getActivityChain(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
                          from: ActivityType = ActivityType.HOME) : List<ActivityType> {
         val chainData = activityDataStore.getChain(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
@@ -496,8 +547,14 @@ class Omod(
     }
 
     /**
-     * Get the stay times given an activity chain
+     * Get the stay times at each activity.
+     *
+     * @param activityChain The activities the agent will undertake that day
+     * @param agent The agent
+     * @param weekday The weekday
+     * @return Stay times at each activity
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED
         ) : List<Double?> {
         return if (activityChain.size == 1) {
@@ -517,10 +574,13 @@ class Omod(
 
     /**
      * Get the activity locations for the given agent.
+     *
      * @param agent The agent
      * @param activityChain The activities the agent will undertake that day
-     * @param start The location the day starts at
+     * @param start Location the day starts at
+     * @return Locations of each activity
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
                      start: LocationOption
     ) : List<LocationOption> {
@@ -543,10 +603,17 @@ class Omod(
     }
 
     /**
-     * Get the mobility profile for the given agent.
+     * Get the activity schedule (Activity types, locations, and stay times)
+     * Defines the start location based on the last activity yesterday.
+     *
+     * @param agent The agent
+     * @param weekday The weekday
+     * @param from Last activity yesterday
+     * @return Activity schedule
      */
-    fun getMobilityProfile(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
-                           from: ActivityType = ActivityType.HOME
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun getActivitySchedule(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
+                            from: ActivityType = ActivityType.HOME
     ): List<Activity> {
         val location = when(from) {
             ActivityType.HOME -> agent.home
@@ -554,9 +621,20 @@ class Omod(
             ActivityType.SCHOOL -> agent.school
             else -> throw Exception("Start must be either Home, Work, School, or coordinates must be given. Agent: ${agent.id}")
         }
-        return getMobilityProfile(agent, weekday, from, location)
+        return getActivitySchedule(agent, weekday, from, location)
     }
-    fun getMobilityProfile(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED, from: ActivityType = ActivityType.HOME,
+
+    /**
+     * Get the activity schedule (Activity types, locations, and stay times)
+     *
+     * @param agent The agent
+     * @param weekday The weekday
+     * @param from Last activity yesterday
+     * @param start Location the day starts at
+     * @return Activity schedule
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun getActivitySchedule(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED, from: ActivityType = ActivityType.HOME,
                            start: LocationOption
     ): List<Activity> {
         val activityChain = getActivityChain(agent, weekday, from)
@@ -568,8 +646,12 @@ class Omod(
     }
 
     /**
-     * Determine the demand of the area for n agents at one day.
-     * Optionally safe to json.
+     * Generate the mobility demand of the area.
+     *
+     * @param n_agents Number of agents
+     * @param start_wd Weekday of the first simulated day
+     * @param n_days Number of consecutive days to simulate
+     * @return List of agents each with an activity schedules for every simulated day
      */
     fun run(n_agents: Int, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
         val agents = createAgents(n_agents)
@@ -582,10 +664,10 @@ class Omod(
                 print( "Running model: ${ProgressBar.show( jobsDone / totalJobs )}\r" )
 
                 val activities = if (agent.mobilityDemand.isEmpty()) {
-                    getMobilityProfile(agent, weekday)
+                    getActivitySchedule(agent, weekday)
                 } else {
                     val lastActivity = agent.mobilityDemand.last().activities.last()
-                    getMobilityProfile(
+                    getActivitySchedule(
                         agent,
                         weekday,
                         from = lastActivity.type,
@@ -602,16 +684,18 @@ class Omod(
         return agents
     }
 
-    fun calcOMODProbsAsMap(activityType: ActivityType) : Map<LocationOption, Double> {
-        val probs = calcOMODProbs(activityType)
-        val map = mutableMapOf<LocationOption, Double>()
-        for (i in zones.indices) {
-            map[zones[i]] = probs[i]
-        }
-        return map
-    }
-
-    fun calcOMODProbs(activityType: ActivityType) : DoubleArray {
+    /**
+     * Calculate probability that an activity of type x happens at certain location for all locations.
+     * Used to compare OMODs od probabilities with that of the od-file.
+     * Possible activity types are: HOME and WORK
+     *
+     * P(Location | HOME) = Distribution used for Home location assignment
+     * P(Location | WORK) = sum( P(Location | WORK, Origin=x) * P(x | HOME) ) over all locations x
+     *
+     * @param activityType The activity type x
+     * @return Probability that an activity of type x happens at certain location for all locations
+     */
+    private fun calcOMODProbs(activityType: ActivityType) : DoubleArray {
         require(activityType in listOf(ActivityType.HOME, ActivityType.WORK))
         {"Flexible locations are not  yet supported for k-Factor calibration!"}
         // Home distribution
@@ -634,21 +718,56 @@ class Omod(
         return workProbs
     }
 
+
     /**
-     * Determine probabilities for the activities
+     * Wrapper for calcOMODProbs that returns a map instead of an array.
      */
-    fun getDistr(origin: LocationOption, destinations: List<LocationOption>,
+    private fun calcOMODProbsAsMap(activityType: ActivityType) : Map<LocationOption, Double> {
+        val probs = calcOMODProbs(activityType)
+        val map = mutableMapOf<LocationOption, Double>()
+        for (i in zones.indices) {
+            map[zones[i]] = probs[i]
+        }
+        return map
+    }
+
+    /**
+     * Determine the probability that a location is a destination given an origin and activity type
+     * for all possible destinations.
+     *
+     * @param origin Origin of the trip
+     * @param destinations Possible destinations
+     * @param activityType Activity type conducted at the destination.
+     * @return Cumulative distribution of the destination probabilities
+     */
+    private fun getDistr(origin: LocationOption, destinations: List<LocationOption>,
                  activityType: ActivityType
     ) : DoubleArray {
         val weights = getWeights(origin, destinations, activityType)
         return createCumDist(weights.toDoubleArray())
     }
-    fun getDistrNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : DoubleArray {
+    /**
+     * Determine the probability that a location is a destination given an activity type but no origin
+     * for all possible destinations.
+     *
+     * @param destinations Possible destinations
+     * @param activityType Activity type conducted at the destination.
+     * @return Cumulative distribution of the destination probabilities
+     */
+    private fun getDistrNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : DoubleArray {
         val weights = getWeightsNoOrigin(destinations, activityType)
         return createCumDist(weights.toDoubleArray())
     }
 
-    fun getWeights(origin: LocationOption, destinations: List<LocationOption>,
+    /**
+     * Determine the probabilistic weight that a location is a destination given an origin and activity type
+     * for all possible destinations.
+     *
+     * @param destinations Possible destinations
+     * @param activityType Activity type conducted at the destination.
+     * @return Probabilistic weights
+     */
+    private fun getWeights(origin: LocationOption, destinations: List<LocationOption>,
                    activityType: ActivityType
     ): List<Double> {
         require(activityType != ActivityType.HOME) { "For HOME activities call getWeightsNoOrigin()!" }
@@ -691,7 +810,15 @@ class Omod(
         }
     }
 
-    fun getWeightsNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : List<Double> {
+    /**
+     * Determine the probabilistic weight that a location is a destination given an activity type but no origin
+     * for all possible destinations.
+     *
+     * @param destinations Possible destinations
+     * @param activityType Activity type conducted at the destination.
+     * @return Probabilistic weights
+     */
+    private fun getWeightsNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : List<Double> {
         val weightFunction = locChoiceWeightFuns[activityType]!!
 
         val weights = destinations.map { destination ->
