@@ -3,7 +3,11 @@ package de.uniwuerzburg.omod.core
 import kotlinx.serialization.Serializable
 
 /**
- * Definition of the agent population in terms of sociodemographic features
+ * Definition of the agent population in terms of sociodemographic features.
+ *
+ * @param homogenousGroup Probabilities of each hom. group category
+ * @param mobilityGroup Probabilities of each mob. group category
+ * @param age Probabilities of each age group category
  */
 @Serializable
 data class PopulationDef (
