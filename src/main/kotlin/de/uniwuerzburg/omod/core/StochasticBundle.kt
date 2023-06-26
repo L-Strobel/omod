@@ -4,11 +4,22 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix
 import org.apache.commons.math3.linear.CholeskyDecomposition
 import java.util.*
 
-// Create cumulative distribution from weights
+/**
+ * Create cumulative distribution from weights.
+ * Integer weights version.
+ * @param weights Probabilistic weights
+ * @return Cumulative distribution
+ */
 @Suppress("unused")
 fun createCumDist(weights: IntArray): DoubleArray {
     return createCumDist(weights.map { it.toDouble() }.toDoubleArray())
 }
+/**
+ * Create cumulative distribution from weights.
+ * Double weights version.
+ * @param weights Probabilistic weights
+ * @return Cumulative distribution
+ */
 fun createCumDist(weights: DoubleArray): DoubleArray {
     assert(weights.all { it >= 0 })
     val cumDist = DoubleArray(weights.size)
@@ -24,7 +35,13 @@ fun createCumDist(weights: DoubleArray): DoubleArray {
     return cumDist
 }
 
-// Sample cumulative distribution
+/**
+ * Sample from cumulative distribution
+ *
+ * @param cumDist Cumulative distribution
+ * @param rng Random number generator
+ * @return Index of sample
+ */
 fun sampleCumDist(cumDist: DoubleArray, rng: Random): Int {
     val thresh = rng.nextDouble()
     var i = 0
@@ -35,13 +52,26 @@ fun sampleCumDist(cumDist: DoubleArray, rng: Random): Int {
     return i
 }
 
-// Create and immediately sample cumulative distribution
+/**
+ * Create and immediately sample cumulative distribution
+ *
+ * @param weights Probabilistic weights
+ * @param rng Random number generator
+ * @return Index of sample
+ */
 @Suppress("unused")
 fun createAndSampleCumDist(weights: DoubleArray, rng: Random) : Int {
     return sampleCumDist(createCumDist(weights), rng)
 }
 
-// Sample from multidimensional gaussian
+/**
+ * Sample from multidimensional gaussian distribution
+ *
+ * @param means Mean vector
+ * @param covariances Covariance matrix
+ * @param rng Random number generator
+ * @return Sample
+ */
 fun sampleNDGaussian(means: DoubleArray, covariances: Array<DoubleArray>, rng: Random): DoubleArray {
     require(covariances.size == means.size) { "Dimension mismatch !" }
     val dim = means.size
