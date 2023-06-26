@@ -11,12 +11,20 @@ import java.io.File
 private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.io")
 
 /**
- * @param area in latitude longitude format
+ * Gather and combine all necessary information about the model area.
+ *
+ * @param focusArea Focus area in latitude longitude crs
+ * @param osmFile osm.pbf file that covers the model area
+ * @param bufferRadius Distance that the focus area will be buffered with
+ * @param transformer Used for CRS conversions
+ * @param geometryFactory Geometry factory
+ * @param censusFile Distribution of the population in the area
+ * @return List of buildings with all necessary features
  */
-fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: CRSTransformer,
+fun buildArea(focusArea: Geometry, osmFile: File, bufferRadius: Double, transformer: CRSTransformer,
               geometryFactory: GeometryFactory, censusFile: File? = null) : GeoJsonFeatureCollection {
     logger.info("Start reading OSM-File... (If this is too slow use smaller .osm.pbf file)")
-    val osmBuildings = readOSM(area, osmFile, bufferRadius, geometryFactory, transformer)
+    val osmBuildings = readOSM(focusArea, osmFile, bufferRadius, geometryFactory, transformer)
     logger.info("OSM-File read!")
 
     // Add census data if available
@@ -45,6 +53,7 @@ fun buildArea(area: Geometry, osmFile: File, bufferRadius: Double, transformer: 
         logger.info("Census data read!")
     }
 
+    // Convert to GeoJSON
     val collection = GeoJsonFeatureCollection(
         features = osmBuildings.map {
             val center = it.geometry.centroid
