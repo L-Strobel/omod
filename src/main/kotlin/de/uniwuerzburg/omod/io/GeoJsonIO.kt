@@ -8,12 +8,23 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 
-// Expected geometries
+/**
+ * GeoJSON Geometry
+ */
 @Serializable
 sealed class GeoJsonGeom {
+    /**
+     * Transform the GeoJSON geometry to JTS geometry
+     * @param factory Geometry factory
+     * @return JTS geometry
+     */
     abstract fun toJTS(factory: GeometryFactory) : Geometry
 }
 
+/**
+ * GeoJSON point
+ * @param coordinates Lon-Lat coordinates
+ */
 @Serializable
 @SerialName("Point")
 data class GeoJsonPoint(
@@ -25,6 +36,10 @@ data class GeoJsonPoint(
     }
 }
 
+/**
+ * GeoJSON multi point
+ * @param coordinates list of Lon-Lat coordinates of each point
+ */
 @Serializable
 @SerialName("MultiPoint")
 @Suppress("unused")
@@ -39,6 +54,10 @@ data class GeoJsonMultiPoint(
     }
 }
 
+/**
+ * GeoJSON line string
+ * @param coordinates list of Lon-Lat coordinates
+ */
 @Serializable
 @SerialName("LineString")
 @Suppress("unused")
@@ -53,6 +72,10 @@ data class GeoJsonLineString(
     }
 }
 
+/**
+ * GeoJSON multi line string
+ * @param coordinates list of line string coordinates
+ */
 @Serializable
 @SerialName("MultiLineString")
 @Suppress("unused")
@@ -70,6 +93,10 @@ data class GeoJsonMultiLineString(
     }
 }
 
+/**
+ * GeoJSON polygon
+ * @param coordinates first list -> coordinates of closed line string that defines exterior, other lists -> holes
+ */
 @Serializable
 @SerialName("Polygon")
 @Suppress("unused")
@@ -85,6 +112,10 @@ data class GeoJsonPoly(
     }
 }
 
+/**
+ * GeoJSON multi polygon
+ * @param coordinates list of coordinates of polygons
+ */
 @Serializable
 @SerialName("MultiPolygon")
 @Suppress("unused")
@@ -103,6 +134,10 @@ data class GeoJsonMultiPoly(
     }
 }
 
+/**
+ * GeoJSON geometry collection
+ * @param geometries list of GeoJSON geometries
+ */
 @Serializable
 @SerialName("GeometryCollection")
 @Suppress("unused")
@@ -118,10 +153,25 @@ data class GeoJsonGeometryCollection(
 }
 
 
-// Expected meta information
+/**
+ * GeoJSON properties. Meta information about geometry.
+ */
 @Serializable
 sealed class GeoJsonProperties ()
 
+/**
+ * GeoJSON representation of a building.
+ *
+ * @param osm_id OpenStreetMap ID
+ * @param in_focus_area is the building inside the focus area?
+ * @param area area of the building in meters
+ * @param population population of building. Can be non-integer.
+ * @param landuse OSM-Landuse of the building
+ * @param number_shops Number of shops in the building
+ * @param number_offices Number of offices in the building
+ * @param number_schools Number of schools in the building
+ * @param number_universities Number of universities in the building
+ */
 @Serializable
 @SerialName("BuildingEntree")
 data class GeoJsonBuildingProperties (
@@ -136,20 +186,14 @@ data class GeoJsonBuildingProperties (
     val number_universities: Double,
 ) : GeoJsonProperties()
 
-@Serializable
-@SerialName("BuildingEntreeTest")
-data class GeoJsonBuildingPropertiesTest (
-    val cellID: Int,
-    val in_focus_area: Boolean,
-    val area: Double,
-    val population: Double?,
-    val landuse: Landuse,
-    val number_shops: Double,
-    val number_offices: Double,
-    val number_schools: Double,
-    val number_universities: Double,
-) : GeoJsonProperties()
-
+/**
+ * GeoJSON representation of an origin-destination matrix entry.
+ *
+ * @param origin Name of the origin
+ * @param origin_activity Activity conducted at origin
+ * @param destination_activity Activity conducted at destination
+ * @param destinations Key: Name of destination, Value: Number of trips going to destination
+ */
 @Serializable
 @SerialName("ODEntry")
 data class GeoJsonODProperties (
@@ -159,13 +203,24 @@ data class GeoJsonODProperties (
     val destinations: Map<String, Double>
 ) : GeoJsonProperties()
 
+/**
+ * GeoJSON representation of a census field.
+ *
+ * @param population Population of geometry
+ */
 @Serializable
 @SerialName("CensusEntry")
 data class GeoJsonCensusProperties (
     val population: Double
 ) : GeoJsonProperties()
 
-// Basic structure
+/**
+ * GeoJSON feature. Generic entry in a feature collection.
+ *
+ * @param type Type of feature
+ * @param geometry Geometry of the feature
+ * @param properties Other information about the feature
+ */
 @Serializable
 data class GeoJsonFeature (
     val type: String = "Feature",
@@ -173,23 +228,38 @@ data class GeoJsonFeature (
     val properties: GeoJsonProperties
 )
 
+/**
+ * GeoJSOn feature collection
+ *
+ * @param type Always "FeatureCollection"
+ * @param features List of contained GeoJSON features
+ */
 @Serializable
 data class GeoJsonFeatureCollection (
     val type: String = "FeatureCollection",
     val features: List<GeoJsonFeature>
 )
 
-// Work around structure for json objects with empty properties = {} and raw GeometryCollections
-// Expected meta information
+/**
+ * Work around structure for json objects with empty properties = {} and raw GeometryCollections
+ */
 @Serializable
 sealed interface GeoJsonNoProperties
 
+/**
+ * Work around structure for json objects with empty properties = {} and raw GeometryCollections
+ * See GeoJsonFeature.
+ */
 @Serializable
 data class GeoJsonFeatureNoProperties (
     val type: String = "Feature",
     val geometry: GeoJsonGeom
 )
 
+/**
+ * Work around structure for json objects with empty properties = {} and raw GeometryCollections
+ * See GeoJsonFeatureCollection.
+ */
 @Serializable
 @SerialName("FeatureCollection")
 data class GeoJsonFeatureCollectionNoProperties (
