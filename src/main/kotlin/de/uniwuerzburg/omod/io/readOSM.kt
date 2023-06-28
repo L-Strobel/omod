@@ -9,7 +9,12 @@ import org.openstreetmap.osmosis.core.filter.common.IdTrackerType
 import java.io.File
 import java.io.FileInputStream
 
-
+/**
+ * Data gathered about one building from all inputs.
+ *
+ * @param osm_id OSM ID of building
+ * @param geometry Geometry of building
+ */
 data class BuildingData (
     val osm_id: Long,
     val geometry: Geometry,
@@ -24,9 +29,19 @@ data class BuildingData (
     var population: Double? = null
 }
 
-fun readOSM (area: Geometry, osmFile: File, bufferRadius: Double,
+/**
+ * Read and process all the input files.
+ *
+ * @param focusArea Focus area
+ * @param osmFile osm.pbf file
+ * @param bufferRadius Distance to buffer the focus area with in order to obtain the buffer area
+ * @param geometryFactory Geometry factory
+ * @param transformer Used for CRS conversion
+ * @return Data retrieved for all buildings in the model area
+ */
+fun readOSM (focusArea: Geometry, osmFile: File, bufferRadius: Double,
              geometryFactory: GeometryFactory, transformer: CRSTransformer): List<BuildingData> {
-    val utmFocusArea = transformer.toModelCRS(area)
+    val utmFocusArea = transformer.toModelCRS(focusArea)
     val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
 
     // Prepare osmosis pipeline
