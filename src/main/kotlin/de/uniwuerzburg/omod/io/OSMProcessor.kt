@@ -12,21 +12,33 @@ import org.openstreetmap.osmosis.core.store.IndexedObjectStoreReader
 import org.openstreetmap.osmosis.core.store.SingleClassObjectSerializationFactory
 import org.openstreetmap.osmosis.core.task.v0_6.Sink
 
-// Enumeration of all map objects used in OMOD
+/**
+ * Enumeration of all OSM map objects used in OMOD
+ */
 enum class MapObjectType {
     BUILDING, OFFICE, SHOP, SCHOOL, UNIVERSITY,
     LU_RESIDENTIAL, LU_COMMERCIAL, LU_INDUSTRIAL
 }
 
+/**
+ * OSM map object
+ * @param id OSM ID
+ * @param type Description of what the geometry represents
+ * @param geometry Geometry
+ */
 class MapObject (
     val id: Long,
     val type: MapObjectType,
     val geometry: Geometry
 )
 
-// Map landuse keys to the that used in OMOD
-private fun getShortLanduseDescription(osmDescription: String): MapObjectType? {
-    return when(osmDescription) {
+/**
+ * Maps OSM landuse tags to OMODs landuse categories
+ * @param tag OSM tag
+ * @return landuse category
+ */
+private fun getShortLanduseDescription(tag: String): MapObjectType? {
+    return when(tag) {
         "residential"       -> MapObjectType.LU_RESIDENTIAL
         "commercial"        -> MapObjectType.LU_COMMERCIAL
         "retail"            -> MapObjectType.LU_COMMERCIAL
@@ -52,14 +64,19 @@ private fun getShortLanduseDescription(osmDescription: String): MapObjectType? {
 }
 
 /**
- *Find all the entities with the right tags and keys in the area.
- * @property mapObjects The result. Access this after running the pipeline. Resulting Geometries are in Mercator projection.
+ * Find all the entities with the right keys and tags in the area.
+ *
+ * @param idTrackerType ID tracker. See Osmosis documentation
+ * @param geometryFactory Geometry factory
+ *
+ * @property mapObjects The result. Access this after running the pipeline.
  */
 class OSMProcessor(idTrackerType: IdTrackerType,
                    private val geometryFactory: GeometryFactory
 ) : EntityProcessor, Sink {
     val mapObjects = mutableListOf<MapObject>()
 
+    // Storage of relevant nodes, ways, and relations (on disc)
     private val allNodes: IndexedObjectStore<NodeContainer> = IndexedObjectStore<NodeContainer>(
         SingleClassObjectSerializationFactory(NodeContainer::class.java), "afn"
     )
@@ -75,10 +92,16 @@ class OSMProcessor(idTrackerType: IdTrackerType,
 
     override fun initialize(metaData: MutableMap<String, Any>?) {}
 
+    /**
+     * Called when pipeline yields an EntityContainer.
+     */
     override fun process(entityContainer: EntityContainer?) {
         entityContainer?.process(this)
     }
 
+    /**
+     * Called when pipeline yields a NodeContainer.
+     */
     override fun process(nodeContainer: NodeContainer) {
         val node = nodeContainer.entity
 
@@ -91,6 +114,9 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         }
     }
 
+    /**
+     * Called when pipeline yields a WayContainer.
+     */
     override fun process(wayContainer: WayContainer) {
         val way = wayContainer.entity
 
@@ -103,6 +129,9 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         }
     }
 
+    /**
+     * Called when pipeline yields a RelationContainer.
+     */
     override fun process(relationContainer: RelationContainer) {
         val relation = relationContainer.entity
 
@@ -117,6 +146,11 @@ class OSMProcessor(idTrackerType: IdTrackerType,
 
     override fun process(boundContainer: BoundContainer) { }
 
+    /**
+     * Transform OSM node to JTS point
+     * @param node OSM node
+     * @return JTS Point
+     */
     private fun getGeom(node: Node) : Point {
         val coords = Coordinate(node.latitude, node.longitude)
         val geometry = geometryFactory.createPoint(coords)
@@ -128,6 +162,12 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         return geometry
     }
 
+    /**
+     * Transform OSM way to JTS geometry
+     * @param way OSM way
+     * @param nodeReader Access to the nodes stored on disc in the process() step
+     * @return JTS geometry
+     */
     private fun getGeom(way: Way, nodeReader: IndexedObjectStoreReader<NodeContainer>) : Geometry {
         val coords = Array(way.wayNodes.size) { i ->
             val id = way.wayNodes[i].nodeId
@@ -156,6 +196,13 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         return geometry
     }
 
+    /**
+     * Transform OSM relation to JTS geometry
+     * @param relation OSM relation
+     * @param nodeReader Access to the osm nodes stored on disc in the process() step
+     * @param wayReader Access to the osm ways stored on disc in the process() step
+     * @return JTS geometry
+     */
     private fun getGeom(relation: Relation,
                         wayReader: IndexedObjectStoreReader<WayContainer>,
                         nodeReader: IndexedObjectStoreReader<NodeContainer>
@@ -193,7 +240,17 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         return geometry
     }
 
-    private fun relationGetRings(relation: Relation, role: String,
+    /**
+     * Find linear rings in the relation that have a given osm memberRole.
+     *
+     * @param relation OSM relation
+     * @param role Member role. Either "outer" to obtain exterior boundaries or "inner" to obtain the holes.
+     * @param nodeReader Access to the osm nodes stored on disc in the process() step
+     * @param wayReader Access to the osm ways stored on disc in the process() step
+     * @return Linear rings with the given role
+     */
+    private fun relationGetRings(relation: Relation,
+                                 role: String,
                                  wayReader: IndexedObjectStoreReader<WayContainer>,
                                  nodeReader: IndexedObjectStoreReader<NodeContainer>
     ) : Set<LinearRing> {
@@ -226,6 +283,11 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         return rings
     }
 
+    /**
+     * Determine the MapObjectTypes of the OSM object. Can be more than one, e.g., a building can also be an office.
+     * @param entity OSM object
+     * @return All MapObjectTypes of the object
+     */
     private fun determineTypes(entity: Entity) : List<MapObjectType> {
         val rslt = mutableListOf<MapObjectType>()
         for (tag in entity.tags) {
@@ -250,10 +312,23 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         return rslt
     }
 
+    /**
+     * Determine if the OSM object is relevant for OMOD
+     *
+     * @param entity OSM object
+     * @return true -> object is relevant
+     */
     private fun relevantObject(entity: Entity) : Boolean {
         return determineTypes(entity).isNotEmpty()
     }
 
+    /**
+     * Go through stored OSM data and apply a consumer function to every relevant entry.
+     *
+     * @param reader Access to the stored OSM data
+     * @param idTracker  ID-Tracker see Osmosis documentation
+     * @param foundCallback The consumer lambda function that will be applied to all relevant objects.
+     */
     private fun <T> searchForRelevant(reader: IndexedObjectStoreReader<T>, idTracker: IdTracker,
                                       foundCallback: (container: T) -> Unit) {
         val iterator = idTracker.iterator()
@@ -264,6 +339,10 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         }
     }
 
+    /**
+     * Called when process() is finished. Searches the stored data for relevant objects
+     * and transforms then to MapObjects.
+     */
     override fun complete() {
         allNodes.complete()
         allWays.complete()
@@ -311,6 +390,9 @@ class OSMProcessor(idTrackerType: IdTrackerType,
         relationReader.close()
     }
 
+    /**
+     * Called then OSMProcessor is discarded. Relinquish disc space.
+     */
     override fun close() {
         allNodes.close()
         allWays.close()
