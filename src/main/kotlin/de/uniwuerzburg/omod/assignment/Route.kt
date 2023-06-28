@@ -3,7 +3,15 @@ package de.uniwuerzburg.omod.assignment
 import com.graphhopper.GHResponse
 import org.locationtech.jts.geom.Coordinate
 
-@Suppress("MemberVisibilityCanBePrivate", "unused")
+/**
+ * Route. Result of assignment.
+ *
+ * @param distance Distance of the route. Unit: meter
+ * @param time Travel time. Unit: seconds
+ * @param path Coordinates of the path. In lat-lon format.
+ * @param isReal Is the route real? Meaning does it use the real road network. As opposed
+ * to estimated distances and travel times, for example, based on beeline distance.
+ */
 class Route (
     val distance: Double,           // Unit: meter
     val time: Double,               // Unit: seconds
@@ -11,6 +19,12 @@ class Route (
     val isReal: Boolean             // Between real locations?
 ) {
     companion object {
+        /**
+         * Create a route from GraphHopper response.
+         * @param response GraphHopper response
+         * @param withPath Store path coordinates in the route?
+         * @return Route
+         */
         fun fromGH(response: GHResponse, withPath: Boolean): Route? {
             if (response.hasErrors()) {
                 return null

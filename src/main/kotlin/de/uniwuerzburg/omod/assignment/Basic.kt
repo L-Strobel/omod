@@ -10,13 +10,30 @@ import de.uniwuerzburg.omod.routing.prepareQGraph
 import de.uniwuerzburg.omod.routing.querySPT
 import de.uniwuerzburg.omod.routing.routeWithCar
 
+/**
+ * Determine the direct (beeline) route from origin to destination.
+ *
+ * @param origin Origin
+ * @param destination Destination
+ * @param speedBeeline Speed (used for travel time calculation)
+ * @return Dummy route that contains only distance and travel time but no path.
+ */
 fun beelineRoute(origin: LocationOption, destination: LocationOption, speedBeeline: Double = 130.0 / 3.6) : Route {
     val distance = calcDistanceBeeline(origin, destination)
     val time = distance / speedBeeline
     return Route(distance, time, null, false)
 }
 
-@Suppress("unused")
+/**
+ * Return route from origin to destination. If both origin and destination are real location (within the .osm.pbf file)
+ * the fastest route by car is returned. Otherwise, the beeline route see beelineRoute().
+ *
+ * @param origin Origin
+ * @param destination Destination
+ * @param hopper GraphHopper
+ * @param withPath Include the path in the route.
+ * @return Route
+ */
 fun route(origin: LocationOption, destination: LocationOption, hopper: GraphHopper, withPath: Boolean = false) : Route {
     return if ((origin !is RealLocation) or (destination !is RealLocation)) {
         beelineRoute(origin, destination)
@@ -26,6 +43,14 @@ fun route(origin: LocationOption, destination: LocationOption, hopper: GraphHopp
     }
 }
 
+/**
+ * Cluster trip start and stop locations to speed up routing.
+ *
+ * @param agents Agents for which assignment will be done
+ * @param precision Precision of the routing grid (average distance from a location to its associated centroid)
+ * @param transformer Used for CRS conversions
+ * @return Map: Building -> Routing cell
+ */
 fun makeRoutingGrid(agents: List<MobiAgent>, precision: Double, transformer: CRSTransformer)
     : Map<LocationOption, LocationOption> {
     // Get all trip start/stop locations
@@ -63,6 +88,18 @@ fun makeRoutingGrid(agents: List<MobiAgent>, precision: Double, transformer: CRS
     }
 }
 
+/**
+ * [Experimental] Assign trips in an all-or-nothing manner. Meaning that every agent chooses the route that is fastest
+ * by car and without considering congestion effects.
+ * Warning: all-or-nothing assignment is generally not realistic in urban areas.
+ *
+ * @param agents Agents for which trips should be assigned
+ * @param hopper GraphHopper object
+ * @param transformer Used for CRS transformation
+ * @param withPath Store the path taken by each agent in the output (lat-lon coordinates)
+ * @param precision Precision of the routing grid
+ * @return Routes chosen by agents
+ */
 fun allOrNothing(agents: List<MobiAgent>, hopper: GraphHopper, transformer: CRSTransformer,
                  withPath: Boolean = true, precision: Double = 50.0) : List<OutputTEntry> {
     // Performance parameter: If there are more than threshTree trips starting at one location route with SPT.

@@ -1,1 +1,0 @@
-Experimental. Determine simple assignment for OMOD output.
