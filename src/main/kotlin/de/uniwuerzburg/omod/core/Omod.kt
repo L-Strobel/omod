@@ -200,7 +200,7 @@ class Omod(
         } else {
             // Load data from geojson files and PostgreSQL database with OSM data
             collection = buildArea(
-                area = focusArea,
+                focusArea = focusArea,
                 osmFile = osmFile,
                 bufferRadius = bufferRadius,
                 censusFile = censusFile,
