@@ -7,6 +7,12 @@ import com.graphhopper.routing.weighting.custom.CustomProfile
 import com.graphhopper.util.CustomModel
 import de.uniwuerzburg.omod.core.Omod
 
+/**
+ * Create GraphHopper object.
+ * @param osmLoc Path of osm.pbf file
+ * @param cacheLoc Path where the cache should be stored
+ * @return GraphHopper object
+ */
 fun createGraphHopper(osmLoc: String, cacheLoc: String) : GraphHopper {
     logger.info("Initializing GraphHopper... (If the osm.pbf is large this can take some time. " +
             "Change routing_mode to BEELINE for fast results.)")
