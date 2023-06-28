@@ -15,13 +15,15 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.math.min
 
-
+/**
+ * Distance calculation methods
+ */
 enum class RoutingMode {
     GRAPHHOPPER, BEELINE
 }
 
 /**
- * HashMap with fixed size. If the collection is full and an entry is put in the oldest entry is removed.
+ * HashMap with fixed size. If the collection is full and an entry is added the oldest entry is removed.
  * See: https://stackoverflow.com/questions/5601333/limiting-the-max-size-of-a-hashmap-in-java
  */
 class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
@@ -32,7 +34,10 @@ class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
 
 
 /**
- * Stores routing information
+ * Stores distance information between locations
+ * @param mode Method of distance calculation used for entries
+ * @param hopper GraphHopper object. Only needed if mode = RoutingMode.GRAPHHOPPER
+ * @param cacheSize Maximum number origins and destinations per origin to store
  */
 class RoutingCache(
     private val mode: RoutingMode,
@@ -46,6 +51,15 @@ class RoutingCache(
     private var cachePath: Path? = null
     private val unRoutableLocs = mutableSetOf<LocationOption>()
 
+    /**
+     * Fill cache either by loading it from a file or filling it with fill().
+     * The cache stores the routes from the first n locations to the first n locations.
+     * Where n is the cacheSize. The order of the locations is determined by priorityValues.
+     *
+     * @param locations Locations options
+     * @param cacheDir The directory where the cache is stored
+     * @param priorityValues Priority value that determines what locations will be cached
+     */
     fun load(locations: List<LocationOption>, cacheDir: Path, priorityValues: List<Double>?){
         // Bounds
         val latMin = locations.minOfOrNull { it.latlonCoord.x } ?:0.0
@@ -68,6 +82,13 @@ class RoutingCache(
         }
     }
 
+    /**
+     * Fill by calculating the distance between the first n locations to the first n locations.
+     * Where n is the cacheSize. The order of the locations is determined by priorityValues.
+     *
+     * @param locations Locations options
+     * @param priorityValues Priority value that determines what locations will be cached
+     */
     private fun fill(locations: List<LocationOption>, priorityValues: List<Double>) {
         if (mode == RoutingMode.GRAPHHOPPER) {
             logger.info("Calculating distance matrix. Routing mode is GRAPHHOPPER so this will take a while. " +
@@ -121,6 +142,14 @@ class RoutingCache(
         println("Calculating distance matrix: " + ProgressBar.done())
     }
 
+    /**
+     * Get the distances from an origin to multiple destinations.
+     * Function first checks if the information is in the cache, otherwise the distance is computed.
+     *
+     * @param origin Origin
+     * @param destinations All destinations for which the distance should be determined
+     * @return Array of distances
+     */
     fun getDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
         when (mode) {
             RoutingMode.BEELINE -> return destinations.map { calcDistance(origin, it).toFloat() }.toFloatArray()
@@ -153,6 +182,12 @@ class RoutingCache(
         }
     }
 
+    /**
+     * Calculate the distance between origin and destination
+     * @param origin Origin
+     * @param destination Destination
+     * @return Distance
+     */
     private fun calcDistance(origin: LocationOption, destination: LocationOption) : Double {
         if (origin == destination) {
             return origin.avgDistanceToSelf // 0.0 for Buildings
@@ -194,6 +229,9 @@ class RoutingCache(
         }
     }
 
+    /**
+     * Store cache in file
+     */
     fun toOOMCache () {
         if (cachePath != null) {
             Files.createDirectories(cachePath!!.parent)
@@ -208,6 +246,9 @@ class RoutingCache(
         }
     }
 
+    /**
+     * Load cache from file
+     */
     private fun fillFromOOMCache (cachePath: Path, locations: List<LocationOption>) {
         val fis = FileInputStream(cachePath.toFile())
         val ois = ObjectInputStream(fis)
@@ -243,11 +284,17 @@ class RoutingCache(
         }
     }
 
+    /**
+     * File storage format of the cache
+     */
     private class OOMCacheFormat  (
         val coords: Array<Coordinate>,
         val matrix: Array<FloatArray>
     ) : java.io.Serializable
 
+    /**
+     * Format cache to the storage format
+     */
     private fun formatForCache(table: HashMap<LocationOption, HashMap<LocationOption, Float>>) :
             OOMCacheFormat {
         val locations = table.keys
