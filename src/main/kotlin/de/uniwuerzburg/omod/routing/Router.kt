@@ -18,13 +18,22 @@ import de.uniwuerzburg.omod.core.RealLocation
 
 /**
  * Calculate the euclidean distance between two locations
+ *
+ * @param origin Location A
+ * @param destination Location B
+ * @return distance
  */
 fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : Double {
     return origin.coord.distance(destination.coord)
 }
 
 /**
- * Determine the shortest path between two locations using a car
+ * Determine the shortest path between two locations using a car.
+ *
+ * @param origin Location A
+ * @param destination Location B
+ * @param hopper GraphHopper object
+ * @return GHResponse (Wrapper around the fastest route)
  */
 fun routeWithCar (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
     val req = GHRequest(
@@ -37,6 +46,14 @@ fun routeWithCar (origin: RealLocation, destination: RealLocation, hopper: Graph
     return hopper.route(req)
 }
 
+/**
+ * Prepared query graph used in ShortestPathTree calculation.
+ *
+ * @param queryGraph query graph
+ * @param weighting weighting to use
+ * @param locNodes Map from relevant location to node in graph
+ * @param snapNodes Nodes in the graph that correspond to a relevant location
+ */
 data class PreparedQGraph (
     val queryGraph: QueryGraph,
     val weighting: Weighting,
@@ -44,6 +61,13 @@ data class PreparedQGraph (
     val snapNodes: Set<Int>
 )
 
+/**
+ * Prepare for ShortestPathTree calculation.
+ *
+ * @param hopper GraphHopper object
+ * @param locsToSnap Locations that will be relevant in SPT run (origin + possible destinations)
+ * @return prepared graph
+ */
 fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph {
     val encodingManager = hopper.encodingManager
     val accessEnc = encodingManager.getBooleanEncodedValue(VehicleAccess.key("car"))
@@ -73,11 +97,24 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
     return PreparedQGraph(queryGraph, weighting, locNodes, snapNodes)
 }
 
+/**
+ * Result of ShortestPathTree search.
+ * @param distance Distance to the destination. Unit: Meter
+ * @param time Travel time. Unit: Milliseconds
+ */
 data class SPTResult (
     val distance: Double,   // Unit: Meter
     val time: Double        // Unit: Milliseconds
 )
 
+/**
+ * Get the shortest distance and travel time from an origin to many destinations. Utilizes an ShortestPathTree.
+ *
+ * @param preparedQGraph Prepared query graph
+ * @param origin Start location
+ * @param destinations List of possible destinations
+ * @return Shortest distance and travel time to each destination
+ */
 fun querySPT(preparedQGraph: PreparedQGraph, origin: RealLocation, destinations: List<LocationOption>) : List<SPTResult?> {
     val originNode = preparedQGraph.locNodes[origin]
 
