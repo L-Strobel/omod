@@ -19,7 +19,9 @@ import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
-
+/**
+ * CLI interface
+ */
 @Suppress("PrivatePropertyName")
 class Run : CliktCommand() {
     // Arguments
@@ -95,7 +97,7 @@ class Run : CliktCommand() {
         help="Path to file that describes the socio-demographic makeup of the population. " +
              "Must be formatted like omod/src/main/resources/Population.json."
     ).file(mustExist = true, mustBeReadable = true)
-    //@OptIn(ExperimentalTime::class)
+
     @OptIn(ExperimentalTime::class, ExperimentalSerializationApi::class)
     override fun run() {
         val (omod, timeRead) = measureTimedValue {
