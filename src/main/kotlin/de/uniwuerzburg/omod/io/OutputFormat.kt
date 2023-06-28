@@ -4,7 +4,7 @@ import de.uniwuerzburg.omod.core.*
 import kotlinx.serialization.Serializable
 
 /**
- * Output format mobility demand
+ * OMOD result format of on activity
  */
 @Serializable
 data class OutputActivity (
@@ -15,13 +15,18 @@ data class OutputActivity (
     val dummyLoc: Boolean,
     val inFocusArea: Boolean
 )
+/**
+ * OMOD result format of o day
+ */
 @Serializable
 data class OutputDiary (
     val day: Int,
     val dayType: Weekday,
     val activities: List<OutputActivity>
 )
-
+/**
+ * OMOD result format of on agent
+ */
 @Serializable
 data class OutputEntry (
     val id: Int,
@@ -31,6 +36,12 @@ data class OutputEntry (
     val mobilityDemand: List<OutputDiary>
 )
 
+/**
+ * Retrieves results from an agent and formats the data for output.
+ *
+ * @param agent Agent
+ * @return Data ready for storage in json file
+ */
 fun formatOutput(agent: MobiAgent) : OutputEntry {
     val mobilityDemand = agent.mobilityDemand.map { dairy ->
         val activities = dairy.activities.map { activity ->
@@ -43,7 +54,7 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
 }
 
 /**
- * Output format assignment
+ * Output format of trip
  */
 @Serializable
 data class OutputTrip (
@@ -53,13 +64,17 @@ data class OutputTrip (
     val lons: List<Double>?,
     val isReal: Boolean
 )
-
+/**
+ * Output format of day in assignment
+ */
 @Serializable
 data class OutputTDiary (
     val day: Int,
     val trips: List<OutputTrip>
 )
-
+/**
+ * Output format of all assignment information of an agent
+ */
 @Serializable
 data class OutputTEntry (
     val id: Int,
