@@ -49,7 +49,7 @@ class Run : CliktCommand() {
     ).file().default(File("output.json"))
     private val routing_mode by option(
         help = "Distance calculation method. Either euclidean distance (BEELINE) or routed distance by car (GRAPHHOPPER)"
-    ).enum<RoutingMode>().default(RoutingMode.BEELINE)
+    ).enum<RoutingMode>().default(RoutingMode.GRAPHHOPPER)
     private val od by option(
         help="[Experimental] Path to an OD-Matrix in GeoJSON format. " +
              "The matrix is used to further calibrate the model to the area using k-factors."
