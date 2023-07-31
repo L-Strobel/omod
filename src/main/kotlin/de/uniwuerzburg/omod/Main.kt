@@ -2,6 +2,10 @@ package de.uniwuerzburg.omod
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.groups.default
+import com.github.ajalt.clikt.parameters.groups.mutuallyExclusiveOptions
+import com.github.ajalt.clikt.parameters.groups.single
+import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
@@ -19,6 +23,15 @@ import java.nio.file.Paths
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
+sealed interface AgentNumberDefinition
+
+class FixedAgentNumber(
+    val value: Int
+) : AgentNumberDefinition
+class ShareOfPop (
+    val value: Double
+) : AgentNumberDefinition
+
 /**
  * CLI interface
  */
@@ -34,10 +47,18 @@ class Run : CliktCommand() {
                "Recommended download platform: https://download.geofabrik.de/"
     ).file(mustExist = true, mustBeReadable = true)
     // Options
-    private val n_agents by option(
-        help="Number of agents to simulate. " +
-             "If populate_buffer_area = y, additional agents are created to populate the buffer area"
-    ).int().default(1000)
+    private val agentNumberDefinition by mutuallyExclusiveOptions(
+        option(
+            "--n_agents",
+            help="Number of agents to simulate. " +
+                 "If populate_buffer_area = y, additional agents are created to populate the buffer area"
+        ).convert { FixedAgentNumber(it.toInt()) },
+        option(
+            "--share_pop",
+            help="Share of the population to simulate. 0.0 = 0%, 1.0 = 100%" +
+                 " If populate_buffer_area = y, additional agents are created to populate the buffer area"
+        ).convert { ShareOfPop(it.toDouble()) }
+    ).single().default( FixedAgentNumber(1000) )
     private val n_days by option(
         help="Number of days to simulate"
     ).int().default(1)
@@ -100,6 +121,12 @@ class Run : CliktCommand() {
 
     @OptIn(ExperimentalTime::class, ExperimentalSerializationApi::class)
     override fun run() {
+        if ((census == null) && (agentNumberDefinition is ShareOfPop)) {
+            throw Exception(
+                "Agent population is supposed to be based on the population but no census file is provided." +
+                "Consider adding a census file with --census or use --n_agents instead.")
+        }
+
         val (omod, timeRead) = measureTimedValue {
             Omod(
                 area_geojson, osm_file,
@@ -116,7 +143,10 @@ class Run : CliktCommand() {
 
         // Mobility demand
         val (agents, timeSim) = measureTimedValue {
-            omod.run(n_agents, start_wd, n_days)
+            when (val aND = agentNumberDefinition ) {
+                is FixedAgentNumber -> omod.run(aND.value, start_wd, n_days)
+                is ShareOfPop -> omod.run(aND.value, start_wd, n_days)
+            }
         }
 
         println("Simulation took: $timeSim")

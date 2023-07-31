@@ -18,6 +18,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -69,6 +70,7 @@ class Omod(
     private val geometryFactory: GeometryFactory = GeometryFactory()
     val transformer: CRSTransformer
     private val logger = LoggerFactory.getLogger(Omod::class.java)
+    private var censusAvailable = false
 
     init {
         // Get population distribution
@@ -85,6 +87,7 @@ class Omod(
         val distrTxt = Omod::class.java.classLoader.getResource("LocChoiceWeightFuns.json")!!.readText(Charsets.UTF_8)
         val mutLocChoiceFuns: MutableMap<ActivityType, LocationChoiceDCWeightFun> = Json.decodeFromString(distrTxt)
         if (censusFile != null) {
+            censusAvailable = true
             mutLocChoiceFuns[ActivityType.HOME] = ByPopulation
         }
         mutLocChoiceFuns[ActivityType.BUSINESS] = mutLocChoiceFuns[ActivityType.OTHER]!!
@@ -189,7 +192,7 @@ class Omod(
             "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
                 .toString().replace(" ", "")}" +
                     "Buffer${bufferRadius}" +
-                    "Census${censusFile != null}" +
+                    "Census${censusFile?.nameWithoutExtension ?: false}" +
                     ".geojson"
         )
 
@@ -375,7 +378,8 @@ class Omod(
     }
 
     /**
-     * Initialize population. Assigns socio-demographic features, and home, work, and school locations.
+     * Initialize population with fixed number of agents.
+     * Assigns socio-demographic features, and home, work, and school locations.
      *
      * @param nFocus number of agents in focus areas
      * @return Population of agents
@@ -383,20 +387,6 @@ class Omod(
     @Suppress("MemberVisibilityCanBePrivate")
     fun createAgents(nFocus: Int): List<MobiAgent> {
         println("Creating Population...")
-        val agents = mutableListOf<MobiAgent>()
-
-        // Get sociodemographic features
-        val features = mutableListOf<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>()
-        val jointProbability = mutableListOf<Double>()
-        for ((hom, p_hom) in populationDef.homogenousGroup) {
-            for ((mob, p_mob) in populationDef.mobilityGroup) {
-                for ((age, p_age) in populationDef.age) {
-                    features.add(Triple(hom, mob, age))
-                    jointProbability.add(p_hom*p_mob*p_age)
-                }
-            }
-        }
-        val featureDistribution = createCumDist(jointProbability.toDoubleArray())
 
         // Home distributions inside and outside of focus area
         val insideHWeights = getHomeWeightsRestricted(zones, true).toDoubleArray()
@@ -414,15 +404,9 @@ class Omod(
         }
 
         // Create agent until n life in the focus area
-        val workDistCache = mutableMapOf<Int, DoubleArray>() // Cache for speed up
-        val schoolDistCache = mutableMapOf<Int, DoubleArray>()
+        val agents = ArrayList<MobiAgent>(totalNAgents)
+        val agentFactory = AgentFactory()
         for (id in 0 until totalNAgents) {
-            // Sociodemographic features
-            val agentFeatures = sampleCumDist(featureDistribution, rng)
-            val homogenousGroup = features[agentFeatures].first
-            val mobilityGroup = features[agentFeatures].second
-            val age = features[agentFeatures].third
-
             // Get home zone (might be cell or dummy is node)
             val inside = id < nFocus // Should agent live inside focus area
             val homeCumDist = if ( inside ) insideCumDist else outsideCumDist
@@ -439,8 +423,138 @@ class Omod(
                 homeZone
             }
 
+            // Add the agent to the population
+            agents.add(agentFactory.createAgent(home, homeZone))
+        }
+        agents.shuffle(rng)
+        return agents
+    }
+
+    /**
+     * Initialize population based on a share of the existing population.
+     * Assigns socio-demographic features, and home, work, and school locations.
+     *
+     * @param share Share of the population to simulate
+     * @return Population of agents
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun createAgents(share: Double): List<MobiAgent> {
+        println("Creating Population...")
+
+        if (!censusAvailable) {
+            throw Exception(
+                "Agent population is supposed to be based on the population but no census file is provided." +
+                "Consider adding a census file with --census or use --n_agents instead.")
+        }
+
+        // Determine populations of dummy zones
+        val weightSumCells = getWeightsNoOrigin(grid, ActivityType.HOME).sum()
+        val totalPopCells = grid.sumOf { it.population }
+        val homeWeightsZones = getWeightsNoOrigin(zones, ActivityType.HOME)
+
+        val dummyZones = mutableListOf<LocationOption>()
+        val dummyZonePopulation = mutableListOf<Int>()
+        for ((i, zone) in zones.withIndex()) {
+            if (zone is DummyLocation) {
+                val hWeight = homeWeightsZones[i]
+                val synthPop = totalPopCells * (hWeight / weightSumCells)
+                dummyZones.add(zone)
+                dummyZonePopulation.add(synthPop.toInt())
+            }
+        }
+
+        // Determine number of agents
+        val totalAgentsBuildings = (buildings.sumOf { it.population } * share).toInt()
+        val totalAgentsDummy = (dummyZonePopulation.sum() * share).toInt()
+        val totalNAgents = totalAgentsBuildings + totalAgentsDummy
+
+        // Create agents
+        val agents = ArrayList<MobiAgent>(totalNAgents)
+        val agentFactory = AgentFactory()
+        // Living in buildings
+        val buildingPopDistr = createCumDistWOR(buildings.map { it.population.toInt() }.toIntArray())
+        for (id in 0 until totalAgentsBuildings) {
+            val i = sampleCumDistWOR(buildingPopDistr, rng)
+            val home = buildings[i]
+            agents.add(agentFactory.createAgent(home, home.cell!!))
+        }
+        // Living at dummy location
+        val dummyPopDistr = createCumDistWOR(dummyZonePopulation.toIntArray())
+        for (id in 0 until totalAgentsDummy) {
+            val i = sampleCumDistWOR(dummyPopDistr, rng)
+            val home = dummyZones[i]
+            agents.add(agentFactory.createAgent(home, home))
+        }
+        agents.shuffle(rng)
+        return agents
+    }
+
+   /**
+    * Creates agents by determining socio-demographic features as well as work and school locations.
+    */
+   private inner class AgentFactory {
+        private val features: List<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>
+        private val featureDistribution: DoubleArray
+        private val workDistrCache = mutableMapOf<LocationOption, DoubleArray>()
+        private val schoolDistrCache = mutableMapOf<LocationOption, DoubleArray>()
+        private var nextID = 0
+
+        init {
+            val (f, fD) = getSocioDemographicFeatureDistr()
+            features = f
+            featureDistribution = fD
+        }
+
+       /**
+        * Create agent with given home.
+        *
+        * @param home Home of the agent. Either a Building or a DummyLocation.
+        * @param homeZone Routing cell of the home. Either a Cell or a DummyLocation
+        * @return Agent
+        */
+       fun createAgent(home: LocationOption, homeZone: LocationOption) : MobiAgent {
+           // Sociodemographic features
+           val agentFeatures = sampleCumDist(featureDistribution, rng)
+           val homogenousGroup = features[agentFeatures].first
+           val mobilityGroup = features[agentFeatures].second
+           val age = features[agentFeatures].third
+
+           // Fixed locations
+           val work = determineWorkLocation(homeZone)
+           val school = determineSchoolLocation(homeZone)
+
+           val agent = MobiAgent(nextID, homogenousGroup, mobilityGroup, age, home, work, school)
+           nextID += 1
+           return agent
+       }
+
+        /**
+         * Create sociodemographic feature distribution form populationDef
+         * @return Pair<Possible feature combinations, probability of the combination>
+         */
+        private fun getSocioDemographicFeatureDistr(
+        ) : Pair<List<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>, DoubleArray> {
+            val features = mutableListOf<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>()
+            val jointProbability = mutableListOf<Double>()
+            for ((hom, p_hom) in populationDef.homogenousGroup) {
+                for ((mob, p_mob) in populationDef.mobilityGroup) {
+                    for ((age, p_age) in populationDef.age) {
+                        features.add(Triple(hom, mob, age))
+                        jointProbability.add(p_hom*p_mob*p_age)
+                    }
+                }
+            }
+            return Pair(features, createCumDist(jointProbability.toDoubleArray()))
+        }
+
+       /**
+        * Determine work location.
+        * @param homeZone Routing cell of the home.
+        * @return Workplace
+        */
+       private fun determineWorkLocation(homeZone: LocationOption) : LocationOption {
             // Get work zone (might be cell or dummy is node)
-            val workZoneCumDist = workDistCache.getOrPut(homeZoneID) {
+            val workZoneCumDist = workDistrCache.getOrPut(homeZone) {
                 getDistr(homeZone, zones, ActivityType.WORK)
             }
             val workZone = zones[sampleCumDist(workZoneCumDist, rng)]
@@ -452,26 +566,30 @@ class Omod(
             } else {
                 workZone
             }
-
-            // Get school cell
-            val schoolZoneCumDist = schoolDistCache.getOrPut(homeZoneID) {
-                getDistr(homeZone, zones, ActivityType.SCHOOL)
-            }
-            val schoolZone = zones[sampleCumDist(schoolZoneCumDist, rng)]
-
-            // Get school location
-            val school = if (schoolZone is Cell) {
-                val schoolBuildingsCumDist = getDistrNoOrigin(schoolZone.buildings, ActivityType.SCHOOL)
-                schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
-            } else {
-                schoolZone
-            }
-
-            // Add the agent to the population
-            agents.add(MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school))
+            return work
         }
-        agents.shuffle(rng)
-        return agents
+
+       /**
+        * Determine school location.
+        * @param homeZone Routing cell of the home.
+        * @return School location
+        */
+       private fun determineSchoolLocation(homeZone: LocationOption) : LocationOption {
+           // Get school cell
+           val schoolZoneCumDist = schoolDistrCache.getOrPut(homeZone) {
+               getDistr(homeZone, zones, ActivityType.SCHOOL)
+           }
+           val schoolZone = zones[sampleCumDist(schoolZoneCumDist, rng)]
+
+           // Get school location
+           val school = if (schoolZone is Cell) {
+               val schoolBuildingsCumDist = getDistrNoOrigin(schoolZone.buildings, ActivityType.SCHOOL)
+               schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
+           } else {
+               schoolZone
+           }
+           return school
+       }
     }
 
     /**
@@ -655,6 +773,31 @@ class Omod(
      */
     fun run(n_agents: Int, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
         val agents = createAgents(n_agents)
+        return run(agents, start_wd, n_days)
+    }
+
+    /**
+     * Generate the mobility demand of the area.
+     *
+     * @param shareOfPop Share of population to simulate
+     * @param start_wd Weekday of the first simulated day
+     * @param n_days Number of consecutive days to simulate
+     * @return List of agents each with an activity schedules for every simulated day
+     */
+    fun run(shareOfPop: Double, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
+        val agents = createAgents(shareOfPop)
+        return run(agents, start_wd, n_days)
+    }
+
+    /**
+     * Generate the mobility demand of the area.
+     *
+     * @param agents Agents
+     * @param start_wd Weekday of the first simulated day
+     * @param n_days Number of consecutive days to simulate
+     * @return List of agents each with an activity schedules for every simulated day
+     */
+    fun run(agents: List<MobiAgent>, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
         var weekday = start_wd
 
         var jobsDone = 0
@@ -746,6 +889,7 @@ class Omod(
         val weights = getWeights(origin, destinations, activityType)
         return createCumDist(weights.toDoubleArray())
     }
+
     /**
      * Determine the probability that a location is a destination given an activity type but no origin
      * for all possible destinations.

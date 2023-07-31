@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "de.uniwuerzburg.omod"
-version = "1.6.10"
+version = "1.7.0"
 
 repositories {
     mavenLocal()
