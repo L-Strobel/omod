@@ -7,6 +7,8 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
 import org.slf4j.LoggerFactory
 import java.io.File
+import kotlin.math.ceil
+import kotlin.math.min
 
 private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.io")
 
@@ -39,15 +41,22 @@ fun buildArea(focusArea: Geometry, osmFile: File, bufferRadius: Double, transfor
         val censusData: GeoJsonFeatureCollection = json.decodeFromString(censusFile.readText(Charsets.UTF_8))
 
         for (censusEntree in censusData.features) {
-            val population = (censusEntree.properties as GeoJsonCensusProperties).population
+            var population = (censusEntree.properties as GeoJsonCensusProperties).population
             val censusZone = transformer.toModelCRS( censusEntree.geometry.toJTS(geometryFactory) )
 
             val intersectingBuildings = buildingsTree.query(censusZone.envelopeInternal)
                 .map { it as BuildingData }
                 .filter { it.geometry.intersects(censusZone) }
+                .shuffled()
 
+            val populationPerBuilding = ceil(population / intersectingBuildings.count().toDouble())
             for (building in intersectingBuildings) {
-                building.population = population / intersectingBuildings.count().toDouble()
+                val populationBuilding = min(population, populationPerBuilding)
+                building.population = (building.population ?: 0.0) + populationBuilding
+                population -= populationBuilding
+                if (population <= 0) {
+                    break
+                }
             }
         }
         logger.info("Census data read!")
