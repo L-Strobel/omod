@@ -5,6 +5,47 @@ import org.apache.commons.math3.linear.CholeskyDecomposition
 import java.util.*
 
 /**
+ * Create cumulative distribution from counts for without replacement sampling.
+ * Values are counts of observations.
+ *
+ * @param counts Number of observations
+ * @return Cumulative distribution
+ */
+@Suppress("unused")
+fun createCumDistWOR(counts: IntArray): IntArray {
+    assert(counts.all { it >= 0 })
+    val cumDist = IntArray(counts.size)
+    var cumSum = 0
+    for (i in counts.indices) {
+        cumSum += counts[i]
+        cumDist[i] = cumSum
+    }
+    return cumDist
+}
+
+/**
+ * Sample from cumulative distribution without replacement
+ *
+ * @param cumDistWOR Cumulative distribution
+ * @param rng Random number generator
+ * @return Index of sample
+ */
+fun sampleCumDistWOR(cumDistWOR: IntArray, rng: Random): Int {
+    assert(cumDistWOR.all { it >= 0 })
+    val thresh = rng.nextInt(cumDistWOR.last())
+
+    var i = 0
+    while (i < cumDistWOR.size - 1) {
+        if (thresh < cumDistWOR[i]) {
+            cumDistWOR[i] -= 1
+            break
+        }
+        i++
+    }
+    return i
+}
+
+/**
  * Create cumulative distribution from weights.
  * Integer weights version.
  * @param weights Probabilistic weights
