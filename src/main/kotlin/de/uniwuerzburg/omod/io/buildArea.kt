@@ -59,6 +59,9 @@ fun buildArea(focusArea: Geometry, osmFile: File, bufferRadius: Double, transfor
                 }
             }
         }
+        if (osmBuildings.sumOf { it.population ?: 0.0 } <= 0) {
+            logger.warn("Population in model area is zero!")
+        }
         logger.info("Census data read!")
     }
 
