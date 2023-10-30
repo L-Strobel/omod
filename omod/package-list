@@ -19,10 +19,12 @@ $dokka.location:de.uniwuerzburg.omod.core//cluster/#kotlin.Double#kotlin.collect
 $dokka.location:de.uniwuerzburg.omod.core//createAndSampleCumDist/#kotlin.DoubleArray#java.util.Random/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/create-and-sample-cum-dist.html
 $dokka.location:de.uniwuerzburg.omod.core//createCumDist/#kotlin.DoubleArray/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/create-cum-dist.html
 $dokka.location:de.uniwuerzburg.omod.core//createCumDist/#kotlin.IntArray/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/create-cum-dist.html
+$dokka.location:de.uniwuerzburg.omod.core//createCumDistWOR/#kotlin.IntArray/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/create-cum-dist-w-o-r.html
 $dokka.location:de.uniwuerzburg.omod.core//fastCovers/#org.locationtech.jts.geom.Geometry#kotlin.collections.List[kotlin.Double]#org.locationtech.jts.geom.GeometryFactory#kotlin.Function1[org.locationtech.jts.geom.Envelope,kotlin.Unit]#kotlin.Function1[org.locationtech.jts.geom.Envelope,kotlin.Unit]#kotlin.Function1[org.locationtech.jts.geom.Envelope,kotlin.Unit]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/fast-covers.html
 $dokka.location:de.uniwuerzburg.omod.core//geometryFactory/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/geometry-factory.html
 $dokka.location:de.uniwuerzburg.omod.core//makeClusterGrid/#kotlin.Double#kotlin.collections.List[de.uniwuerzburg.omod.core.Building]#org.locationtech.jts.geom.GeometryFactory#de.uniwuerzburg.omod.core.CRSTransformer/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/make-cluster-grid.html
 $dokka.location:de.uniwuerzburg.omod.core//sampleCumDist/#kotlin.DoubleArray#java.util.Random/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/sample-cum-dist.html
+$dokka.location:de.uniwuerzburg.omod.core//sampleCumDistWOR/#kotlin.IntArray#java.util.Random/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/sample-cum-dist-w-o-r.html
 $dokka.location:de.uniwuerzburg.omod.core//sampleNDGaussian/#kotlin.DoubleArray#kotlin.Array[kotlin.DoubleArray]#java.util.Random/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/sample-n-d-gaussian.html
 $dokka.location:de.uniwuerzburg.omod.core//semiOpenDoubleRange/#kotlin.Double#kotlin.Double#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/semi-open-double-range.html
 $dokka.location:de.uniwuerzburg.omod.core//step/kotlin.ranges.ClosedRange[kotlin.Double]#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/step.html
@@ -283,6 +285,7 @@ $dokka.location:de.uniwuerzburg.omod.core/Omod.Companion/defaultFactory/#java.io
 $dokka.location:de.uniwuerzburg.omod.core/Omod///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/index.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/Omod/#java.io.File#java.io.File#de.uniwuerzburg.omod.routing.RoutingMode#kotlin.Boolean#java.nio.file.Path#java.io.File?#kotlin.Double#kotlin.Long?#kotlin.Double#java.io.File?#kotlin.Boolean#kotlin.Int#java.io.File?/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/-omod.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/buildings/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/buildings.html
+$dokka.location:de.uniwuerzburg.omod.core/Omod/createAgents/#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/create-agents.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/createAgents/#kotlin.Int/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/create-agents.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/findFlexibleLoc/#de.uniwuerzburg.omod.core.LocationOption#de.uniwuerzburg.omod.core.ActivityType/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/find-flexible-loc.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/getActivityChain/#de.uniwuerzburg.omod.core.MobiAgent#de.uniwuerzburg.omod.core.Weekday#de.uniwuerzburg.omod.core.ActivityType/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/get-activity-chain.html
@@ -292,7 +295,9 @@ $dokka.location:de.uniwuerzburg.omod.core/Omod/getLocations/#de.uniwuerzburg.omo
 $dokka.location:de.uniwuerzburg.omod.core/Omod/getStayTimes/#kotlin.collections.List[de.uniwuerzburg.omod.core.ActivityType]#de.uniwuerzburg.omod.core.MobiAgent#de.uniwuerzburg.omod.core.Weekday/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/get-stay-times.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/hopper/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/hopper.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/kdTree/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/kd-tree.html
+$dokka.location:de.uniwuerzburg.omod.core/Omod/run/#kotlin.Double#de.uniwuerzburg.omod.core.Weekday#kotlin.Int/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/run.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/run/#kotlin.Int#de.uniwuerzburg.omod.core.Weekday#kotlin.Int/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/run.html
+$dokka.location:de.uniwuerzburg.omod.core/Omod/run/#kotlin.collections.List[de.uniwuerzburg.omod.core.MobiAgent]#de.uniwuerzburg.omod.core.Weekday#kotlin.Int/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/run.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/transformer/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/transformer.html
 $dokka.location:de.uniwuerzburg.omod.core/PopulationDef///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-population-def/index.html
 $dokka.location:de.uniwuerzburg.omod.core/PopulationDef/PopulationDef/#kotlin.collections.Map[de.uniwuerzburg.omod.core.HomogeneousGrp,kotlin.Double]#kotlin.collections.Map[de.uniwuerzburg.omod.core.MobilityGrp,kotlin.Double]#kotlin.collections.Map[de.uniwuerzburg.omod.core.AgeGrp,kotlin.Double]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-population-def/-population-def.html
@@ -525,9 +530,16 @@ $dokka.location:de.uniwuerzburg.omod.routing/SPTResult/distance/#/PointingToDecl
 $dokka.location:de.uniwuerzburg.omod.routing/SPTResult/time/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.routing/-s-p-t-result/time.html
 $dokka.location:de.uniwuerzburg.omod////PointingToDeclaration/omod/de.uniwuerzburg.omod/index.html
 $dokka.location:de.uniwuerzburg.omod//main/#kotlin.Array[kotlin.String]/PointingToDeclaration/omod/de.uniwuerzburg.omod/main.html
+$dokka.location:de.uniwuerzburg.omod/AgentNumberDefinition///PointingToDeclaration/omod/de.uniwuerzburg.omod/-agent-number-definition/index.html
+$dokka.location:de.uniwuerzburg.omod/FixedAgentNumber///PointingToDeclaration/omod/de.uniwuerzburg.omod/-fixed-agent-number/index.html
+$dokka.location:de.uniwuerzburg.omod/FixedAgentNumber/FixedAgentNumber/#kotlin.Int/PointingToDeclaration/omod/de.uniwuerzburg.omod/-fixed-agent-number/-fixed-agent-number.html
+$dokka.location:de.uniwuerzburg.omod/FixedAgentNumber/value/#/PointingToDeclaration/omod/de.uniwuerzburg.omod/-fixed-agent-number/value.html
 $dokka.location:de.uniwuerzburg.omod/Run///PointingToDeclaration/omod/de.uniwuerzburg.omod/-run/index.html
 $dokka.location:de.uniwuerzburg.omod/Run/Run/#/PointingToDeclaration/omod/de.uniwuerzburg.omod/-run/-run.html
 $dokka.location:de.uniwuerzburg.omod/Run/run/#/PointingToDeclaration/omod/de.uniwuerzburg.omod/-run/run.html
+$dokka.location:de.uniwuerzburg.omod/ShareOfPop///PointingToDeclaration/omod/de.uniwuerzburg.omod/-share-of-pop/index.html
+$dokka.location:de.uniwuerzburg.omod/ShareOfPop/ShareOfPop/#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod/-share-of-pop/-share-of-pop.html
+$dokka.location:de.uniwuerzburg.omod/ShareOfPop/value/#/PointingToDeclaration/omod/de.uniwuerzburg.omod/-share-of-pop/value.html
 de.uniwuerzburg.omod
 de.uniwuerzburg.omod.assignment
 de.uniwuerzburg.omod.core
