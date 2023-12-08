@@ -315,7 +315,11 @@ class Omod(
             // Normalize
             val omodProb = omodWeights[odZone]!! / weightSumOMOD
             val odProb = odWeights[odZone]!! / weightSumOD
-            factors[odZone] = odProb / omodProb
+            factors[odZone] = if (omodProb <= 0) { // Can't calibrate with k-factor if OMOD prob is 0 %
+                0.0
+            } else {
+                odProb / omodProb
+            }
         }
        return Pair(activity, factors)
     }
@@ -367,10 +371,15 @@ class Omod(
             } else {
                 for (destOdZone in originOdZone.destinations.map { it.first }) {
                     // Normalize
-                    val gamgProb = omodWeights[destOdZone]!! / weightSumOMOD
+                    val omodProb = omodWeights[destOdZone]!! / weightSumOMOD
                     val odProb = odWeights[destOdZone]!! / weightSumOD
 
-                    factors[Pair(originOdZone, destOdZone)] = odProb / gamgProb
+                    // Can't calibrate with k-factor if OMOD prob is 0 %
+                    factors[Pair(originOdZone, destOdZone)] = if (omodProb <= 0) {
+                        0.0
+                    } else {
+                        odProb / omodProb
+                    }
                 }
             }
         }
