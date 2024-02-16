@@ -9,6 +9,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryCollection
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
@@ -19,6 +20,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -51,7 +54,8 @@ class Omod(
     censusFile: File? = null,
     private val populateBufferArea: Boolean = true,
     distanceCacheSize: Int = 20_000,
-    populationFile: File? = null
+    populationFile: File? = null,
+    tazFile: File? = null
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
@@ -71,6 +75,7 @@ class Omod(
     val transformer: CRSTransformer
     private val logger = LoggerFactory.getLogger(Omod::class.java)
     private var censusAvailable = false
+    private var tazFileAvailable = false
 
     init {
         // Get population distribution
@@ -110,11 +115,22 @@ class Omod(
             kdTree.insert(building.coord, building)
         }
 
-        // Create grid (used for speed up)
-        grid = makeClusterGrid(gridPrecision, buildings, geometryFactory, transformer)
+
+        // Read custom traffic assignment zones if TAZ File available
+        grid = if (tazFile != null) {
+            tazFileAvailable = true
+                logger.info("Reading TAZ File...")
+                makeClusterGridFromFile(tazFile, buildings, transformer)
+            } else {
+                // else create grid (used for speed up)
+                makeClusterGrid(gridPrecision, buildings, geometryFactory, transformer)
+            }
+
         for (cell in grid) {
             cell.buildings.forEach { it.cell = cell }
         }
+
+
 
         // Create graphhopper
         hopper = if (mode == RoutingMode.GRAPHHOPPER) {
@@ -150,6 +166,10 @@ class Omod(
         } else {
             zones = grid
         }
+
+
+
+
     }
 
     // Factories
@@ -267,7 +287,7 @@ class Omod(
         // Add OD-Zones to cells and vice versa
         for (cell in grid) {
             // OD-Zone most buildings in cell belong to
-            val odZone = cell.buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
+            val odZone = if (cell.buildings.isNotEmpty()) {cell.buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key} else {null}
 
             cell.odZone = odZone
             odZone?.aggLocs?.add(cell)
@@ -412,7 +432,7 @@ class Omod(
             nFocus
         }
 
-        // Create agent until n life in the focus area
+        // Create agent until n live in the focus area
         val agents = ArrayList<MobiAgent>(totalNAgents)
         val agentFactory = AgentFactory()
         for (id in 0 until totalNAgents) {
@@ -422,18 +442,24 @@ class Omod(
             val homeZoneID = sampleCumDist(homeCumDist, rng)
             val homeZone = zones[homeZoneID]
 
-            // Get home location
-            val home = if (homeZone is Cell) { // Home is building
-                val buildingsHomeDist = createCumDist(
-                    getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
-                )
-                homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
-            } else { // IS dummy location
-                homeZone
+
+            if (!tazFileAvailable) {
+                // Get home location as Building
+                val home = if (homeZone is Cell) { // Home is building
+                    val buildingsHomeDist = createCumDist(
+                        getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
+                    )
+                    homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
+                } else { // IS dummy location
+                    homeZone
+                }
+                agents.add(agentFactory.createAgent(home, homeZone))
+
+            } else {
+                // Get home location as TAZ
+                agents.add(agentFactory.createAgent(homeZone, homeZone))
             }
 
-            // Add the agent to the population
-            agents.add(agentFactory.createAgent(home, homeZone))
         }
         agents.shuffle(rng)
         return agents
@@ -566,16 +592,24 @@ class Omod(
             val workZoneCumDist = workDistrCache.getOrPut(homeZone) {
                 getDistr(homeZone, zones, ActivityType.WORK)
             }
+
             val workZone = zones[sampleCumDist(workZoneCumDist, rng)]
 
-            // Get work location
-            val work = if (workZone is Cell) {
-                val workBuildingsCumDist = getDistrNoOrigin(workZone.buildings, ActivityType.WORK)
-                workZone.buildings[sampleCumDist(workBuildingsCumDist, rng)]
-            } else {
-                workZone
-            }
-            return work
+           if (!tazFileAvailable) {
+                // Get work location as Building
+                val work = if (workZone is Cell) {
+                    val workBuildingsCumDist = getDistrNoOrigin(workZone.buildings, ActivityType.WORK)
+                    workZone.buildings[sampleCumDist(workBuildingsCumDist, rng)]
+                } else {
+                    workZone
+                }
+                return work
+
+           } else {
+               // Get work location as TAZ
+               return workZone
+           }
+
         }
 
        /**
@@ -588,16 +622,25 @@ class Omod(
            val schoolZoneCumDist = schoolDistrCache.getOrPut(homeZone) {
                getDistr(homeZone, zones, ActivityType.SCHOOL)
            }
+
            val schoolZone = zones[sampleCumDist(schoolZoneCumDist, rng)]
 
-           // Get school location
-           val school = if (schoolZone is Cell) {
-               val schoolBuildingsCumDist = getDistrNoOrigin(schoolZone.buildings, ActivityType.SCHOOL)
-               schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
+           if (!tazFileAvailable) {
+               // Get school location as building
+               val school = if (schoolZone is Cell) {
+                   val schoolBuildingsCumDist = getDistrNoOrigin(schoolZone.buildings, ActivityType.SCHOOL)
+                   schoolZone.buildings[sampleCumDist(schoolBuildingsCumDist, rng)]
+               } else {
+                   schoolZone
+               }
+
+               return school
+
            } else {
-               schoolZone
+               // Get school location as TAZ
+               return schoolZone
            }
-           return school
+
        }
     }
 
@@ -642,19 +685,26 @@ class Omod(
         } else {
             getDistr(zone, zones, ActivityType.OTHER)
         }
+
         val flexZone = zones[sampleCumDist(flexDist, rng)]
 
-        // Get location
-        return if (flexZone is Cell) {
-            val flexBuildingCumDist = if (type == ActivityType.SHOPPING) {
-                getDistrNoOrigin(flexZone.buildings, ActivityType.SHOPPING)
+        if(!tazFileAvailable) {
+            // Get location
+            return if (flexZone is Cell) {
+                val flexBuildingCumDist = if (type == ActivityType.SHOPPING) {
+                    getDistrNoOrigin(flexZone.buildings, ActivityType.SHOPPING)
+                } else {
+                    getDistrNoOrigin(flexZone.buildings, ActivityType.OTHER)
+                }
+                flexZone.buildings[sampleCumDist(flexBuildingCumDist, rng)]
             } else {
-                getDistrNoOrigin(flexZone.buildings, ActivityType.OTHER)
+                flexZone
             }
-            flexZone.buildings[sampleCumDist(flexBuildingCumDist, rng)]
         } else {
-            flexZone
+            return flexZone
         }
+
+
     }
 
     /**
@@ -767,8 +817,11 @@ class Omod(
         val activityChain = getActivityChain(agent, weekday, from)
         val stayTimes = getStayTimes(activityChain, agent, weekday)
         val locations = getLocations(agent, activityChain, start)
+
         return List(activityChain.size) { i ->
-            Activity(activityChain[i], stayTimes[i], locations[i], locations[i].latlonCoord.x, locations[i].latlonCoord.y)
+            Activity(activityChain[i], stayTimes[i], locations[i], locations[i].latlonCoord.x, locations[i].latlonCoord.y,
+                if(locations[i] is Cell) {(locations[i] as Cell).id} else {-1}   )
+
         }
     }
 

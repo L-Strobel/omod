@@ -176,14 +176,15 @@ class Building  (
 data class Cell (
     val id: Int,
     override val coord: Coordinate,
-    override val latlonCoord: Coordinate ,
+    override val latlonCoord: Coordinate,
     val buildings: List<Building>,
 ) : RealLocation {
     // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
     // Most common taz (Normally null here)
-    override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
+
+    override var odZone = if(buildings.isNotEmpty()) {buildings.groupingBy {it.odZone }.eachCount().maxByOrNull { it.value }!!.key} else {null}
 
     // Sum
     override val inFocusArea = buildings.any { it.inFocusArea }

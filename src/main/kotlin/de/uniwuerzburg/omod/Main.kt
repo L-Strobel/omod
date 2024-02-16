@@ -118,6 +118,11 @@ class Run : CliktCommand() {
         help="Path to file that describes the socio-demographic makeup of the population. " +
              "Must be formatted like omod/src/main/resources/Population.json."
     ).file(mustExist = true, mustBeReadable = true)
+    private val taz_file by option(
+        help="Path to file in GeoJson format that contains predefines traffic assignment zones. " +
+                "Must be formatted like omod/src/main/resources/Population.json."
+    ).file(mustExist = true, mustBeReadable = true)
+
 
     @OptIn(ExperimentalTime::class, ExperimentalSerializationApi::class)
     override fun run() {
@@ -136,7 +141,8 @@ class Run : CliktCommand() {
                 cache = true, cacheDir = cache_dir,
                 populateBufferArea = populate_buffer_area,
                 distanceCacheSize = distance_matrix_cache_size,
-                populationFile = population_file
+                populationFile = population_file,
+                tazFile = taz_file
             )
         }
         println("Loading data took: $timeRead")

@@ -113,5 +113,7 @@ data class Activity (
     val stayTime: Double?,
     val location: LocationOption,
     val lat: Double,
-    val lon: Double
+    val lon: Double,
+    val cellId: Int
 )
+

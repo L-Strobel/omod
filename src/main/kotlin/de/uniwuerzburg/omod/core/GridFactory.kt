@@ -1,5 +1,9 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.io.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
 import org.apache.commons.math3.ml.clustering.CentroidCluster
 import org.apache.commons.math3.ml.clustering.Clusterable
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
@@ -7,7 +11,10 @@ import org.apache.commons.math3.ml.distance.DistanceMeasure
 import org.apache.commons.math3.ml.distance.EuclideanDistance
 import org.apache.commons.math3.random.JDKRandomGenerator
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -174,4 +181,170 @@ fun makeClusterGrid(focusAreaPrecision: Double, buildings: List<Building>,
     }
 
     return cells.toList()
+}
+
+/**
+ *     // Get cluster in buffer area with gradually declining resolution
+ */
+fun getBufferBuildingClusters (focusAreaPrecision: Double, focusAreaBoundary: Geometry, bufferBuildings: List<Building>,
+                               geometryFactory: GeometryFactory, transformer: CRSTransformer, startID: Int) : MutableList<Cell>  {
+
+    var cells = mutableListOf<Cell>()
+
+    // Determine distance to focus area and level of detail
+    val buildingGroups = mutableMapOf<Int, MutableList<Building>>()
+    for (building in bufferBuildings) {
+        val distance = focusAreaBoundary.distance(building.point).toInt()
+
+        // Quadratic precision decrease by distance of number of clusters in 10km chunks
+        val nClusterDivisor = 2 + (distance / 10_000).toDouble().pow(2).toInt()
+
+        if(buildingGroups.containsKey(nClusterDivisor)) {
+            buildingGroups[nClusterDivisor]!!.add(building)
+        } else {
+            buildingGroups[nClusterDivisor] = mutableListOf(building)
+        }
+    }
+
+    for ((nClusterDivisor, buildingsAtDistance) in buildingGroups) {
+        cells.addAll(
+            cluster(
+                focusAreaPrecision*nClusterDivisor, buildingsAtDistance, geometryFactory, transformer, startID)
+        )
+    }
+
+    return cells
+}
+
+/**
+ * Group buildings into traffic assignment zones (cells) with predefined geometry.
+ * Calculates cell centroids using building centroids
+ * Cells outside Focus area are not considered yet...
+ *
+ * @param zoneGeometriFile geojson file with geometries of traffic assignment zones (cells)
+ * @param buildings the buildings which are assigned to cells
+ * @param transformer CRS transformer to use
+ *
+ * @return routing cells
+ */
+@Suppress("unused")
+fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transformer: CRSTransformer ) : List<Cell> {
+
+    // Get TAZs from file
+    val taz : GeoJsonNoProperties = de.uniwuerzburg.omod.io.json.decodeFromString(tazFile.readText(Charsets.UTF_8))
+    var zones = arrayOf<Geometry>()
+    if (taz is GeoJsonFeatureCollectionNoProperties) {
+        zones = taz.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
+    }
+
+    // Get Buildings in FocusArea
+    val focusAreaBuildings = buildings.filter { it.inFocusArea }
+
+    // Init empty Cells
+    val grid = mutableListOf<Cell>()
+
+    // create cell buildings arrays
+    val cellBuildingLists = MutableList(zones.size) { mutableListOf<Building>() }
+
+    // Structure for aggregated cell information
+    val simpleTAZs = mutableListOf<OutputSimpleTAZ>()
+
+    // Fill Cells with buildings
+    println("Fill Focus Area Cells")
+    for ((n, b) in focusAreaBuildings.withIndex()) {
+        for((i, z) in zones.withIndex()) {
+            if(z.contains(transformer.toLatLon( b.point ))) {
+                cellBuildingLists[i].add(b)
+                break
+            }
+        }
+    }
+    println("Aggregate Cell Information")
+
+    var id = 0
+    for ((i,z) in zones.withIndex()) {
+
+        // Calc Cell Centroid from Building Areas
+        // if cell contains buildings
+        var centroid = arrayOf(0.0,0.0)
+        if(cellBuildingLists[i].isNotEmpty()) {
+            for (b in cellBuildingLists[i]) {
+                val point: DoubleArray = b.getPoint()
+                for (j in centroid.indices) {
+                    centroid[j] += point[j]
+                }
+            }
+            for (j in centroid.indices) {
+                centroid[j] /= cellBuildingLists[i].size.toDouble()
+            }
+        // if cell is empty
+        } else {
+            centroid = arrayOf(z.centroid.x, z.centroid.y)
+        }
+
+        val featureCentroid = Coordinate(centroid[0], centroid[1])
+        val latlonCoord = transformer.toLatLon( geometryFactory.createPoint(featureCentroid) ).coordinate
+
+        // Create Cells and TAZs
+        val cell = Cell(
+            id = id,
+            coord = featureCentroid,
+            latlonCoord = latlonCoord,
+            buildings = cellBuildingLists[i]
+        )
+
+        grid.add(cell)
+        simpleTAZs.add(createSimpleTAZFromCell(cell))
+
+        id += 1
+
+    }
+
+    // Buffer Area Cells
+
+    // Get cluster in buffer area with gradually declining resolution
+    val bufferBuildings = buildings.filter { !it.inFocusArea }
+
+    // Boundary of focus area
+    val faBoundary = geometryFactory.createMultiPoint(
+        focusAreaBuildings.map { it.point }.toTypedArray()
+    ).convexHull()
+
+    var bufferCells = getBufferBuildingClusters(focusAreaPrecision = 5000.0,
+        focusAreaBoundary = faBoundary, bufferBuildings = bufferBuildings, geometryFactory = geometryFactory, transformer = transformer, startID = id)
+
+    for (c in bufferCells) {
+        grid.add(c)
+        simpleTAZs.add(createSimpleTAZFromCell(c))
+    }
+
+    // Cache Cells with Geometry and Building areas
+    if (true)
+    {
+        val cellsOut = File("output_cells.json")
+        FileOutputStream(cellsOut).use { f ->
+            Json.encodeToStream(simpleTAZs, f)
+        }
+    }
+
+    return grid.toList()
+
+}
+
+fun createSimpleTAZFromCell(cell : Cell) : OutputSimpleTAZ {
+    return OutputSimpleTAZ(
+        id = cell.id,
+
+        lat = cell.latlonCoord.x,
+        lon = cell.latlonCoord.y,
+
+        //geometry = z,
+        avgDistanceToSelf = (if(java.lang.Double.isNaN(cell.avgDistanceToSelf)) { 0.0 } else { cell.avgDistanceToSelf }) as Double,
+        population = cell.population,
+        inFocusArea = cell.inFocusArea,
+        areaResidential = cell.areaResidential,
+        areaCommercial = cell.areaCommercial,
+        areaIndustrial = cell.areaIndustrial,
+        areaOther = cell.areaOther
+    )
 }

@@ -1,7 +1,9 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.core.*
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import org.locationtech.jts.geom.Geometry
 
 /**
  * OMOD result format of on activity
@@ -12,6 +14,7 @@ data class OutputActivity (
     val stayTime: Double?,
     val lat: Double,
     val lon: Double,
+    val cellId: Int,
     val dummyLoc: Boolean,
     val inFocusArea: Boolean
 )
@@ -45,7 +48,7 @@ data class OutputEntry (
 fun formatOutput(agent: MobiAgent) : OutputEntry {
     val mobilityDemand = agent.mobilityDemand.map { dairy ->
         val activities = dairy.activities.map { activity ->
-            OutputActivity(activity.type, activity.stayTime, activity.lat, activity.lon,
+            OutputActivity(activity.type, activity.stayTime, activity.lat, activity.lon, activity.cellId,
                            activity.location is DummyLocation, activity.location.inFocusArea)
         }
         OutputDiary(dairy.day, dairy.dayType, activities)
@@ -79,4 +82,30 @@ data class OutputTDiary (
 data class OutputTEntry (
     val id: Int,
     val days: List<OutputTDiary>
+)
+
+
+
+
+/**
+ * SimpleTAZ: Cell with geometry and aggregated building areas.
+ */
+@Serializable
+data class OutputSimpleTAZ(
+    val id: Int,
+
+    val lat: Double,
+    val lon: Double,
+
+    // @Contextual
+    //val geometry: Geometry,
+
+    val avgDistanceToSelf: Double,
+    val inFocusArea: Boolean,
+    val population: Double,
+
+    val areaResidential: Double,
+    val areaCommercial: Double,
+    val areaIndustrial: Double,
+    val areaOther: Double
 )
