@@ -30,14 +30,25 @@ interface RealLocation : LocationOption {
     val nShops: Double
     val nSchools: Double
     val nUnis: Double
+    val nPlaceOfWorship: Double
+    val nCafe: Double
+    val nFastFood: Double
+    val nKinderGarten: Double
+    val nTourism: Double
     val nResidential: Double
     val nCommercial: Double
+    val nRetail: Double
     val nIndustrial: Double
 
     val areaResidential: Double
     val areaCommercial: Double
+    val areaRetail: Double
     val areaIndustrial: Double
-    val areaOther: Double
+    val areaOtherLanduse: Double
+    val areaOffice: Double
+    val areaShop: Double
+    val areaSchool: Double
+    val areaUniversity: Double
 }
 
 /**
@@ -65,6 +76,11 @@ class Building  (
     override val nOffices: Double,
     override val nSchools: Double,
     override val nUnis: Double,
+    override val nPlaceOfWorship: Double,
+    override val nCafe: Double,
+    override val nFastFood: Double,
+    override val nKinderGarten: Double,
+    override val nTourism: Double,
     override val population: Double,
 
     val point: Point,
@@ -79,21 +95,33 @@ class Building  (
     override val nResidential: Double
     override val nIndustrial: Double
     override val nCommercial: Double
+    override val nRetail: Double
 
     override val areaResidential: Double
     override val areaCommercial: Double
+    override val areaRetail: Double
     override val areaIndustrial: Double
-    override val areaOther: Double
+    override val areaOtherLanduse: Double
+    override val areaOffice: Double
+    override val areaShop: Double
+    override val areaSchool: Double
+    override val areaUniversity: Double
 
     init {
         var nResidential = 0.0
         var nIndustrial = 0.0
         var nCommercial = 0.0
+        var nRetail = 0.0
 
         var areaResidential = 0.0
         var areaCommercial = 0.0
+        var areaRetail = 0.0
         var areaIndustrial = 0.0
-        var areaOther = 0.0
+        var areaOtherLanduse = 0.0
+        var areaOffice = 0.0
+        var areaShop = 0.0
+        var areaSchool = 0.0
+        var areaUniversity = 0.0
 
         when(landuse) {
             Landuse.RESIDENTIAL -> {
@@ -104,23 +132,43 @@ class Building  (
                 nCommercial = 1.0
                 areaCommercial = area
             }
+            Landuse.RETAIL -> {
+                nRetail = 1.0
+                areaRetail = area
+            }
             Landuse.INDUSTRIAL -> {
                 nIndustrial = 1.0
                 areaIndustrial = area
             }
             else -> {
-                areaOther = area
+                areaOtherLanduse = area
             }
+        }
+
+        if (nOffices > 0) {
+            areaOffice = area
+        } else if (nShops > 0) {
+            areaShop = area
+        } else if (nSchools > 0) {
+            areaSchool = area
+        } else if (nUnis > 0) {
+            areaUniversity = area
         }
 
         this.nResidential = nResidential
         this.nIndustrial = nIndustrial
         this.nCommercial = nCommercial
+        this.nRetail = nRetail
 
         this.areaResidential = areaResidential
         this.areaCommercial = areaCommercial
+        this.areaRetail = areaRetail
         this.areaIndustrial = areaIndustrial
-        this.areaOther = areaOther
+        this.areaOtherLanduse = areaOtherLanduse
+        this.areaOffice = areaOffice
+        this.areaShop = areaShop
+        this.areaSchool = areaSchool
+        this.areaUniversity = areaUniversity
     }
 
     companion object {
@@ -152,6 +200,11 @@ class Building  (
                     nOffices = properties.number_offices,
                     nSchools = properties.number_schools,
                     nUnis = properties.number_universities,
+                    nPlaceOfWorship = properties.number_place_of_worship,
+                    nCafe = properties.number_cafe,
+                    nFastFood = properties.number_fast_food,
+                    nKinderGarten = properties.number_kindergarten,
+                    nTourism = properties.number_tourism,
                     inFocusArea = properties.in_focus_area,
                     odZone = null,
                     point = point
@@ -194,14 +247,25 @@ data class Cell (
     override val nSchools = buildings.sumOf { it.nSchools }
     override val nUnis = buildings.sumOf { it.nUnis }
     override val nShops = buildings.sumOf { it.nShops }
+    override val nPlaceOfWorship = buildings.sumOf { it.nPlaceOfWorship }
+    override val nCafe = buildings.sumOf { it.nCafe }
+    override val nFastFood = buildings.sumOf { it.nFastFood }
+    override val nKinderGarten = buildings.sumOf { it.nKinderGarten }
+    override val nTourism = buildings.sumOf { it.nTourism }
     override val nResidential = buildings.sumOf { it.nResidential }
     override val nIndustrial = buildings.sumOf { it.nIndustrial }
     override val nCommercial = buildings.sumOf { it.nCommercial }
+    override val nRetail = buildings.sumOf { it.nRetail }
 
     override val areaResidential = buildings.sumOf { it.areaResidential }
     override val areaCommercial = buildings.sumOf { it.areaCommercial }
+    override val areaRetail = buildings.sumOf { it.areaRetail }
     override val areaIndustrial = buildings.sumOf { it.areaIndustrial }
-    override val areaOther = buildings.sumOf { it.areaOther }
+    override val areaOtherLanduse = buildings.sumOf { it.areaOtherLanduse }
+    override val areaOffice = buildings.sumOf { it.areaOffice }
+    override val areaShop = buildings.sumOf { it.areaShop }
+    override val areaSchool = buildings.sumOf { it.areaSchool }
+    override val areaUniversity = buildings.sumOf { it.areaUniversity }
 
     override fun hashCode(): Int {
         return id
