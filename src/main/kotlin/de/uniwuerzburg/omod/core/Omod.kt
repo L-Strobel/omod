@@ -6,15 +6,12 @@ import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import de.uniwuerzburg.omod.routing.createGraphHopper
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
@@ -94,15 +91,16 @@ class Omod(
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
         // Load focus area
-        val focusArea = getFocusArea(areaFile)
+        val focusArea = readGeoJson(areaFile, geometryFactory)
 
         // Get CRSTransformer
         val center = focusArea.centroid
         transformer = CRSTransformer( center.coordinate.y )
 
         // Get spatial data
-        buildings = getBuildings(focusArea, geometryFactory, transformer, osmFile, cacheDir,
-                                 bufferRadius, censusFile, cache)
+        buildings = getBuildingsCachedWrapper(
+            focusArea, osmFile, bufferRadius,  transformer, geometryFactory, censusFile, cacheDir, cache
+        )
 
         // Create KD-Tree for faster access
         kdTree = KdTree()
@@ -164,59 +162,6 @@ class Omod(
         fun defaultFactory(areaFile: File, osmFile: File): Omod {
             return Omod(areaFile, osmFile)
         }
-    }
-
-    /**
-     * Parse the areaFile
-     */
-    private fun getFocusArea(areaFile: File): Geometry {
-        val areaColl: GeoJsonNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
-        return if (areaColl is GeoJsonFeatureCollectionNoProperties) {
-            geometryFactory.createGeometryCollection(
-                areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
-            ).union()
-        } else {
-            (areaColl as GeoJsonGeometryCollection).toJTS(geometryFactory).union()
-        }
-    }
-
-    /**
-     * Obtain buildings from input data
-     */
-    private fun getBuildings(focusArea: Geometry, geometryFactory: GeometryFactory, transformer: CRSTransformer,
-                     osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
-                     cache: Boolean) : List<Building> {
-        // Is cached?
-        val bound = focusArea.envelopeInternal
-        val cachePath = Paths.get(cacheDir.toString(),
-            "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
-                .toString().replace(" ", "")}" +
-                    "Buffer${bufferRadius}" +
-                    "Census${censusFile?.nameWithoutExtension ?: false}" +
-                    ".geojson"
-        )
-
-        // Check cache
-        val collection: GeoJsonFeatureCollection
-        if (cache and cachePath.toFile().exists()) {
-            collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
-        } else {
-            // Load data from geojson files and PostgreSQL database with OSM data
-            collection = buildArea(
-                focusArea = focusArea,
-                osmFile = osmFile,
-                bufferRadius = bufferRadius,
-                censusFile = censusFile,
-                transformer = transformer,
-                geometryFactory = geometryFactory
-            )
-
-            if (cache) {
-                Files.createDirectories(cachePath.parent)
-                cachePath.toFile().writeText(json.encodeToString(collection))
-            }
-        }
-        return Building.fromGeoJson(collection, geometryFactory, transformer)
     }
 
     /**
