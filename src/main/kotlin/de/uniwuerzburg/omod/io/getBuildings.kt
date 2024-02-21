@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.Building
 import de.uniwuerzburg.omod.core.CRSTransformer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -35,7 +34,7 @@ private val logger = LoggerFactory.getLogger("de.uniwuerzburg.omod.io")
 fun getBuildingsCachedWrapper(focusArea: Geometry, osmFile: File, bufferRadius: Double = 0.0,
                               transformer: CRSTransformer, geometryFactory: GeometryFactory,
                               censusFile: File?, cacheDir: Path, cache: Boolean
-) : List<Building> {
+) : GeoJsonFeatureCollection {
     // Is cached?
     val bound = focusArea.envelopeInternal
     val cachePath = Paths.get(cacheDir.toString(),
@@ -66,7 +65,7 @@ fun getBuildingsCachedWrapper(focusArea: Geometry, osmFile: File, bufferRadius: 
             cachePath.toFile().writeText(json.encodeToString(collection))
         }
     }
-    return Building.fromGeoJson(collection, geometryFactory, transformer)
+    return collection
 }
 
 /**
