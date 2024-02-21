@@ -98,9 +98,10 @@ class Omod(
         transformer = CRSTransformer( center.coordinate.y )
 
         // Get spatial data
-        buildings = getBuildingsCachedWrapper(
+        val buildingsGeoJson = getBuildingsCachedWrapper(
             focusArea, osmFile, bufferRadius,  transformer, geometryFactory, censusFile, cacheDir, cache
         )
+        buildings = Building.fromGeoJson(buildingsGeoJson, geometryFactory, transformer)
 
         // Create KD-Tree for faster access
         kdTree = KdTree()
