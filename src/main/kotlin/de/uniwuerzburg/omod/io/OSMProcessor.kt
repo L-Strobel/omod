@@ -16,8 +16,9 @@ import org.openstreetmap.osmosis.core.task.v0_6.Sink
  * Enumeration of all OSM map objects used in OMOD
  */
 enum class MapObjectType {
-    BUILDING, OFFICE, SHOP, SCHOOL, UNIVERSITY,
-    LU_RESIDENTIAL, LU_COMMERCIAL, LU_INDUSTRIAL
+    BUILDING, OFFICE, SHOP, SCHOOL, UNIVERSITY, KINDER_GARTEN,
+    FAST_FOOD, PLACE_OF_WORSHIP, RESTAURANT, CAFE, TOURISM,
+    LU_RESIDENTIAL, LU_COMMERCIAL, LU_RETAIL, LU_INDUSTRIAL
 }
 
 /**
@@ -41,7 +42,7 @@ private fun getShortLanduseDescription(tag: String): MapObjectType? {
     return when(tag) {
         "residential"       -> MapObjectType.LU_RESIDENTIAL
         "commercial"        -> MapObjectType.LU_COMMERCIAL
-        "retail"            -> MapObjectType.LU_COMMERCIAL
+        "retail"            -> MapObjectType.LU_RETAIL
         "industrial"        -> MapObjectType.LU_INDUSTRIAL
         /* Unused landuse types
         "cemetery"          -> MapObjectType.LU_RECREATIONAL
@@ -295,14 +296,18 @@ class OSMProcessor(idTrackerType: IdTrackerType,
                 "building"  -> MapObjectType.BUILDING
                 "office"    -> MapObjectType.OFFICE
                 "shop"      -> MapObjectType.SHOP
+                "tourism"   -> MapObjectType.TOURISM
                 "landuse"   -> getShortLanduseDescription(tag.value) ?: continue
                 "amenity"   -> {
-                    if (tag.value == "school") {
-                        MapObjectType.SCHOOL
-                    } else if (tag.value == "university") {
-                        MapObjectType.UNIVERSITY
-                    } else {
-                        continue
+                    when (tag.value) {
+                        "school" -> MapObjectType.SCHOOL
+                        "university" -> MapObjectType.UNIVERSITY
+                        "restaurant" -> MapObjectType.RESTAURANT
+                        "place_of_worship" -> MapObjectType.PLACE_OF_WORSHIP
+                        "cafe" -> MapObjectType.CAFE
+                        "fast_food" -> MapObjectType.FAST_FOOD
+                        "kindergarten" -> MapObjectType.KINDER_GARTEN
+                        else -> continue
                     }
                 }
                 else -> continue

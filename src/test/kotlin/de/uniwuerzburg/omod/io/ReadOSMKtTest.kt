@@ -29,6 +29,7 @@ internal class ReadOSMKtTest {
         val transformer = CRSTransformer( focusArea.centroid.coordinate.y )
         val buildings = readOSM(focusArea, osmFile, 0.0, geometryFactory, transformer)
 
+        assert(buildings.sumOf { it.nPlaceOfWorship }.toInt() == 1)
         assert(buildings.size == 5)
     }
 }
