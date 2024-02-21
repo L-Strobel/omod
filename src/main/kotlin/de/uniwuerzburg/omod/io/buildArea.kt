@@ -82,6 +82,11 @@ fun buildArea(focusArea: Geometry, osmFile: File, bufferRadius: Double, transfor
                 number_offices = it.nOffices,
                 number_schools = it.nSchools,
                 number_universities = it.nUnis,
+                number_place_of_worship = it.nPlaceOfWorship,
+                number_cafe = it.nCafe,
+                number_fast_food = it.nFastFood,
+                number_kindergarten = it.nKinderGarten,
+                number_tourism = it.nTourism,
             )
             GeoJsonFeature(geometry = geometry, properties = properties)
         }

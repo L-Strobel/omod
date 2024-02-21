@@ -184,6 +184,11 @@ data class GeoJsonBuildingProperties (
     val number_offices: Double,
     val number_schools: Double,
     val number_universities: Double,
+    val number_place_of_worship: Double,
+    val number_cafe: Double,
+    val number_fast_food: Double,
+    val number_kindergarten: Double,
+    val number_tourism: Double,
 ) : GeoJsonProperties()
 
 /**
