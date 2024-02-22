@@ -21,6 +21,7 @@ sealed interface LocationOption {
 
 /**
  * A location that is inside the area with OSM data, i.e. not a dummy location
+ *
  */
 interface RealLocation : LocationOption {
     val population: Double
@@ -35,6 +36,7 @@ interface RealLocation : LocationOption {
  * @param latlonCoord coordinates in lat-lon
  * @param odZone origin-destination zone (TAZ). Only relevant if OD-data is provided.
  * @param inFocusArea is the building inside the focus area?
+ * @param attractions Attraction value of that building for the distance choice function with id: KEY
  */
 class Building  (
     @Suppress("unused")
