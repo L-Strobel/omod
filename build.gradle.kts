@@ -24,17 +24,17 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
     implementation("org.locationtech.jts:jts-core:1.19.0")
     implementation("org.apache.commons:commons-math3:3.6.1")
-    implementation("com.github.ajalt.clikt:clikt:3.5.0")
-    implementation("com.graphhopper:graphhopper-core:6.2")
-    implementation("ch.qos.logback:logback-classic:1.4.5")
+    implementation("com.github.ajalt.clikt:clikt:3.5.2")
+    implementation("com.graphhopper:graphhopper-core:7.0")
+    implementation("ch.qos.logback:logback-classic:1.4.7")
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.3")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.3")
     implementation("org.geotools:gt-main:27.1")
     implementation("org.geotools:gt-epsg-hsql:27.1")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 }
 
 tasks.test {
