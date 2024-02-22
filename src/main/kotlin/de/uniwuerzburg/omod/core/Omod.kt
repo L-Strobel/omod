@@ -101,7 +101,7 @@ class Omod(
         val buildingsGeoJson = getBuildingsCachedWrapper(
             focusArea, osmFile, bufferRadius,  transformer, geometryFactory, censusFile, cacheDir, cache
         )
-        buildings = Building.fromGeoJson(buildingsGeoJson, geometryFactory, transformer)
+        buildings = Building.fromGeoJson(buildingsGeoJson, geometryFactory, transformer, locChoiceWeightFuns)
 
         // Create KD-Tree for faster access
         kdTree = KdTree()

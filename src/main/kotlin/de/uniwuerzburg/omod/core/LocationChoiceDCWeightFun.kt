@@ -1,5 +1,6 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -34,6 +35,18 @@ sealed class LocationChoiceDCWeightFun {
     abstract val coeffCommercialUnits: Double
     abstract val coeffRetailUnits: Double
     abstract val coeffIndustrialUnits: Double
+
+    @Transient
+    private var id: Int? = null
+
+    fun getUniqueID() : Int {
+        id?.let {
+            return it
+        } ?: run {
+            id = hashCode()
+            return id!!
+        }
+    }
 
     /**
      * Calculates the natural logarithm of the deterrence function given the distance from the origin.
@@ -70,31 +83,51 @@ sealed class LocationChoiceDCWeightFun {
      * @param destination The destination the weight will be calculated for
      * @return probabilistic weight
      */
-    open fun calcForNoOrigin(destination: RealLocation) : Double {
-        return 1 +
-               coeffResidentialArea * destination.areaResidential +
-               coeffCommercialArea * destination.areaCommercial +
-               coeffRetailArea * destination.areaRetail +
-               coeffIndustrialArea * destination.areaIndustrial +
-               coeffOfficeArea * destination.areaOffice +
-               coeffShopArea * destination.areaShop +
-               coeffSchoolArea * destination.areaSchool +
-               coeffUniversityArea * destination.areaUniversity +
-               coeffOtherArea * destination.areaOtherLanduse +
-               coeffOfficeUnits * destination.nOffices +
-               coeffShopUnits * destination.nShops +
-               coeffSchoolUnits * destination.nSchools +
-               coeffUniUnits * destination.nUnis +
-               coeffPlaceOfWorshipUnits * destination.nPlaceOfWorship +
-               coeffCafeUnits * destination.nCafe +
-               coeffFastFoodUnits * destination.nFastFood +
-               coeffKinderGartenUnits * destination.nKinderGarten +
-               coeffTourismUnits * destination.nTourism +
-               coeffBuildingUnits * destination.nBuilding +
-               coeffResidentialUnits * destination.nResidential +
-               coeffCommercialUnits * destination.nCommercial +
-               coeffRetailUnits * destination.nRetail +
-               coeffIndustrialUnits * destination.nIndustrial
+    fun calcForNoOrigin(destination: RealLocation) : Double {
+        return destination.attractions[id]!!
+    }
+
+    open fun calcAttraction(properties: GeoJsonBuildingProperties) : Double {
+        val area = properties.area
+        val areaOffice = if (properties.number_offices > 0) area else 0.0
+        val areaShop = if (properties.number_shops > 0) area else 0.0
+        val areaSchool = if (properties.number_schools > 0) area else 0.0
+        val areaUniversity = if (properties.number_universities > 0) area else 0.0
+
+        val attractionLanduse = when( properties.landuse) {
+            Landuse.RESIDENTIAL -> {
+                coeffResidentialArea * area + coeffResidentialUnits * 1.0
+            }
+            Landuse.COMMERCIAL -> {
+                coeffCommercialArea * area + coeffCommercialUnits * 1.0
+            }
+            Landuse.RETAIL -> {
+                coeffRetailArea * area + coeffRetailUnits * 1.0
+            }
+            Landuse.INDUSTRIAL -> {
+                coeffIndustrialArea * area + coeffIndustrialUnits * 1.0
+            }
+            else -> {
+                coeffOtherArea * area
+            }
+        }
+
+        return 1.0 +
+                attractionLanduse +
+                coeffOfficeArea * areaOffice +
+                coeffShopArea * areaShop +
+                coeffSchoolArea * areaSchool +
+                coeffUniversityArea * areaUniversity +
+                coeffOfficeUnits * properties.number_offices +
+                coeffShopUnits * properties.number_shops +
+                coeffSchoolUnits * properties.number_schools +
+                coeffUniUnits * properties.number_universities +
+                coeffPlaceOfWorshipUnits *  properties.number_place_of_worship +
+                coeffCafeUnits * properties.number_cafe +
+                coeffFastFoodUnits * properties.number_fast_food +
+                coeffKinderGartenUnits * properties.number_kindergarten +
+                coeffTourismUnits * properties.number_tourism +
+                coeffBuildingUnits * 1
     }
 }
 
@@ -127,8 +160,8 @@ object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffRetailUnits: Double get() { throw NotImplementedError() }
     override val coeffIndustrialUnits: Double get() { throw NotImplementedError() }
 
-    override fun calcForNoOrigin(destination: RealLocation): Double {
-        return destination.population
+    override fun calcAttraction(properties: GeoJsonBuildingProperties): Double {
+        return properties.population ?: 0.0
     }
 
     override fun deterrenceFunction(distance: Double): Double {
