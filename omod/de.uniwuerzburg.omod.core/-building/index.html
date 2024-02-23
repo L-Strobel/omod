@@ -40,7 +40,7 @@
             </a>
     </div>
     <div>
-1.7.1    </div>
+1.8.0    </div>
     <div class="pull-right d-flex">
         <div class="filter-section" id="filter-section">
                 <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":dokkaHtml/main">jvm</button>
@@ -58,24 +58,24 @@
   <div class="breadcrumbs"><a href="../../../index.html">omod</a><span class="delimiter">/</span><a href="../index.html">de.uniwuerzburg.omod.core</a><span class="delimiter">/</span><span class="current">Building</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Building</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">Building</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>osmID<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>coord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>latlonCoord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>odZone<span class="token operator">: </span><a href="../-o-d-zone/index.html">ODZone</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>inFocusArea<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nShops<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nOffices<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nSchools<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nUnis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>population<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>point<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Point///PointingToDeclaration/">Point</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>area<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>landuse<span class="token operator">: </span><a href="../-landuse/index.html">Landuse</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>cell<span class="token operator">: </span><a href="../-cell/index.html">Cell</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span> : <a href="../-real-location/index.html">RealLocation</a>, <span data-unresolved-link="org.apache.commons.math3.ml.clustering/Clusterable///PointingToDeclaration/">Clusterable</span></div><p class="paragraph">A building. Can be the location of an activity.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>osm</span><wbr></wbr><span><span>ID</span></span></u></div></span></div><div><div class="title"><p class="paragraph">OpenStreetMap ID</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>coord</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Coordinates of centroid in model CRS (Distance unit: meters)</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>latlon</span><wbr></wbr><span><span>Coord</span></span></u></div></span></div><div><div class="title"><p class="paragraph">coordinates in lat-lon</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>od</span><wbr></wbr><span><span>Zone</span></span></u></div></span></div><div><div class="title"><p class="paragraph">origin-destination zone (TAZ). Only relevant if OD-data is provided.</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>in</span><wbr></wbr><span>Focus</span><wbr></wbr><span><span>Area</span></span></u></div></span></div><div><div class="title"><p class="paragraph">is the building inside the focus area?</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>area</span></span></u></div></span></div><div><div class="title"><p class="paragraph">area of the building in meters</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>population</span></span></u></div></span></div><div><div class="title"><p class="paragraph">population of building. Can be non-integer.</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>landuse</span></span></u></div></span></div><div><div class="title"><p class="paragraph">OSM-Landuse of the building</p></div></div></div></div></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">Building</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>osmID<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>coord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>latlonCoord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>odZone<span class="token operator">: </span><a href="../-o-d-zone/index.html">ODZone</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>inFocusArea<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>attractions<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>population<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>point<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Point///PointingToDeclaration/">Point</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>cell<span class="token operator">: </span><a href="../-cell/index.html">Cell</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span> : <a href="../-real-location/index.html">RealLocation</a>, <span data-unresolved-link="org.apache.commons.math3.ml.clustering/Clusterable///PointingToDeclaration/">Clusterable</span></div><p class="paragraph">A building. Can be the location of an activity.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>osm</span><wbr></wbr><span><span>ID</span></span></u></div></span></div><div><div class="title"><p class="paragraph">OpenStreetMap ID</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>coord</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Coordinates of centroid in model CRS (Distance unit: meters)</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>latlon</span><wbr></wbr><span><span>Coord</span></span></u></div></span></div><div><div class="title"><p class="paragraph">coordinates in lat-lon</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>od</span><wbr></wbr><span><span>Zone</span></span></u></div></span></div><div><div class="title"><p class="paragraph">origin-destination zone (TAZ). Only relevant if OD-data is provided.</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>in</span><wbr></wbr><span>Focus</span><wbr></wbr><span><span>Area</span></span></u></div></span></div><div><div class="title"><p class="paragraph">is the building inside the focus area?</p></div></div></div></div><div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>attractions</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Attraction value of that building for the distance choice function with id: KEY</p></div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,FUNCTION,PROPERTY">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="-1010782525%2FConstructors%2F769193423" anchor-label="Building" id="-1010782525%2FConstructors%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+        <div class="table"><a data-name="-1398155482%2FConstructors%2F769193423" anchor-label="Building" id="-1398155482%2FConstructors%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
           <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-building.html"><span><span>Building</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1010782525%2FConstructors%2F769193423"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1398155482%2FConstructors%2F769193423"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">osmID<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">coord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter ">latlonCoord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter ">odZone<span class="token operator">: </span><a href="../-o-d-zone/index.html">ODZone</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">inFocusArea<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter ">nShops<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">nOffices<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">nSchools<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">nUnis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">population<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">point<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Point///PointingToDeclaration/">Point</span><span class="token punctuation">, </span></span><span class="parameter ">area<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">landuse<span class="token operator">: </span><a href="../-landuse/index.html">Landuse</a><span class="token punctuation">, </span></span><span class="parameter ">cell<span class="token operator">: </span><a href="../-cell/index.html">Cell</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">osmID<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">coord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter ">latlonCoord<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span><span class="token punctuation">, </span></span><span class="parameter ">odZone<span class="token operator">: </span><a href="../-o-d-zone/index.html">ODZone</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">inFocusArea<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter ">attractions<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">population<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter ">point<span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Point///PointingToDeclaration/">Point</span><span class="token punctuation">, </span></span><span class="parameter ">cell<span class="token operator">: </span><a href="../-cell/index.html">Cell</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -122,77 +122,17 @@
       </div>
       <div data-togglable="PROPERTY">
         <h2 class="">Properties</h2>
-        <div class="table"><a data-name="-160842172%2FProperties%2F769193423" anchor-label="area" id="-160842172%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+        <div class="table"><a data-name="429673053%2FProperties%2F769193423" anchor-label="attractions" id="429673053%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
           <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="area.html"><span><span>area</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-160842172%2FProperties%2F769193423"></span>
+                  <div><a href="attractions.html"><span><span>attractions</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="429673053%2FProperties%2F769193423"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="area.html">area</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1867855194%2FProperties%2F769193423" anchor-label="areaCommercial" id="1867855194%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="area-commercial.html"><span>area</span><wbr></wbr><span><span>Commercial</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1867855194%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="area-commercial.html">areaCommercial</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="33095947%2FProperties%2F769193423" anchor-label="areaIndustrial" id="33095947%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="area-industrial.html"><span>area</span><wbr></wbr><span><span>Industrial</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="33095947%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="area-industrial.html">areaIndustrial</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1326326950%2FProperties%2F769193423" anchor-label="areaOther" id="1326326950%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="area-other.html"><span>area</span><wbr></wbr><span><span>Other</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1326326950%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="area-other.html">areaOther</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1413224562%2FProperties%2F769193423" anchor-label="areaResidential" id="1413224562%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="area-residential.html"><span>area</span><wbr></wbr><span><span>Residential</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1413224562%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="area-residential.html">areaResidential</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="attractions.html">attractions</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token operator">&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -257,21 +197,6 @@
               </div>
             </div>
           </div>
-<a data-name="979665037%2FProperties%2F769193423" anchor-label="landuse" id="979665037%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="landuse.html"><span><span>landuse</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="979665037%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="landuse.html">landuse</a><span class="token operator">: </span><a href="../-landuse/index.html">Landuse</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
 <a data-name="2083394016%2FProperties%2F769193423" anchor-label="latlonCoord" id="2083394016%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
           <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
             <div class="main-subrow keyValue ">
@@ -283,126 +208,6 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="latlon-coord.html">latlonCoord</a><span class="token operator">: </span><span data-unresolved-link="org.locationtech.jts.geom/Coordinate///PointingToDeclaration/">Coordinate</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1516719815%2FProperties%2F769193423" anchor-label="nBuilding" id="1516719815%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-building.html"><span>n</span><wbr></wbr><span><span>Building</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1516719815%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-building.html">nBuilding</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token operator"> = </span><span class="token constant">1.0</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1570339983%2FProperties%2F769193423" anchor-label="nCommercial" id="-1570339983%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-commercial.html"><span>n</span><wbr></wbr><span><span>Commercial</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1570339983%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-commercial.html">nCommercial</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="889868066%2FProperties%2F769193423" anchor-label="nIndustrial" id="889868066%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-industrial.html"><span>n</span><wbr></wbr><span><span>Industrial</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="889868066%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-industrial.html">nIndustrial</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="890608488%2FProperties%2F769193423" anchor-label="nOffices" id="890608488%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-offices.html"><span>n</span><wbr></wbr><span><span>Offices</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="890608488%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-offices.html">nOffices</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-2091610821%2FProperties%2F769193423" anchor-label="nResidential" id="-2091610821%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-residential.html"><span>n</span><wbr></wbr><span><span>Residential</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2091610821%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-residential.html">nResidential</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-346504672%2FProperties%2F769193423" anchor-label="nSchools" id="-346504672%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-schools.html"><span>n</span><wbr></wbr><span><span>Schools</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-346504672%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-schools.html">nSchools</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1532208222%2FProperties%2F769193423" anchor-label="nShops" id="-1532208222%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-shops.html"><span>n</span><wbr></wbr><span><span>Shops</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1532208222%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-shops.html">nShops</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-792539688%2FProperties%2F769193423" anchor-label="nUnis" id="-792539688%2FProperties%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="n-unis.html"><span>n</span><wbr></wbr><span><span>Unis</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-792539688%2FProperties%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="n-unis.html">nUnis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div></div></div>
                 </div>
               </div>
             </div>
