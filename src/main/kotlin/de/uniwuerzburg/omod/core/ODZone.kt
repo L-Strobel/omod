@@ -62,7 +62,8 @@ data class ODZone (
             for (entry in geoJson.features) {
                 val properties = entry.properties as GeoJsonODProperties
                 val originZone = nameMapping[properties.origin]!!
-                originZone.destinations = properties.destinations.map { Pair(nameMapping[it.key]!!, it.value) }
+                originZone.destinations = properties.destinations
+                    .filter { it.value > 0 }.map {Pair(nameMapping[it.key]!!, it.value)}
             }
 
             // Check if OD is valid

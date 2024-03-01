@@ -242,7 +242,11 @@ class Omod(
             // Calculate omod origin probability. For speed only on zone level.
             omodWeights[odZone] = odZone.aggLocs.sumOf { omodProbs[it]!! }
             // Calculate OD-Matrix origin probability.
-            odWeights[odZone] = odZone.destinations.filter { it.first.inFocusArea }.sumOf { it.second }
+            odWeights[odZone] = if (odZone.inFocusArea) {
+                odZone.destinations.sumOf { it.second }
+            } else {
+                odZone.destinations.filter { it.first.inFocusArea }.sumOf { it.second }
+            }
         }
 
         val weightSumOMOD = omodWeights.values.sum()
@@ -285,25 +289,31 @@ class Omod(
         require(activities == Pair(ActivityType.HOME, ActivityType.WORK)) {
             "Only OD-Matrices with Activities HOME->WORK are currently supported"
         }
-        
+
         val factors = mutableMapOf<Pair<ODZone, ODZone>, Double>()
         val priorProbs = calcOMODProbsAsMap(activities.first)
 
         for (originOdZone in odZones) {
-            val omodWeights = mutableMapOf<ODZone, Double>()
-            val odWeights = mutableMapOf<ODZone, Double>()
-            for ((destOdZone, transitions) in originOdZone.destinations) {
-                // Calculate omod transition probability. For speed only on zone level.
-                var omodWeight = 0.0
-                for (origin in originOdZone.aggLocs) {
-                    val prior = priorProbs[origin]!!
-                    if (prior == 0.0) { continue }
-                    omodWeight +=  prior * getWeights(origin, destOdZone.aggLocs, activities.second).sum()
-                 }
-                omodWeights[destOdZone] = omodWeight
+            val omodWeights = odZones.associateWith { 0.0 } as MutableMap<ODZone, Double>
+            val odWeights = odZones.associateWith { 0.0 } as MutableMap<ODZone, Double>
 
-                // Calculate OD-Matrix origin probability.
-                odWeights[destOdZone] = if (destOdZone.inFocusArea || originOdZone.inFocusArea) transitions else 0.0
+            // Calculate omod transition probability. For speed only on zone level.
+            for (origin in originOdZone.aggLocs) {
+                val pPriorLoc = priorProbs[origin]!!
+                if (pPriorLoc == 0.0) { continue }
+                val wDependentZone = getWeights(origin, zones, activities.second).sum()
+
+                for (destOdZone in odZones) {
+                    val wDependentLoc = getWeights(origin, destOdZone.aggLocs, activities.second).sum()
+                    omodWeights[destOdZone] = omodWeights[destOdZone]!! + (pPriorLoc * wDependentLoc / wDependentZone)
+                }
+            }
+
+            // Calculate OD-Matrix origin probability.
+            for ((destOdZone, transitions) in originOdZone.destinations) {
+                if (destOdZone.inFocusArea || originOdZone.inFocusArea) {
+                    odWeights[destOdZone] = transitions
+                }
             }
 
             val weightSumOMOD = omodWeights.values.sum()
@@ -315,7 +325,7 @@ class Omod(
                     factors[Pair(originOdZone, destOdZone)] = 1.0
                 }
             } else {
-                for (destOdZone in originOdZone.destinations.map { it.first }) {
+                for (destOdZone in odZones) {
                     // Normalize
                     val omodProb = omodWeights[destOdZone]!! / weightSumOMOD
                     val odProb = odWeights[destOdZone]!! / weightSumOD
@@ -806,11 +816,11 @@ class Omod(
 
         // Work distribution
         val workProbs = DoubleArray(zones.size) { 0.0 }
-        for (zone in zones) {
+        for ((i, zone) in zones.withIndex()) {
             val workWeights = getWeights(zone, zones, ActivityType.WORK)
             val totalWorkWeight = workWeights.sum()
-            for (i in zones.indices) {
-                workProbs[i] += homeProbs[i] * workWeights[i] / totalWorkWeight
+            for (j in zones.indices) {
+                workProbs[j] += homeProbs[i] * workWeights[j] / totalWorkWeight
             }
         }
         return workProbs
