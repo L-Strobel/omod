@@ -14,7 +14,7 @@ import java.io.File
  * GeoJSON Geometry
  */
 @Serializable
-sealed class GeoJsonGeom {
+sealed class GeoJsonGeom : GeoJsonNoProperties {
     /**
      * Transform the GeoJSON geometry to JTS geometry
      * @param factory Geometry factory
@@ -145,7 +145,7 @@ data class GeoJsonMultiPoly(
 @Suppress("unused")
 data class GeoJsonGeometryCollection(
     val geometries: List<GeoJsonGeom>
-) : GeoJsonGeom(), GeoJsonNoProperties {
+) : GeoJsonGeom() {
     override fun toJTS(factory: GeometryFactory): Geometry {
         val geoms = geometries.map { geom ->
             geom.toJTS(factory)
@@ -284,6 +284,6 @@ fun readGeoJson(areaFile: File, geometryFactory: GeometryFactory): Geometry {
             areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
         ).union()
     } else {
-        (areaColl as GeoJsonGeometryCollection).toJTS(geometryFactory).union()
+        (areaColl as GeoJsonGeom).toJTS(geometryFactory).union()
     }
 }
