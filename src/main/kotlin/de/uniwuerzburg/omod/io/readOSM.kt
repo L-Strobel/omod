@@ -25,6 +25,12 @@ data class BuildingData (
     var nOffices: Double = 0.0
     var nSchools: Double = 0.0
     var nUnis: Double = 0.0
+    var nRestaurant: Double = 0.0
+    var nPlaceOfWorship: Double = 0.0
+    var nCafe: Double = 0.0
+    var nFastFood: Double = 0.0
+    var nKinderGarten: Double = 0.0
+    var nTourism: Double = 0.0
     var inFocusArea: Boolean = false
     var population: Double? = null
 }
@@ -86,8 +92,15 @@ fun readOSM (focusArea: Geometry, osmFile: File, bufferRadius: Double,
                 MapObjectType.OFFICE            -> building.nOffices += 1
                 MapObjectType.SCHOOL            -> building.nSchools += 1
                 MapObjectType.UNIVERSITY        -> building.nUnis += 1
+                MapObjectType.RESTAURANT        -> building.nRestaurant += 1
+                MapObjectType.PLACE_OF_WORSHIP  -> building.nPlaceOfWorship += 1
+                MapObjectType.CAFE              -> building.nCafe += 1
+                MapObjectType.FAST_FOOD         -> building.nFastFood += 1
+                MapObjectType.KINDER_GARTEN     -> building.nKinderGarten += 1
+                MapObjectType.TOURISM           -> building.nTourism += 1
                 MapObjectType.LU_RESIDENTIAL    -> building.landuse = Landuse.RESIDENTIAL
                 MapObjectType.LU_COMMERCIAL     -> building.landuse = Landuse.COMMERCIAL
+                MapObjectType.LU_RETAIL         -> building.landuse = Landuse.RETAIL
                 MapObjectType.LU_INDUSTRIAL     -> building.landuse = Landuse.INDUSTRIAL
                 else -> { continue }
             }

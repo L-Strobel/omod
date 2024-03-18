@@ -4,9 +4,11 @@ import de.uniwuerzburg.omod.core.ActivityType
 import de.uniwuerzburg.omod.core.Landuse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import java.io.File
 
 /**
  * GeoJSON Geometry
@@ -184,6 +186,11 @@ data class GeoJsonBuildingProperties (
     val number_offices: Double,
     val number_schools: Double,
     val number_universities: Double,
+    val number_place_of_worship: Double,
+    val number_cafe: Double,
+    val number_fast_food: Double,
+    val number_kindergarten: Double,
+    val number_tourism: Double,
 ) : GeoJsonProperties()
 
 /**
@@ -265,3 +272,18 @@ data class GeoJsonFeatureNoProperties (
 data class GeoJsonFeatureCollectionNoProperties (
     val features: List<GeoJsonFeatureNoProperties>
 ) : GeoJsonNoProperties
+
+/**
+ * Reads GeoJson file. Will only use geo-information.
+ * Throws away property entries.
+ */
+fun readGeoJson(areaFile: File, geometryFactory: GeometryFactory): Geometry {
+    val areaColl: GeoJsonNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
+    return if (areaColl is GeoJsonFeatureCollectionNoProperties) {
+        geometryFactory.createGeometryCollection(
+            areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
+        ).union()
+    } else {
+        (areaColl as GeoJsonGeometryCollection).toJTS(geometryFactory).union()
+    }
+}

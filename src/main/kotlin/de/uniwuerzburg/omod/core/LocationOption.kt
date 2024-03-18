@@ -21,23 +21,11 @@ sealed interface LocationOption {
 
 /**
  * A location that is inside the area with OSM data, i.e. not a dummy location
+ *
  */
 interface RealLocation : LocationOption {
     val population: Double
-
-    val nBuilding: Double
-    val nOffices: Double
-    val nShops: Double
-    val nSchools: Double
-    val nUnis: Double
-    val nResidential: Double
-    val nCommercial: Double
-    val nIndustrial: Double
-
-    val areaResidential: Double
-    val areaCommercial: Double
-    val areaIndustrial: Double
-    val areaOther: Double
+    val attractions: Map<Int, Double>
 }
 
 /**
@@ -48,80 +36,21 @@ interface RealLocation : LocationOption {
  * @param latlonCoord coordinates in lat-lon
  * @param odZone origin-destination zone (TAZ). Only relevant if OD-data is provided.
  * @param inFocusArea is the building inside the focus area?
- * @param area area of the building in meters
- * @param population population of building. Can be non-integer.
- * @param landuse OSM-Landuse of the building
+ * @param attractions Attraction value of that building for the distance choice function with id: KEY
  */
 class Building  (
     @Suppress("unused")
     val osmID: Long,
-
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
     override var odZone: ODZone?,
     override val inFocusArea: Boolean,
-
-    override val nShops: Double,
-    override val nOffices: Double,
-    override val nSchools: Double,
-    override val nUnis: Double,
+    override val attractions: Map<Int, Double>,
     override val population: Double,
-
     val point: Point,
-    val area: Double,
-    val landuse: Landuse,
-
     var cell: Cell? = null
 ) : RealLocation, Clusterable {
     override val avgDistanceToSelf = 0.0
-
-    override val nBuilding = 1.0
-    override val nResidential: Double
-    override val nIndustrial: Double
-    override val nCommercial: Double
-
-    override val areaResidential: Double
-    override val areaCommercial: Double
-    override val areaIndustrial: Double
-    override val areaOther: Double
-
-    init {
-        var nResidential = 0.0
-        var nIndustrial = 0.0
-        var nCommercial = 0.0
-
-        var areaResidential = 0.0
-        var areaCommercial = 0.0
-        var areaIndustrial = 0.0
-        var areaOther = 0.0
-
-        when(landuse) {
-            Landuse.RESIDENTIAL -> {
-                nResidential += 1.0
-                areaResidential = area
-            }
-            Landuse.COMMERCIAL -> {
-                nCommercial = 1.0
-                areaCommercial = area
-            }
-            Landuse.INDUSTRIAL -> {
-                nIndustrial = 1.0
-                areaIndustrial = area
-            }
-            else -> {
-                areaOther = area
-            }
-        }
-
-        this.nResidential = nResidential
-        this.nIndustrial = nIndustrial
-        this.nCommercial = nCommercial
-
-        this.areaResidential = areaResidential
-        this.areaCommercial = areaCommercial
-        this.areaIndustrial = areaIndustrial
-        this.areaOther = areaOther
-    }
 
     companion object {
         /**
@@ -132,7 +61,8 @@ class Building  (
          * @param transformer Used for CRS conversion
          */
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
-                        transformer: CRSTransformer): List<Building> {
+                        transformer: CRSTransformer,
+                        dcFunctions: Map<ActivityType, LocationChoiceDCWeightFun>): List<Building> {
             return collection.features.map {
                 require(it.properties is GeoJsonBuildingProperties) {
                     "Geo json contains features that are not buildings!"
@@ -141,18 +71,15 @@ class Building  (
                 val properties = it.properties
                 val point = transformer.toModelCRS( it.geometry.toJTS(geometryFactory) ).centroid
 
+                val attractions = dcFunctions.map { (_, v) -> v.getUniqueID() to v.calcAttraction(properties)}.toMap()
+
                 Building(
                     osmID = properties.osm_id,
                     coord = point.coordinate,
                     latlonCoord = transformer.toLatLon(point).coordinate,
-                    area = properties.area,
-                    population = properties.population ?: 0.0,
-                    landuse = properties.landuse,
-                    nShops = properties.number_shops,
-                    nOffices = properties.number_offices,
-                    nSchools = properties.number_schools,
-                    nUnis = properties.number_universities,
                     inFocusArea = properties.in_focus_area,
+                    attractions = attractions,
+                    population = properties.population ?: 0.0,
                     odZone = null,
                     point = point
                 )
@@ -186,29 +113,19 @@ data class Cell (
 
     override var odZone = if(buildings.isNotEmpty()) {buildings.groupingBy {it.odZone }.eachCount().maxByOrNull { it.value }!!.key} else {null}
 
-    // Sum
     override val inFocusArea = buildings.any { it.inFocusArea }
+
+    override val attractions = buildings.map { it.attractions }
+        .flatMap { map -> map.entries }
+        .groupBy ({ it.key },{ it.value })
+        .mapValues { it.value.sum() }
+
     override val population = buildings.sumOf { it.population }
-
-    override val nBuilding = buildings.sumOf { it.nBuilding }
-    override val nOffices = buildings.sumOf { it.nOffices }
-    override val nSchools = buildings.sumOf { it.nSchools }
-    override val nUnis = buildings.sumOf { it.nUnis }
-    override val nShops = buildings.sumOf { it.nShops }
-    override val nResidential = buildings.sumOf { it.nResidential }
-    override val nIndustrial = buildings.sumOf { it.nIndustrial }
-    override val nCommercial = buildings.sumOf { it.nCommercial }
-
-    override val areaResidential = buildings.sumOf { it.areaResidential }
-    override val areaCommercial = buildings.sumOf { it.areaCommercial }
-    override val areaIndustrial = buildings.sumOf { it.areaIndustrial }
-    override val areaOther = buildings.sumOf { it.areaOther }
 
     override fun hashCode(): Int {
         return id
     }
 
-    // Auto generated
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -221,13 +138,9 @@ data class Cell (
         if (buildings != other.buildings) return false
         if (avgDistanceToSelf != other.avgDistanceToSelf) return false
         if (odZone != other.odZone) return false
-        if (nBuilding != other.nBuilding) return false
-        if (population != other.population) return false
-        if (nOffices != other.nOffices) return false
-        if (nSchools != other.nSchools) return false
-        if (nUnis != other.nUnis) return false
-        if (nShops != other.nShops) return false
         if (inFocusArea != other.inFocusArea) return false
+        if (attractions != other.attractions) return false
+        if (population != other.population) return false
 
         return true
     }

@@ -1,5 +1,6 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -13,16 +14,39 @@ import kotlin.math.ln
 sealed class LocationChoiceDCWeightFun {
     abstract val coeffResidentialArea: Double
     abstract val coeffCommercialArea: Double
+    abstract val coeffRetailArea: Double
     abstract val coeffIndustrialArea: Double
+    abstract val coeffOfficeArea: Double
+    abstract val coeffShopArea: Double
+    abstract val coeffSchoolArea: Double
+    abstract val coeffUniversityArea: Double
     abstract val coeffOtherArea: Double
     abstract val coeffOfficeUnits: Double
     abstract val coeffShopUnits: Double
     abstract val coeffSchoolUnits: Double
     abstract val coeffUniUnits: Double
+    abstract val coeffPlaceOfWorshipUnits: Double
+    abstract val coeffCafeUnits: Double
+    abstract val coeffFastFoodUnits: Double
+    abstract val coeffKinderGartenUnits: Double
+    abstract val coeffTourismUnits: Double
     abstract val coeffBuildingUnits: Double
     abstract val coeffResidentialUnits: Double
     abstract val coeffCommercialUnits: Double
+    abstract val coeffRetailUnits: Double
     abstract val coeffIndustrialUnits: Double
+
+    @Transient
+    private var id: Int? = null
+
+    fun getUniqueID() : Int {
+        id?.let {
+            return it
+        } ?: run {
+            id = hashCode()
+            return id!!
+        }
+    }
 
     /**
      * Calculates the natural logarithm of the deterrence function given the distance from the origin.
@@ -59,19 +83,51 @@ sealed class LocationChoiceDCWeightFun {
      * @param destination The destination the weight will be calculated for
      * @return probabilistic weight
      */
-    open fun calcForNoOrigin(destination: RealLocation) : Double {
-        return 1 + coeffResidentialArea * destination.areaResidential +
-               coeffCommercialArea * destination.areaCommercial +
-               coeffIndustrialArea * destination.areaIndustrial +
-               coeffOtherArea * destination.areaOther +
-               coeffOfficeUnits * destination.nOffices +
-               coeffShopUnits * destination.nShops +
-               coeffSchoolUnits * destination.nSchools +
-               coeffUniUnits * destination.nUnis +
-               coeffBuildingUnits * destination.nBuilding +
-               coeffResidentialUnits * destination.nResidential +
-               coeffCommercialUnits * destination.nCommercial +
-               coeffIndustrialUnits * destination.nIndustrial
+    fun calcForNoOrigin(destination: RealLocation) : Double {
+        return destination.attractions[id]!!
+    }
+
+    open fun calcAttraction(properties: GeoJsonBuildingProperties) : Double {
+        val area = properties.area
+        val areaOffice = if (properties.number_offices > 0) area else 0.0
+        val areaShop = if (properties.number_shops > 0) area else 0.0
+        val areaSchool = if (properties.number_schools > 0) area else 0.0
+        val areaUniversity = if (properties.number_universities > 0) area else 0.0
+
+        val attractionLanduse = when( properties.landuse) {
+            Landuse.RESIDENTIAL -> {
+                coeffResidentialArea * area + coeffResidentialUnits * 1.0
+            }
+            Landuse.COMMERCIAL -> {
+                coeffCommercialArea * area + coeffCommercialUnits * 1.0
+            }
+            Landuse.RETAIL -> {
+                coeffRetailArea * area + coeffRetailUnits * 1.0
+            }
+            Landuse.INDUSTRIAL -> {
+                coeffIndustrialArea * area + coeffIndustrialUnits * 1.0
+            }
+            else -> {
+                coeffOtherArea * area
+            }
+        }
+
+        return 1.0 +
+                attractionLanduse +
+                coeffOfficeArea * areaOffice +
+                coeffShopArea * areaShop +
+                coeffSchoolArea * areaSchool +
+                coeffUniversityArea * areaUniversity +
+                coeffOfficeUnits * properties.number_offices +
+                coeffShopUnits * properties.number_shops +
+                coeffSchoolUnits * properties.number_schools +
+                coeffUniUnits * properties.number_universities +
+                coeffPlaceOfWorshipUnits *  properties.number_place_of_worship +
+                coeffCafeUnits * properties.number_cafe +
+                coeffFastFoodUnits * properties.number_fast_food +
+                coeffKinderGartenUnits * properties.number_kindergarten +
+                coeffTourismUnits * properties.number_tourism +
+                coeffBuildingUnits * 1
     }
 }
 
@@ -82,19 +138,30 @@ sealed class LocationChoiceDCWeightFun {
 object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffResidentialArea: Double get() { throw NotImplementedError() }
     override val coeffCommercialArea: Double get() { throw NotImplementedError() }
+    override val coeffRetailArea: Double get() { throw NotImplementedError() }
     override val coeffIndustrialArea: Double get() { throw NotImplementedError() }
+    override val coeffOfficeArea: Double get() { throw NotImplementedError() }
+    override val coeffShopArea: Double get() { throw NotImplementedError() }
+    override val coeffSchoolArea: Double get() { throw NotImplementedError() }
+    override val coeffUniversityArea: Double get() { throw NotImplementedError() }
     override val coeffOtherArea: Double get() { throw NotImplementedError() }
     override val coeffOfficeUnits: Double get() { throw NotImplementedError() }
     override val coeffShopUnits: Double get() { throw NotImplementedError() }
     override val coeffSchoolUnits: Double get() { throw NotImplementedError() }
     override val coeffUniUnits: Double get() { throw NotImplementedError() }
+    override val coeffPlaceOfWorshipUnits: Double get() { throw NotImplementedError() }
+    override val coeffCafeUnits: Double get() { throw NotImplementedError() }
+    override val coeffFastFoodUnits: Double get() { throw NotImplementedError() }
+    override val coeffKinderGartenUnits: Double get() { throw NotImplementedError() }
+    override val coeffTourismUnits: Double get() { throw NotImplementedError() }
     override val coeffBuildingUnits: Double get() { throw NotImplementedError() }
     override val coeffResidentialUnits: Double get() { throw NotImplementedError() }
     override val coeffCommercialUnits: Double get() { throw NotImplementedError() }
+    override val coeffRetailUnits: Double get() { throw NotImplementedError() }
     override val coeffIndustrialUnits: Double get() { throw NotImplementedError() }
 
-    override fun calcForNoOrigin(destination: RealLocation): Double {
-        return destination.population
+    override fun calcAttraction(properties: GeoJsonBuildingProperties): Double {
+        return properties.population ?: 0.0
     }
 
     override fun deterrenceFunction(distance: Double): Double {
@@ -115,15 +182,26 @@ object ByPopulation: LocationChoiceDCWeightFun () {
 class PureAttraction (
     override val coeffResidentialArea: Double,
     override val coeffCommercialArea: Double,
+    override val coeffRetailArea: Double,
     override val coeffIndustrialArea: Double,
+    override val coeffOfficeArea: Double,
+    override val coeffShopArea: Double,
+    override val coeffSchoolArea: Double,
+    override val coeffUniversityArea: Double,
     override val coeffOtherArea: Double,
     override val coeffOfficeUnits: Double,
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffPlaceOfWorshipUnits: Double,
+    override val coeffCafeUnits: Double,
+    override val coeffFastFoodUnits: Double,
+    override val coeffKinderGartenUnits: Double,
+    override val coeffTourismUnits: Double,
     override val coeffBuildingUnits: Double,
     override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
+    override val coeffRetailUnits: Double,
     override val coeffIndustrialUnits: Double,
     ) : LocationChoiceDCWeightFun( ) {
 
@@ -148,15 +226,26 @@ class PureAttraction (
 class LogNormDCUtil (
     override val coeffResidentialArea: Double,
     override val coeffCommercialArea: Double,
+    override val coeffRetailArea: Double,
     override val coeffIndustrialArea: Double,
+    override val coeffOfficeArea: Double,
+    override val coeffShopArea: Double,
+    override val coeffSchoolArea: Double,
+    override val coeffUniversityArea: Double,
     override val coeffOtherArea: Double,
     override val coeffOfficeUnits: Double,
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffPlaceOfWorshipUnits: Double,
+    override val coeffCafeUnits: Double,
+    override val coeffFastFoodUnits: Double,
+    override val coeffKinderGartenUnits: Double,
+    override val coeffTourismUnits: Double,
     override val coeffBuildingUnits: Double,
     override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
+    override val coeffRetailUnits: Double,
     override val coeffIndustrialUnits: Double,
     // For deterrence function
     private val coeff0: Double,
@@ -180,15 +269,26 @@ class LogNormDCUtil (
 class LogNormPowerDCUtil (
     override val coeffResidentialArea: Double,
     override val coeffCommercialArea: Double,
+    override val coeffRetailArea: Double,
     override val coeffIndustrialArea: Double,
+    override val coeffOfficeArea: Double,
+    override val coeffShopArea: Double,
+    override val coeffSchoolArea: Double,
+    override val coeffUniversityArea: Double,
     override val coeffOtherArea: Double,
     override val coeffOfficeUnits: Double,
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffPlaceOfWorshipUnits: Double,
+    override val coeffCafeUnits: Double,
+    override val coeffFastFoodUnits: Double,
+    override val coeffKinderGartenUnits: Double,
+    override val coeffTourismUnits: Double,
     override val coeffBuildingUnits: Double,
     override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
+    override val coeffRetailUnits: Double,
     override val coeffIndustrialUnits: Double,
     // For deterrence function
     private val coeff0: Double,
@@ -240,15 +340,26 @@ class LogNormPowerDCUtil (
 data class CombinedDCUtil(
     override val coeffResidentialArea: Double,
     override val coeffCommercialArea: Double,
+    override val coeffRetailArea: Double,
     override val coeffIndustrialArea: Double,
+    override val coeffOfficeArea: Double,
+    override val coeffShopArea: Double,
+    override val coeffSchoolArea: Double,
+    override val coeffUniversityArea: Double,
     override val coeffOtherArea: Double,
     override val coeffOfficeUnits: Double,
     override val coeffShopUnits: Double,
     override val coeffSchoolUnits: Double,
     override val coeffUniUnits: Double,
+    override val coeffPlaceOfWorshipUnits: Double,
+    override val coeffCafeUnits: Double,
+    override val coeffFastFoodUnits: Double,
+    override val coeffKinderGartenUnits: Double,
+    override val coeffTourismUnits: Double,
     override val coeffBuildingUnits: Double,
     override val coeffResidentialUnits: Double,
     override val coeffCommercialUnits: Double,
+    override val coeffRetailUnits: Double,
     override val coeffIndustrialUnits: Double,
     // For deterrence function
     private val coeff0: Double,

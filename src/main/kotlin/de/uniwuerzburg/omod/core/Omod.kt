@@ -6,7 +6,6 @@ import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import de.uniwuerzburg.omod.routing.createGraphHopper
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryCollection
@@ -15,13 +14,10 @@ import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.time.measureTime
-import kotlin.time.measureTimedValue
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -99,15 +95,17 @@ class Omod(
         locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
         // Load focus area
-        val focusArea = getFocusArea(areaFile)
+        val focusArea = readGeoJson(areaFile, geometryFactory)
 
         // Get CRSTransformer
         val center = focusArea.centroid
         transformer = CRSTransformer( center.coordinate.y )
 
         // Get spatial data
-        buildings = getBuildings(focusArea, geometryFactory, transformer, osmFile, cacheDir,
-                                 bufferRadius, censusFile, cache)
+        val buildingsGeoJson = getBuildingsCachedWrapper(
+            focusArea, osmFile, bufferRadius,  transformer, geometryFactory, censusFile, cacheDir, cache
+        )
+        buildings = Building.fromGeoJson(buildingsGeoJson, geometryFactory, transformer, locChoiceWeightFuns)
 
         // Create KD-Tree for faster access
         kdTree = KdTree()
@@ -129,8 +127,6 @@ class Omod(
         for (cell in grid) {
             cell.buildings.forEach { it.cell = cell }
         }
-
-
 
         // Create graphhopper
         hopper = if (mode == RoutingMode.GRAPHHOPPER) {
@@ -166,10 +162,6 @@ class Omod(
         } else {
             zones = grid
         }
-
-
-
-
     }
 
     // Factories
@@ -184,59 +176,6 @@ class Omod(
         fun defaultFactory(areaFile: File, osmFile: File): Omod {
             return Omod(areaFile, osmFile)
         }
-    }
-
-    /**
-     * Parse the areaFile
-     */
-    private fun getFocusArea(areaFile: File): Geometry {
-        val areaColl: GeoJsonNoProperties = json.decodeFromString(areaFile.readText(Charsets.UTF_8))
-        return if (areaColl is GeoJsonFeatureCollectionNoProperties) {
-            geometryFactory.createGeometryCollection(
-                areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
-            ).union()
-        } else {
-            (areaColl as GeoJsonGeometryCollection).toJTS(geometryFactory).union()
-        }
-    }
-
-    /**
-     * Obtain buildings from input data
-     */
-    private fun getBuildings(focusArea: Geometry, geometryFactory: GeometryFactory, transformer: CRSTransformer,
-                     osmFile: File, cacheDir: Path, bufferRadius: Double = 0.0, censusFile: File?,
-                     cache: Boolean) : List<Building> {
-        // Is cached?
-        val bound = focusArea.envelopeInternal
-        val cachePath = Paths.get(cacheDir.toString(),
-            "AreaBounds${listOf(bound.minX, bound.maxX, bound.minY, bound.maxY)
-                .toString().replace(" ", "")}" +
-                    "Buffer${bufferRadius}" +
-                    "Census${censusFile?.nameWithoutExtension ?: false}" +
-                    ".geojson"
-        )
-
-        // Check cache
-        val collection: GeoJsonFeatureCollection
-        if (cache and cachePath.toFile().exists()) {
-            collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
-        } else {
-            // Load data from geojson files and PostgreSQL database with OSM data
-            collection = buildArea(
-                focusArea = focusArea,
-                osmFile = osmFile,
-                bufferRadius = bufferRadius,
-                censusFile = censusFile,
-                transformer = transformer,
-                geometryFactory = geometryFactory
-            )
-
-            if (cache) {
-                Files.createDirectories(cachePath.parent)
-                cachePath.toFile().writeText(json.encodeToString(collection))
-            }
-        }
-        return Building.fromGeoJson(collection, geometryFactory, transformer)
     }
 
     /**
@@ -316,7 +255,11 @@ class Omod(
             // Calculate omod origin probability. For speed only on zone level.
             omodWeights[odZone] = odZone.aggLocs.sumOf { omodProbs[it]!! }
             // Calculate OD-Matrix origin probability.
-            odWeights[odZone] = odZone.destinations.filter { it.first.inFocusArea }.sumOf { it.second }
+            odWeights[odZone] = if (odZone.inFocusArea) {
+                odZone.destinations.sumOf { it.second }
+            } else {
+                odZone.destinations.filter { it.first.inFocusArea }.sumOf { it.second }
+            }
         }
 
         val weightSumOMOD = omodWeights.values.sum()
@@ -359,25 +302,31 @@ class Omod(
         require(activities == Pair(ActivityType.HOME, ActivityType.WORK)) {
             "Only OD-Matrices with Activities HOME->WORK are currently supported"
         }
-        
+
         val factors = mutableMapOf<Pair<ODZone, ODZone>, Double>()
         val priorProbs = calcOMODProbsAsMap(activities.first)
 
         for (originOdZone in odZones) {
-            val omodWeights = mutableMapOf<ODZone, Double>()
-            val odWeights = mutableMapOf<ODZone, Double>()
-            for ((destOdZone, transitions) in originOdZone.destinations) {
-                // Calculate omod transition probability. For speed only on zone level.
-                var omodWeight = 0.0
-                for (origin in originOdZone.aggLocs) {
-                    val prior = priorProbs[origin]!!
-                    if (prior == 0.0) { continue }
-                    omodWeight +=  prior * getWeights(origin, destOdZone.aggLocs, activities.second).sum()
-                 }
-                omodWeights[destOdZone] = omodWeight
+            val omodWeights = odZones.associateWith { 0.0 } as MutableMap<ODZone, Double>
+            val odWeights = odZones.associateWith { 0.0 } as MutableMap<ODZone, Double>
 
-                // Calculate OD-Matrix origin probability.
-                odWeights[destOdZone] = if (destOdZone.inFocusArea || originOdZone.inFocusArea) transitions else 0.0
+            // Calculate omod transition probability. For speed only on zone level.
+            for (origin in originOdZone.aggLocs) {
+                val pPriorLoc = priorProbs[origin]!!
+                if (pPriorLoc == 0.0) { continue }
+                val wDependentZone = getWeights(origin, zones, activities.second).sum()
+
+                for (destOdZone in odZones) {
+                    val wDependentLoc = getWeights(origin, destOdZone.aggLocs, activities.second).sum()
+                    omodWeights[destOdZone] = omodWeights[destOdZone]!! + (pPriorLoc * wDependentLoc / wDependentZone)
+                }
+            }
+
+            // Calculate OD-Matrix origin probability.
+            for ((destOdZone, transitions) in originOdZone.destinations) {
+                if (destOdZone.inFocusArea || originOdZone.inFocusArea) {
+                    odWeights[destOdZone] = transitions
+                }
             }
 
             val weightSumOMOD = omodWeights.values.sum()
@@ -389,7 +338,7 @@ class Omod(
                     factors[Pair(originOdZone, destOdZone)] = 1.0
                 }
             } else {
-                for (destOdZone in originOdZone.destinations.map { it.first }) {
+                for (destOdZone in odZones) {
                     // Normalize
                     val omodProb = omodWeights[destOdZone]!! / weightSumOMOD
                     val odProb = odWeights[destOdZone]!! / weightSumOD
@@ -592,7 +541,6 @@ class Omod(
             val workZoneCumDist = workDistrCache.getOrPut(homeZone) {
                 getDistr(homeZone, zones, ActivityType.WORK)
             }
-
             val workZone = zones[sampleCumDist(workZoneCumDist, rng)]
 
            if (!tazFileAvailable) {
@@ -622,7 +570,6 @@ class Omod(
            val schoolZoneCumDist = schoolDistrCache.getOrPut(homeZone) {
                getDistr(homeZone, zones, ActivityType.SCHOOL)
            }
-
            val schoolZone = zones[sampleCumDist(schoolZoneCumDist, rng)]
 
            if (!tazFileAvailable) {
@@ -685,7 +632,6 @@ class Omod(
         } else {
             getDistr(zone, zones, ActivityType.OTHER)
         }
-
         val flexZone = zones[sampleCumDist(flexDist, rng)]
 
         if(!tazFileAvailable) {
@@ -703,8 +649,6 @@ class Omod(
         } else {
             return flexZone
         }
-
-
     }
 
     /**
@@ -817,7 +761,6 @@ class Omod(
         val activityChain = getActivityChain(agent, weekday, from)
         val stayTimes = getStayTimes(activityChain, agent, weekday)
         val locations = getLocations(agent, activityChain, start)
-
         return List(activityChain.size) { i ->
             Activity(activityChain[i], stayTimes[i], locations[i], locations[i].latlonCoord.x, locations[i].latlonCoord.y,
                 if(locations[i] is Cell) {(locations[i] as Cell).id} else {-1}   )
@@ -913,11 +856,11 @@ class Omod(
 
         // Work distribution
         val workProbs = DoubleArray(zones.size) { 0.0 }
-        for (zone in zones) {
+        for ((i, zone) in zones.withIndex()) {
             val workWeights = getWeights(zone, zones, ActivityType.WORK)
             val totalWorkWeight = workWeights.sum()
-            for (i in zones.indices) {
-                workProbs[i] += homeProbs[i] * workWeights[i] / totalWorkWeight
+            for (j in zones.indices) {
+                workProbs[j] += homeProbs[i] * workWeights[j] / totalWorkWeight
             }
         }
         return workProbs

@@ -52,7 +52,7 @@ enum class AgeGrp {
  * Landuse categories.
  */
 enum class Landuse {
-    RESIDENTIAL, INDUSTRIAL, COMMERCIAL, NONE;
+    RESIDENTIAL, INDUSTRIAL, COMMERCIAL, RETAIL, NONE;
 }
 
 /**
