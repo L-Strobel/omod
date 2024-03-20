@@ -104,8 +104,11 @@ data class OutputSimpleTAZ(
     val inFocusArea: Boolean,
     val population: Double,
 
+    val attractions: Map<Int, Double>
+    /*
     val areaResidential: Double,
     val areaCommercial: Double,
     val areaIndustrial: Double,
     val areaOther: Double
+     */
 )

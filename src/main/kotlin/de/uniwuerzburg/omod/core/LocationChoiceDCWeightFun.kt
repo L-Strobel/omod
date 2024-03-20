@@ -4,6 +4,7 @@ import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import java.lang.Exception
 import kotlin.math.exp
 import kotlin.math.ln
 
@@ -84,7 +85,8 @@ sealed class LocationChoiceDCWeightFun {
      * @return probabilistic weight
      */
     fun calcForNoOrigin(destination: RealLocation) : Double {
-        return destination.attractions[id]!!
+        //TODO: Check for empty buildings beforehand
+        return destination.attractions.getOrDefault(id, 0.0)
     }
 
     open fun calcAttraction(properties: GeoJsonBuildingProperties) : Double {

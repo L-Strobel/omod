@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.io.*
+import de.uniwuerzburg.omod.routing.logger
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
@@ -221,7 +222,7 @@ fun getBufferBuildingClusters (focusAreaPrecision: Double, focusAreaBoundary: Ge
  * Calculates cell centroids using building centroids
  * Cells outside Focus area are not considered yet...
  *
- * @param zoneGeometriFile geojson file with geometries of traffic assignment zones (cells)
+ * @param tazFile geojson file with geometries of traffic assignment zones (cells)
  * @param buildings the buildings which are assigned to cells
  * @param transformer CRS transformer to use
  *
@@ -250,7 +251,7 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
     val simpleTAZs = mutableListOf<OutputSimpleTAZ>()
 
     // Fill Cells with buildings
-    println("Fill Focus Area Cells")
+    logger.info("Fill Focus Area Cells...")
     for ((n, b) in focusAreaBuildings.withIndex()) {
         for((i, z) in zones.withIndex()) {
             if(z.contains(transformer.toLatLon( b.point ))) {
@@ -259,7 +260,7 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
             }
         }
     }
-    println("Aggregate Cell Information")
+    logger.info("Aggregate Cell Information...")
 
     var id = 0
     for ((i,z) in zones.withIndex()) {
@@ -342,9 +343,14 @@ fun createSimpleTAZFromCell(cell : Cell) : OutputSimpleTAZ {
         avgDistanceToSelf = (if(java.lang.Double.isNaN(cell.avgDistanceToSelf)) { 0.0 } else { cell.avgDistanceToSelf }) as Double,
         population = cell.population,
         inFocusArea = cell.inFocusArea,
+        attractions = cell.attractions
+
+        /*
         areaResidential = cell.areaResidential,
         areaCommercial = cell.areaCommercial,
         areaIndustrial = cell.areaIndustrial,
         areaOther = cell.areaOther
+        */
+
     )
 }

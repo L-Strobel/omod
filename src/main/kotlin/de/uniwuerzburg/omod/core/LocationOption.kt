@@ -115,10 +115,11 @@ data class Cell (
 
     override val inFocusArea = buildings.any { it.inFocusArea }
 
+    //TODO: Check for empty buildings for activity type
     override val attractions = buildings.map { it.attractions }
-        .flatMap { map -> map.entries }
-        .groupBy ({ it.key },{ it.value })
-        .mapValues { it.value.sum() }
+                .flatMap { map -> map.entries }
+                .groupBy({ it.key }, { it.value })
+                .mapValues { it.value.sum() }
 
     override val population = buildings.sumOf { it.population }
 
