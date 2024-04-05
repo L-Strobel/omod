@@ -190,6 +190,9 @@ $dokka.location:de.uniwuerzburg.omod.core/HomogeneousGrp.WORKING///PointingToDec
 $dokka.location:de.uniwuerzburg.omod.core/HomogeneousGrp///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-homogeneous-grp/index.html
 $dokka.location:de.uniwuerzburg.omod.core/HomogeneousGrp/valueOf/#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-homogeneous-grp/value-of.html
 $dokka.location:de.uniwuerzburg.omod.core/HomogeneousGrp/values/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-homogeneous-grp/values.html
+$dokka.location:de.uniwuerzburg.omod.core/IDDispenser///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-i-d-dispenser/index.html
+$dokka.location:de.uniwuerzburg.omod.core/IDDispenser/next/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-i-d-dispenser/next.html
+$dokka.location:de.uniwuerzburg.omod.core/IDDispenser/nextID/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-i-d-dispenser/next-i-d.html
 $dokka.location:de.uniwuerzburg.omod.core/Landuse.COMMERCIAL///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}omod/de.uniwuerzburg.omod.core/-landuse/-c-o-m-m-e-r-c-i-a-l/index.html
 $dokka.location:de.uniwuerzburg.omod.core/Landuse.INDUSTRIAL///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}omod/de.uniwuerzburg.omod.core/-landuse/-i-n-d-u-s-t-r-i-a-l/index.html
 $dokka.location:de.uniwuerzburg.omod.core/Landuse.NONE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}omod/de.uniwuerzburg.omod.core/-landuse/-n-o-n-e/index.html
@@ -226,7 +229,7 @@ $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/coeffTourism
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/coeffUniUnits/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/coeff-uni-units.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/coeffUniversityArea/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/coeff-university-area.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/deterrenceFunction/#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/deterrence-function.html
-$dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/getUniqueID/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/get-unique-i-d.html
+$dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/id/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/id.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationOption///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-option/index.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationOption/avgDistanceToSelf/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-option/avg-distance-to-self.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationOption/coord/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-option/coord.html
