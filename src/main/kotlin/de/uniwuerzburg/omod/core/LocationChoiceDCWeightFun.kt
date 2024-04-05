@@ -8,6 +8,21 @@ import kotlin.math.exp
 import kotlin.math.ln
 
 /**
+ * Return unique IDs used for the destination choice functions.
+ * These IDs are used to cache a location's attraction value, as calculated with the function,
+ * inside the location itself.
+ */
+object IDDispenser {
+    var nextID = 0
+
+    fun next() : Int {
+        val id = nextID
+        nextID += 1
+        return id
+    }
+}
+
+/**
  * Destination choice model. Parent class.
  */
 @Serializable
@@ -37,16 +52,7 @@ sealed class LocationChoiceDCWeightFun {
     abstract val coeffIndustrialUnits: Double
 
     @Transient
-    private var id: Int? = null
-
-    fun getUniqueID() : Int {
-        id?.let {
-            return it
-        } ?: run {
-            id = hashCode()
-            return id!!
-        }
-    }
+    val id: Int = IDDispenser.next()
 
     /**
      * Calculates the natural logarithm of the deterrence function given the distance from the origin.

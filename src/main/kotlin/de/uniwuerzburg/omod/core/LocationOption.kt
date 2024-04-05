@@ -71,7 +71,7 @@ class Building  (
                 val properties = it.properties
                 val point = transformer.toModelCRS( it.geometry.toJTS(geometryFactory) ).centroid
 
-                val attractions = dcFunctions.map { (_, v) -> v.getUniqueID() to v.calcAttraction(properties)}.toMap()
+                val attractions = dcFunctions.map { (_, v) -> v.id to v.calcAttraction(properties)}.toMap()
 
                 Building(
                     osmID = properties.osm_id,
