@@ -62,7 +62,7 @@ Additionally, census information of the region is helpful
 ## Get Started
 You need Java 11 or a later Version.
 
-1. Download the latest release of OMOD
+1. Download the latest release of OMOD (see _Releases_ on the right)
 2. Download OSM data of the region you are interested in as an osm.pbf.
 The file can cover a larger area, but too large files slow down initialization.
 Recommended download site: https://download.geofabrik.de/
