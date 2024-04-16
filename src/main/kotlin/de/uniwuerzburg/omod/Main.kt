@@ -81,8 +81,8 @@ class Run : CliktCommand() {
              "Should cover the entire area, but can cover more."
     ).file(mustExist = true, mustBeReadable = true)
     private val grid_precision by option(
-        help="Allowed average distance between focus area building and its corresponding TAZ center. " +
-             "The default is 200m and suitable in most cases." +
+        help="Allowed average distance between a focus area building and its corresponding TAZ center. " +
+             "The default is 150m and suitable in most cases." +
              "In the buffer area the allowed distance increases quadratically with distance. " +
              "Unit: meters"
     ).double().default(150.0)
