@@ -72,7 +72,7 @@ With https://geojson.io, you can easily create a geojson of an arbitrary region.
 Geojsons for administrative areas can be obtained quickly with https://polygons.openstreetmap.fr/.
 4. Run OMOD:
    ```
-   java -jar omod-1.8.1-all.jar Path/to/GeoJson Path/to/osm.pbf 
+   java -jar omod-1.8.2-all.jar Path/to/GeoJson Path/to/osm.pbf 
    ```
 
 Run --help for an explanation of optional parameters, such as the number of agents, weekday, or routing mode.
