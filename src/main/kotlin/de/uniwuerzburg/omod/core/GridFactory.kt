@@ -14,6 +14,7 @@ import org.apache.commons.math3.random.JDKRandomGenerator
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.index.hprtree.HPRtree
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.min
@@ -233,6 +234,8 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
 
     // Get TAZs from file
     val taz : GeoJsonNoProperties = de.uniwuerzburg.omod.io.json.decodeFromString(tazFile.readText(Charsets.UTF_8))
+
+    // extract shape of each zone
     var zones = arrayOf<Geometry>()
     if (taz is GeoJsonFeatureCollectionNoProperties) {
         zones = taz.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()
@@ -241,16 +244,25 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
     // Get Buildings in FocusArea
     val focusAreaBuildings = buildings.filter { it.inFocusArea }
 
-    // Init empty Cells
+    // Init empty cells
     val grid = mutableListOf<Cell>()
 
-    // create cell buildings arrays
+    // Init empty cell buildings arrays (one for each zone)
     val cellBuildingLists = MutableList(zones.size) { mutableListOf<Building>() }
+
+    /*
+    val cellBuildingsTree = HPRtree()
+    for (building in focusAreaBuildings) {
+        cellBuildingsTree.insert(building.geometry.envelopeInternal, building)
+    }
+    */
+
 
     // Structure for aggregated cell information
     val simpleTAZs = mutableListOf<OutputSimpleTAZ>()
 
     // Fill Cells with buildings
+
     logger.info("Fill Focus Area Cells...")
     for ((n, b) in focusAreaBuildings.withIndex()) {
         for((i, z) in zones.withIndex()) {
@@ -260,8 +272,8 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
             }
         }
     }
-    logger.info("Aggregate Cell Information...")
 
+    logger.info("Aggregate Cell Information to TAZs...")
     var id = 0
     for ((i,z) in zones.withIndex()) {
 
@@ -320,6 +332,7 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
     }
 
     // Cache Cells with Geometry and Building areas
+    // TODO: Flag for Cell Caching
     if (true)
     {
         val cellsOut = File("output_cells.json")

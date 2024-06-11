@@ -226,7 +226,7 @@ class Omod(
         // Add OD-Zones to cells and vice versa
         for (cell in grid) {
             // OD-Zone most buildings in cell belong to
-            val odZone = if (cell.buildings.isNotEmpty()) {cell.buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key} else {null}
+            val odZone = cell.buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
 
             cell.odZone = odZone
             odZone?.aggLocs?.add(cell)
@@ -252,6 +252,7 @@ class Omod(
         val odWeights = mutableMapOf<ODZone, Double>()
 
         for (odZone in odZones) {
+
             // Calculate omod origin probability. For speed only on zone level.
             omodWeights[odZone] = odZone.aggLocs.sumOf { omodProbs[it]!! }
             // Calculate OD-Matrix origin probability.
@@ -260,6 +261,7 @@ class Omod(
             } else {
                 odZone.destinations.filter { it.first.inFocusArea }.sumOf { it.second }
             }
+
         }
 
         val weightSumOMOD = omodWeights.values.sum()
