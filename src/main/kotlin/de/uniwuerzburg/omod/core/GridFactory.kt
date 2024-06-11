@@ -2,6 +2,7 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.io.*
 import de.uniwuerzburg.omod.routing.logger
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
@@ -14,7 +15,6 @@ import org.apache.commons.math3.random.JDKRandomGenerator
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.index.hprtree.HPRtree
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.min
@@ -191,7 +191,7 @@ fun makeClusterGrid(focusAreaPrecision: Double, buildings: List<Building>,
 fun getBufferBuildingClusters (focusAreaPrecision: Double, focusAreaBoundary: Geometry, bufferBuildings: List<Building>,
                                geometryFactory: GeometryFactory, transformer: CRSTransformer, startID: Int) : MutableList<Cell>  {
 
-    var cells = mutableListOf<Cell>()
+    val cells = mutableListOf<Cell>()
 
     // Determine distance to focus area and level of detail
     val buildingGroups = mutableMapOf<Int, MutableList<Building>>()
@@ -229,11 +229,12 @@ fun getBufferBuildingClusters (focusAreaPrecision: Double, focusAreaBoundary: Ge
  *
  * @return routing cells
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Suppress("unused")
 fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transformer: CRSTransformer ) : List<Cell> {
 
     // Get TAZs from file
-    val taz : GeoJsonNoProperties = de.uniwuerzburg.omod.io.json.decodeFromString(tazFile.readText(Charsets.UTF_8))
+    val taz : GeoJsonNoProperties = json.decodeFromString(tazFile.readText(Charsets.UTF_8))
 
     // extract shape of each zone
     var zones = arrayOf<Geometry>()
@@ -264,11 +265,10 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
     // Fill Cells with buildings
 
     logger.info("Fill Focus Area Cells...")
-    for ((n, b) in focusAreaBuildings.withIndex()) {
-        for((i, z) in zones.withIndex()) {
+    for (b in focusAreaBuildings) {
+        zones.withIndex().forEach { (i, z) ->
             if(z.contains(transformer.toLatLon( b.point ))) {
                 cellBuildingLists[i].add(b)
-                break
             }
         }
     }
@@ -323,7 +323,7 @@ fun makeClusterGridFromFile(tazFile: File, buildings: List<Building>, transforme
         focusAreaBuildings.map { it.point }.toTypedArray()
     ).convexHull()
 
-    var bufferCells = getBufferBuildingClusters(focusAreaPrecision = 5000.0,
+    val bufferCells = getBufferBuildingClusters(focusAreaPrecision = 5000.0,
         focusAreaBoundary = faBoundary, bufferBuildings = bufferBuildings, geometryFactory = geometryFactory, transformer = transformer, startID = id)
 
     for (c in bufferCells) {
@@ -353,7 +353,7 @@ fun createSimpleTAZFromCell(cell : Cell) : OutputSimpleTAZ {
         lon = cell.latlonCoord.y,
 
         //geometry = z,
-        avgDistanceToSelf = (if(java.lang.Double.isNaN(cell.avgDistanceToSelf)) { 0.0 } else { cell.avgDistanceToSelf }) as Double,
+        avgDistanceToSelf = (if(java.lang.Double.isNaN(cell.avgDistanceToSelf)) { 0.0 } else { cell.avgDistanceToSelf }),
         population = cell.population,
         inFocusArea = cell.inFocusArea,
         attractions = cell.attractions

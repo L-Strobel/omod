@@ -7,8 +7,6 @@ import de.uniwuerzburg.omod.routing.RoutingMode
 import de.uniwuerzburg.omod.routing.createGraphHopper
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryCollection
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
