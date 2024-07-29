@@ -50,7 +50,7 @@ fun getBuildingsCachedWrapper(focusArea: Geometry, osmFile: File, bufferRadius: 
     if (cache and cachePath.toFile().exists()) {
         collection = json.decodeFromString(cachePath.toFile().readText(Charsets.UTF_8))
     } else {
-        // Load data from geojson files and PostgreSQL database with OSM data
+        // Load data if not cached
         collection = getBuildings(
             focusArea = focusArea,
             osmFile = osmFile,

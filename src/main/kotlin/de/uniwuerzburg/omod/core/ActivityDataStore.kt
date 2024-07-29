@@ -51,9 +51,9 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
     private val nodes: Map<Int, GroupData>
     private val thresh = 30 // Minimum number of samples that a valid activity chain distribution needs
 
-    private val cHom = Weekday.values().size
-    private val cMob = cHom * HomogeneousGrp.values().size
-    private val cAge = cMob * MobilityGrp.values().size
+    private val cHom = Weekday.entries.size
+    private val cMob = cHom * HomogeneousGrp.entries.size
+    private val cAge = cMob * MobilityGrp.entries.size
 
     init {
         nodes = activityGroups.associateBy (
