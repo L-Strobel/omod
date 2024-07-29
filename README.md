@@ -60,7 +60,7 @@ Additionally, census information of the region is helpful
 (see python_tools/format_zensus2011.py for an example of how to correctly format census data for OMOD).
 
 ## Get Started
-You need Java 11 or a later Version.
+You need Java 17 or a later Version.
 
 1. Download the latest release of OMOD (see _Releases_ on the right)
 2. Download OSM data of the region you are interested in as an osm.pbf.

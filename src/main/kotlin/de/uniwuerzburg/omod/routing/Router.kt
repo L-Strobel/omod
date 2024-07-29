@@ -10,9 +10,9 @@ import com.graphhopper.routing.ev.VehicleSpeed
 import com.graphhopper.routing.querygraph.QueryGraph
 import com.graphhopper.routing.util.DefaultSnapFilter
 import com.graphhopper.routing.util.TraversalMode
-import com.graphhopper.routing.weighting.FastestWeighting
 import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
+import com.graphhopper.util.PMap
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.RealLocation
 
@@ -70,9 +70,7 @@ data class PreparedQGraph (
  */
 fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph {
     val encodingManager = hopper.encodingManager
-    val accessEnc = encodingManager.getBooleanEncodedValue(VehicleAccess.key("car"))
-    val speedEnc = encodingManager.getDecimalEncodedValue(VehicleSpeed.key("car"))
-    val weighting = FastestWeighting(accessEnc, speedEnc)
+    val weighting = hopper.createWeighting(hopper.getProfile("custom_car"), PMap());
 
     val snaps = mutableListOf<Snap>()
     val locNodes = mutableMapOf<LocationOption, Int>()
