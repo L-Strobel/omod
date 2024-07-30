@@ -1,5 +1,7 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.core.models.Building
+import de.uniwuerzburg.omod.core.models.Cell
 import org.apache.commons.math3.ml.clustering.CentroidCluster
 import org.apache.commons.math3.ml.clustering.Clusterable
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer

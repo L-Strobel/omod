@@ -11,7 +11,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
 import de.uniwuerzburg.omod.core.assignment.allOrNothing
 import de.uniwuerzburg.omod.core.Omod
-import de.uniwuerzburg.omod.core.Weekday
+import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
 import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.ExperimentalSerializationApi

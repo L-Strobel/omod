@@ -2,6 +2,7 @@ package de.uniwuerzburg.omod.core
 
 import com.graphhopper.GraphHopper
 import de.uniwuerzburg.omod.io.*
+import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import de.uniwuerzburg.omod.routing.createGraphHopper
@@ -878,7 +879,7 @@ class Omod(
      * @return Cumulative distribution of the destination probabilities
      */
     private fun getDistr(origin: LocationOption, destinations: List<LocationOption>,
-                 activityType: ActivityType
+                         activityType: ActivityType
     ) : DoubleArray {
         val weights = getWeights(origin, destinations, activityType)
         return createCumDist(weights.toDoubleArray())
@@ -906,7 +907,7 @@ class Omod(
      * @return Probabilistic weights
      */
     private fun getWeights(origin: LocationOption, destinations: List<LocationOption>,
-                   activityType: ActivityType
+                           activityType: ActivityType
     ): List<Double> {
         require(activityType != ActivityType.HOME) { "For HOME activities call getWeightsNoOrigin()!" }
 

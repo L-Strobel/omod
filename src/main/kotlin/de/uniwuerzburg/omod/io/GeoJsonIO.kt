@@ -1,10 +1,9 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.ActivityType
-import de.uniwuerzburg.omod.core.Landuse
+import de.uniwuerzburg.omod.core.models.ActivityType
+import de.uniwuerzburg.omod.core.models.Landuse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory

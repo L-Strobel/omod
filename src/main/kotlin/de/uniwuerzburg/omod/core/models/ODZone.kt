@@ -1,14 +1,12 @@
-package de.uniwuerzburg.omod.core
+package de.uniwuerzburg.omod.core.models
 
+import de.uniwuerzburg.omod.core.CRSTransformer
 import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
 import de.uniwuerzburg.omod.io.GeoJsonODProperties
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import java.io.File
-
-private val json = Json { ignoreUnknownKeys = true }
 
 /**
  * Zone of the OD-Matrix, i.e. TAZ. Used for calibrating OMOD then an od-file is provided.
@@ -34,6 +32,8 @@ data class ODZone (
     val aggLocs: MutableList<LocationOption> = mutableListOf()
 
     companion object {
+        private val json = Json { ignoreUnknownKeys = true }
+
         /**
          * Read od-file
          *
@@ -49,11 +49,11 @@ data class ODZone (
             // Get zones
             val odZones = geoJson.features.map {
                 val properties = it.properties as GeoJsonODProperties
-                ODZone (
+                ODZone(
                     name = properties.origin,
                     originActivity = properties.origin_activity,
                     destinationActivity = properties.destination_activity,
-                    geometry = transformer.toModelCRS( it.geometry.toJTS(factory) )
+                    geometry = transformer.toModelCRS(it.geometry.toJTS(factory))
                 )
             }
 

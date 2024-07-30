@@ -1,7 +1,6 @@
-package de.uniwuerzburg.omod.io
+package de.uniwuerzburg.omod.core
 
-import de.uniwuerzburg.omod.core.CRSTransformer
-import kotlinx.serialization.decodeFromString
+import de.uniwuerzburg.omod.io.*
 import kotlinx.serialization.encodeToString
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory

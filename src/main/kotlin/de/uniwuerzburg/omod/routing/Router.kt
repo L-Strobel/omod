@@ -5,19 +5,17 @@ import com.graphhopper.GHResponse
 import com.graphhopper.GraphHopper
 import com.graphhopper.isochrone.algorithm.ShortestPathTree
 import com.graphhopper.routing.ev.Subnetwork
-import com.graphhopper.routing.ev.VehicleAccess
-import com.graphhopper.routing.ev.VehicleSpeed
 import com.graphhopper.routing.querygraph.QueryGraph
 import com.graphhopper.routing.util.DefaultSnapFilter
 import com.graphhopper.routing.util.TraversalMode
 import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
 import com.graphhopper.util.PMap
-import de.uniwuerzburg.omod.core.LocationOption
-import de.uniwuerzburg.omod.core.RealLocation
+import de.uniwuerzburg.omod.core.models.LocationOption
+import de.uniwuerzburg.omod.core.models.RealLocation
 
 /**
- * Calculate the euclidean distance between two locations
+ * Calculate the Euclidean distance between two locations
  *
  * @param origin Location A
  * @param destination Location B

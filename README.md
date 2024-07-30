@@ -60,17 +60,14 @@ Additionally, census information of the region is helpful
 (see python_tools/format_zensus2011.py for an example of how to correctly format census data for OMOD).
 
 ## Get Started
+
 You need Java 17 or a later Version.
 
-1. Download the latest release of OMOD (see _Releases_ on the right)
-2. Download OSM data of the region you are interested in as an osm.pbf.
-The file can cover a larger area, but too large files slow down initialization.
-Recommended download site: https://download.geofabrik.de/
-3. Get a GeoJson of the region you want to simulate.
-This region must be covered in the osm.pbf file.
-With https://geojson.io, you can easily create a geojson of an arbitrary region.
-Geojsons for administrative areas can be obtained quickly with https://polygons.openstreetmap.fr/.
+1. Download the latest release of OMOD (see *Releases* on the right)
+2. Download OSM data of the region you are interested in as an osm.pbf. The file can cover a larger area, but too large files slow down initialization. Recommended download site: https://download.geofabrik.de/
+3. Get a GeoJson of the region you want to simulate. This region must be covered in the osm.pbf file. With https://geojson.io, you can easily create a geojson of an arbitrary region. Geojsons for administrative areas can be obtained quickly with https://polygons.openstreetmap.fr/.
 4. Run OMOD:
+
    ```
    java -jar omod-1.8.2-all.jar Path/to/GeoJson Path/to/osm.pbf 
    ```
@@ -78,8 +75,9 @@ Geojsons for administrative areas can be obtained quickly with https://polygons.
 Run --help for an explanation of optional parameters, such as the number of agents, weekday, or routing mode.
 
 ## Routing Mode
+
 OMOD determines the destination choice of agents based on a gravity model.
-The necessary distances from A to B can be calculated with the 
+The necessary distances from A to B can be calculated with the
 routing mode GraphHopper and Beeline.
 The first calculates the distance by car using the open-source router GraphHopper
 (https://github.com/graphhopper/graphhopper).
@@ -90,7 +88,7 @@ Therefore, the first run is slow, but subsequent runs are fast.
 The second mode uses the euclidean distance
 and is significantly faster but less precise.
 
-Change the routing mode with the CLI flag *--routing_mode* to either *GRAPHHOPPER* or *BEELINE*.
+Change the routing mode with the CLI flag *\--routing_mode* to either *GRAPHHOPPER* or *BEELINE*.
 
 ## Usage as Java library
 

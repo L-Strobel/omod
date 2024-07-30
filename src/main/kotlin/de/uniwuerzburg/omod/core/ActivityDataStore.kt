@@ -1,5 +1,6 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.core.models.*
 import kotlinx.serialization.Serializable
 
 /**
@@ -115,7 +116,7 @@ class ActivityDataStore(activityGroups: List<ActivityGroup>) {
      * @return gaussian mixture of the dwell times
      */
     fun getMixture(weekday: Weekday, homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp,
-                    chain: List<ActivityType>) : Mixture {
+                   chain: List<ActivityType>) : Mixture {
         val from = chain.first()
 
         val groupData = searchFor(weekday, homogenousGroup, mobilityGroup, age) {

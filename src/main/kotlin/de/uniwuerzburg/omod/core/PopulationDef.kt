@@ -1,5 +1,8 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.core.models.AgeGrp
+import de.uniwuerzburg.omod.core.models.HomogeneousGrp
+import de.uniwuerzburg.omod.core.models.MobilityGrp
 import kotlinx.serialization.Serializable
 
 /**

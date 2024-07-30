@@ -2,6 +2,7 @@ package de.uniwuerzburg.omod.io
 
 import crosby.binary.osmosis.OsmosisReader
 import de.uniwuerzburg.omod.core.*
+import de.uniwuerzburg.omod.core.models.Landuse
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
