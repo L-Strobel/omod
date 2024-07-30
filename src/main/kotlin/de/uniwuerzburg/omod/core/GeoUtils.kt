@@ -11,9 +11,7 @@ import org.geotools.referencing.operation.projection.TransverseMercator
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
-import org.opengis.referencing.crs.GeographicCRS
-import org.opengis.referencing.crs.ProjectedCRS
-import org.opengis.referencing.cs.CartesianCS
+import org.geotools.api.referencing.crs.ProjectedCRS
 import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -62,8 +60,8 @@ class CRSTransformer (
         val mtFactory = ReferencingFactoryFinder.getMathTransformFactory(null)
         val factories = ReferencingFactoryContainer(null)
 
-        val geoCRS: GeographicCRS = DefaultGeographicCRS.WGS84
-        val cartCS: CartesianCS = DefaultCartesianCS.GENERIC_2D
+        val geoCRS = DefaultGeographicCRS.WGS84
+        val cartCS = DefaultCartesianCS.GENERIC_2D
 
         val parameters = mtFactory.getDefaultParameters("Transverse_Mercator")
         parameters.parameter("central_meridian").setValue(centerLon)

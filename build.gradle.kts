@@ -3,9 +3,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "2.+"
     kotlin("plugin.serialization") version "1.+"
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.github.johnrengelman.shadow") version "8.+"
     id("java")
-    id("org.jetbrains.dokka") version "1.8.10"
+    id("org.jetbrains.dokka") version "1.9.+"
     application
 }
 
@@ -24,6 +24,8 @@ repositories {
 }
 
 dependencies {
+    implementation("org.geotools:gt-epsg-hsql:31.+")
+    implementation("org.geotools:gt-main:31.+")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.+")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.+")
     implementation("org.locationtech.jts:jts-core:1.+")
@@ -33,9 +35,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.+")
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.+")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.+")
-    implementation("org.geotools:gt-main:27.+")
-    implementation("org.geotools:gt-epsg-hsql:27.+")
-    implementation("org.geotools:gt-main:27.1")
     implementation("com.google.guava:guava:33.2.1-jre")
     testImplementation("org.junit.jupiter:junit-jupiter:5.+")
 }
@@ -44,8 +43,17 @@ tasks.test {
     useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+kotlin {
+    jvmToolchain(17)
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.shadowJar {
+    mergeServiceFiles()
 }
 
 application {
