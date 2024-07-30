@@ -35,6 +35,7 @@ dependencies {
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.+")
     implementation("org.geotools:gt-main:27.+")
     implementation("org.geotools:gt-epsg-hsql:27.+")
+    implementation("org.geotools:gt-main:27.1")
     implementation("com.google.guava:guava:33.2.1-jre")
     testImplementation("org.junit.jupiter:junit-jupiter:5.+")
 }
