@@ -1,10 +1,14 @@
 package de.uniwuerzburg.omod.routing
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.graphhopper.GraphHopper
 import com.graphhopper.util.exceptions.PointNotFoundException
 import de.uniwuerzburg.omod.core.LocationOption
 import de.uniwuerzburg.omod.core.ProgressBar
 import de.uniwuerzburg.omod.core.RealLocation
+import kotlinx.coroutines.*
 import org.locationtech.jts.geom.Coordinate
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -13,7 +17,11 @@ import java.io.ObjectOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
+import kotlin.math.sqrt
 
 /**
  * Distance calculation methods
@@ -23,15 +31,30 @@ enum class RoutingMode {
 }
 
 /**
- * HashMap with fixed size. If the collection is full and an entry is added the oldest entry is removed.
- * See: https://stackoverflow.com/questions/5601333/limiting-the-max-size-of-a-hashmap-in-java
+ * Combination of two locations with no ordering.
+ * Used as key for the routing cache. The assumption is that the Distance A->B equals the distance B->A
+ *
+ * @param a location option A
+ * @param b location option B
  */
-class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
-    override fun removeEldestEntry(eldest: Map.Entry<K, V>): Boolean {
-        return size > maxSize
+private class UnorderedODPair(a: LocationOption, b: LocationOption) {
+    val first = a
+    val second = b
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UnorderedODPair
+        if ((first == other.first) and (second == other.second)) return true
+        if ((first == other.second) and (second == other.first)) return true
+        return false
+    }
+
+    override fun hashCode(): Int {
+        return 7919 * first.hashCode() + second.hashCode()
     }
 }
-
 
 /**
  * Stores distance information between locations
@@ -42,14 +65,21 @@ class MaxSizeHashMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>() {
 class RoutingCache(
     private val mode: RoutingMode,
     private val hopper: GraphHopper?,
-    cacheSize: Int = 20_000
+    cacheSize: Long = 400e6.toLong(), // Maximum number of entries in the cache
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private val sizeLimit = cacheSize // This value caps the memory consumption roughly at 5 GB (I hope)
-    private val prefillSize = cacheSize // Should be smaller than sizeLimit
-    private val sizeLimitSecTable = cacheSize
-    private var table: HashMap<LocationOption, HashMap<LocationOption, Float>> = MaxSizeHashMap(sizeLimit)
+    private val nPrefillOrigins = sqrt(cacheSize.toFloat()).toInt() // Should be smaller than sizeLimit
+    private var cache : LoadingCache<UnorderedODPair, Float> = CacheBuilder.newBuilder()
+        .maximumSize(cacheSize)
+        .build(
+            object : CacheLoader<UnorderedODPair, Float>() {
+                override fun load(key: UnorderedODPair) : Float {
+                    return calcDistance(key.first, key.second).toFloat()
+                }
+            }
+        )
     private var cachePath: Path? = null
-    private val unRoutableLocs = mutableSetOf<LocationOption>()
+    private val unRoutableLocs = ConcurrentHashMap.newKeySet<LocationOption>()
 
     /**
      * Fill cache either by loading it from a file or filling it with fill().
@@ -98,46 +128,54 @@ class RoutingCache(
             logger.info("Calculating distance matrix.")
         }
 
-        val nLocations = min(locations.size, prefillSize)
+        val nLocations = min(locations.size, nPrefillOrigins)
         val highestPriorities = priorityValues.mapIndexed {i, it -> i to it}.sortedBy { it.second }.takeLast(nLocations)
         val relevantLocations = highestPriorities.map { locations[it.first] }
 
-        var locsDone = 0
-        for (origin in relevantLocations) {
-            // Progressbar
-            print( "Calculating distance matrix: ${ProgressBar.show(locsDone / nLocations.toDouble() )}\r" )
-
-            if (origin !is RealLocation) { continue }
-
-            val oTable  = if (!table.containsKey(origin)) {
-                table[origin] = MaxSizeHashMap(sizeLimitSecTable)
-                table[origin]!!
-            } else {
-                table[origin]!!
-            }
-
-            when (mode) {
-                RoutingMode.BEELINE -> {
-                    for (destination in relevantLocations) {
-                        if (destination !is RealLocation) { continue }
-                        if (oTable[destination] != null)  { continue }
-                        oTable[destination] = calcDistance(origin, destination).toFloat()
-                    }
+        runBlocking(dispatcher) {
+            val locsDone = AtomicInteger()
+            for (origin in relevantLocations) {
+                if (origin !is RealLocation) {
+                    continue
                 }
-                RoutingMode.GRAPHHOPPER -> {
-                    val qGraph = prepareQGraph(hopper!!, relevantLocations.filterIsInstance<RealLocation>())
-                    val sptResults = querySPT(qGraph, origin, relevantLocations)
+                launch {
+                    when (mode) {
+                        RoutingMode.BEELINE -> {
+                            for (destination in relevantLocations) {
+                                if (destination !is RealLocation) {
+                                    continue
+                                }
+                                val od = UnorderedODPair(origin, destination)
+                                cache.get(od) // Put into cache if not already present
+                            }
+                        }
 
-                    for ((i, destination) in relevantLocations.withIndex()) {
-                        if (destination !is RealLocation) { continue }
-                        if (oTable[destination] != null)  { continue }
+                        RoutingMode.GRAPHHOPPER -> {
+                            val qGraph = prepareQGraph(hopper!!, relevantLocations.filterIsInstance<RealLocation>())
+                            val sptResults = querySPT(qGraph, origin, relevantLocations)
 
-                        val sptDistance = sptResults[i]?.distance?.toFloat()
-                        oTable[destination] = sptDistance ?: calcDistance(origin, destination).toFloat()
+                            for ((j, destination) in relevantLocations.withIndex()) {
+                                if (destination !is RealLocation) {
+                                    continue
+                                }
+                                val od = UnorderedODPair(origin, destination)
+
+                                val sptDistance = sptResults[j]?.distance?.toFloat()
+                                if (sptDistance != null) {
+                                    cache.put(od, sptDistance)
+                                } else {
+                                    cache.get(od)
+                                }
+                            }
+                        }
                     }
+
+                    // Progressbar
+                    val done = locsDone.incrementAndGet()
+                    print("Calculating distance matrix: ${ProgressBar.show(done / nLocations.toDouble())}\r")
                 }
+
             }
-            locsDone += 1
         }
         println("Calculating distance matrix: " + ProgressBar.done())
     }
@@ -157,25 +195,15 @@ class RoutingCache(
                 if (origin !is RealLocation) {
                     return destinations.map { calcDistanceBeeline(origin, it).toFloat() }.toFloatArray()
                 }
-                val oTable  = if (!table.containsKey(origin)) {
-                    table[origin] = MaxSizeHashMap(sizeLimitSecTable)
-                    table[origin]!!
-                } else {
-                    table[origin]!!
-                }
+
                 return FloatArray(destinations.size) {
                     val destination = destinations[it]
+
                     if (destination !is RealLocation) {
                         calcDistanceBeeline(origin, destination).toFloat()
                     } else {
-                        val entry = oTable[destination]
-                        if (entry == null) {
-                            val distance = calcDistance(origin, destination).toFloat()
-                            oTable[destination] = distance
-                            distance
-                        } else {
-                            oTable[destination]!!
-                        }
+                        val od = UnorderedODPair(origin, destination)
+                        cache.get(od)
                     }
                 }
             }
@@ -207,17 +235,16 @@ class RoutingCache(
 
                     for (error in rsp.errors) {
                         if (error is PointNotFoundException) {
-                            if (error.pointIndex == 0) {
+                            val unreachableCoord = if (error.pointIndex == 0) {
                                 unRoutableLocs.add(origin)
-                                logger.warn(
-                                    "Because Point ${origin.latlonCoord} is unreachable."
-                                )
+                                origin.latlonCoord
                             } else {
                                 unRoutableLocs.add(destination)
-                                logger.warn(
-                                    "Because Point ${destination.latlonCoord} is unreachable."
-                                )
+                                destination.latlonCoord
                             }
+                            logger.warn(
+                                "Because Point $unreachableCoord is unreachable."
+                            )
                         }
                     }
 
@@ -237,7 +264,7 @@ class RoutingCache(
             Files.createDirectories(cachePath!!.parent)
             val fos = FileOutputStream(cachePath!!.toFile())
             val oos = ObjectOutputStream(fos)
-            oos.writeObject(formatForCache(table))
+            oos.writeObject(formatForCache(cache.asMap()))
             oos.close()
         } else {
             if (mode != RoutingMode.BEELINE) {
@@ -254,33 +281,26 @@ class RoutingCache(
         val ois = ObjectInputStream(fis)
         val cacheData = ois.readObject() as OOMCacheFormat
 
-        val indicesInCache = mutableListOf<Int>()
-        for (location in locations) {
-            for ((i, coord) in cacheData.coords.withIndex()) {
+        // Find locations for coords
+        val allCoords = cacheData.dCoords.toSet().union(cacheData.oCoords.toSet())
+        val coordLocMap = mutableMapOf<Coordinate, LocationOption>()
+        for (coord in allCoords) {
+            if (coordLocMap.containsKey(coord)) { continue }
+            for (location in locations) {
                 if ((coord.x == location.latlonCoord.x) and (coord.y == location.latlonCoord.y)) {
-                    indicesInCache.add(i)
+                    coordLocMap[coord] = location
                     break
                 }
             }
         }
-        assert(indicesInCache.size == locations.size)
 
-        for ((i, origin) in locations.withIndex()) {
-            val oTable  = if (!table.containsKey(origin)) {
-                table[origin] = MaxSizeHashMap(sizeLimitSecTable)
-                table[origin]!!
-            } else {
-                table[origin]!!
-            }
-
-            for ((j, destination) in locations.withIndex()) {
-                val originIdx = indicesInCache[i]
-                val destinationIdx = indicesInCache[j]
-                val value = cacheData.matrix[originIdx][destinationIdx]
-                assert(value >= 0f)
-
-                oTable[destination] = value
-            }
+        // Fill cache
+        for (i in 0 until cacheData.oCoords.size) {
+            val o = coordLocMap[cacheData.oCoords[i]]!!
+            val d = coordLocMap[cacheData.dCoords[i]]!!
+            val od = UnorderedODPair(o, d)
+            val distance = cacheData.distances[i]
+            cache.put(od, distance)
         }
     }
 
@@ -288,26 +308,18 @@ class RoutingCache(
      * File storage format of the cache
      */
     private class OOMCacheFormat  (
-        val coords: Array<Coordinate>,
-        val matrix: Array<FloatArray>
+        val oCoords: Array<Coordinate>,
+        val dCoords: Array<Coordinate>,
+        val distances: Array<Float>
     ) : java.io.Serializable
 
     /**
      * Format cache to the storage format
      */
-    private fun formatForCache(table: HashMap<LocationOption, HashMap<LocationOption, Float>>) :
-            OOMCacheFormat {
-        val locations = table.keys
-        val coords = table.keys.map { it.latlonCoord }.toTypedArray()
-        val matrix = Array(coords.size) { FloatArray(coords.size) { -1.0f } }
-
-        for ((i, origin) in locations.withIndex()) {
-            val oTable = table[origin]!!
-            for((j, destination) in locations.withIndex()) {
-                val distance = oTable[destination]
-                matrix[i][j] = distance ?: -1.0f
-            }
-        }
-        return OOMCacheFormat(coords, matrix)
+    private fun formatForCache(table: ConcurrentMap<UnorderedODPair, Float>) : OOMCacheFormat {
+        val oCoords = table.keys.map { it.first.latlonCoord }.toTypedArray()
+        val dCoords = table.keys.map { it.second.latlonCoord }.toTypedArray()
+        val distances = table.values.toTypedArray()
+        return OOMCacheFormat(oCoords, dCoords, distances)
     }
 }

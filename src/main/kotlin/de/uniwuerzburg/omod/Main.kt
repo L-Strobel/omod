@@ -9,7 +9,7 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
-import de.uniwuerzburg.omod.assignment.allOrNothing
+import de.uniwuerzburg.omod.core.assignment.allOrNothing
 import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.core.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
@@ -20,7 +20,6 @@ import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Paths
-import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
 sealed interface AgentNumberDefinition
@@ -104,7 +103,7 @@ class Run : CliktCommand() {
         help = "Size of the distance matrix to precompute (only if routing_mode is GRAPHHOPPER). " +
                "A high value will lead to high RAM usage and long initialization times " +
                "but overall significant speed gains. Especially then rerunning the same area."
-    ).int().default(20_000)
+    ).long().default(400e6.toLong())
     private val assign_trips by option(
         help = "[Experimental] Assign trips to routes using an all-or-nothing approach. " +
                "All trips are driven by car."
@@ -118,8 +117,12 @@ class Run : CliktCommand() {
         help="Path to file that describes the socio-demographic makeup of the population. " +
              "Must be formatted like omod/src/main/resources/Population.json."
     ).file(mustExist = true, mustBeReadable = true)
+    private val n_worker by option(
+        help="Number of parallel coroutines that can be executed at the same time." +
+             "Default: Number of CPU-Cores available."
+    ).int()
 
-    @OptIn(ExperimentalTime::class, ExperimentalSerializationApi::class)
+    @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
         if ((census == null) && (agentNumberDefinition is ShareOfPop)) {
             throw Exception(
@@ -136,7 +139,8 @@ class Run : CliktCommand() {
                 cache = true, cacheDir = cache_dir,
                 populateBufferArea = populate_buffer_area,
                 distanceCacheSize = distance_matrix_cache_size,
-                populationFile = population_file
+                populationFile = population_file,
+                nWorker = n_worker
             )
         }
         println("Loading data took: $timeRead")

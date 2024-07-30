@@ -5,7 +5,9 @@ import de.uniwuerzburg.omod.io.*
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import de.uniwuerzburg.omod.routing.createGraphHopper
-import kotlinx.serialization.decodeFromString
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.*
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
@@ -15,7 +17,10 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -47,8 +52,9 @@ class Omod(
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
     private val populateBufferArea: Boolean = true,
-    distanceCacheSize: Int = 20_000,
-    populationFile: File? = null
+    distanceCacheSize: Long = 400e6.toLong(),
+    populationFile: File? = null,
+    nWorker: Int? = null
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
@@ -68,6 +74,7 @@ class Omod(
     val transformer: CRSTransformer
     private val logger = LoggerFactory.getLogger(Omod::class.java)
     private var censusAvailable = false
+    private val dispatcher = if (nWorker != null) Dispatchers.Default.limitedParallelism(nWorker) else Dispatchers.Default
 
     init {
         // Get population distribution
@@ -126,7 +133,7 @@ class Omod(
         }
 
         // Create routing cache
-        routingCache = RoutingCache(mode, hopper, distanceCacheSize)
+        routingCache = RoutingCache(mode, hopper, distanceCacheSize, dispatcher)
         if (mode == RoutingMode.GRAPHHOPPER) {
             val priorityValues = getWeightsNoOrigin(grid, ActivityType.OTHER) // Priority of cells for caching
             routingCache.load(grid, cacheDir, priorityValues)
@@ -371,25 +378,33 @@ class Omod(
         // Create agent until n life in the focus area
         val agents = ArrayList<MobiAgent>(totalNAgents)
         val agentFactory = AgentFactory()
-        for (id in 0 until totalNAgents) {
-            // Get home zone (might be cell or dummy is node)
-            val inside = id < nFocus // Should agent live inside focus area
-            val homeCumDist = if ( inside ) insideCumDist else outsideCumDist
-            val homeZoneID = sampleCumDist(homeCumDist, rng)
-            val homeZone = zones[homeZoneID]
+        for (chunk in (0 until totalNAgents).chunked(10000)) {
+            runBlocking(dispatcher) {
+                val agentFutures = mutableListOf<Deferred<MobiAgent>>()
+                for (id in chunk) {
+                    val agent = async(dispatcher) {
+                        // Get home zone (might be cell or dummy is node)
+                        val inside = id < nFocus // Should agent live inside focus area
+                        val homeCumDist = if ( inside ) insideCumDist else outsideCumDist
+                        val homeZoneID = sampleCumDist(homeCumDist, rng)
+                        val homeZone = zones[homeZoneID]
 
-            // Get home location
-            val home = if (homeZone is Cell) { // Home is building
-                val buildingsHomeDist = createCumDist(
-                    getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
-                )
-                homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
-            } else { // IS dummy location
-                homeZone
+                        // Get home location
+                        val home = if (homeZone is Cell) { // Home is building
+                            val buildingsHomeDist = createCumDist(
+                                getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
+                            )
+                            homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
+                        } else { // IS dummy location
+                            homeZone
+                        }
+                        agentFactory.createAgent(home, homeZone)
+                    }
+                    agentFutures.add(agent)
+                }
+                // Add the agents to the population
+                agents.addAll( agentFutures.awaitAll() )
             }
-
-            // Add the agent to the population
-            agents.add(agentFactory.createAgent(home, homeZone))
         }
         agents.shuffle(rng)
         return agents
@@ -717,8 +732,8 @@ class Omod(
      * @return Activity schedule
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun getActivitySchedule(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED, from: ActivityType = ActivityType.HOME,
-                           start: LocationOption
+    fun getActivitySchedule(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
+                            from: ActivityType = ActivityType.HOME, start: LocationOption
     ): List<Activity> {
         val activityChain = getActivityChain(agent, weekday, from)
         val stayTimes = getStayTimes(activityChain, agent, weekday)
@@ -763,33 +778,51 @@ class Omod(
      * @return List of agents each with an activity schedules for every simulated day
      */
     fun run(agents: List<MobiAgent>, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
-        var weekday = start_wd
+        val jobsDone = AtomicInteger()
+        val totalJobs = (agents.size).toDouble()
 
-        var jobsDone = 0
-        val totalJobs = (agents.size * n_days).toDouble()
-        for (i in 0 until n_days) {
-            for (agent in agents) {
-                print( "Running model: ${ProgressBar.show( jobsDone / totalJobs )}\r" )
-
-                val activities = if (agent.mobilityDemand.isEmpty()) {
-                    getActivitySchedule(agent, weekday)
-                } else {
-                    val lastActivity = agent.mobilityDemand.last().activities.last()
-                    getActivitySchedule(
-                        agent,
-                        weekday,
-                        from = lastActivity.type,
-                        start = lastActivity.location
-                    )
+        for (chunk in agents.chunked(10000)) { // Don't launch to many coroutines at once
+            runBlocking(dispatcher) {
+                for (agent in chunk) {
+                    launch(dispatcher) {
+                        runAgent(agent, start_wd, n_days)
+                        val done = jobsDone.incrementAndGet()
+                        print("Running model: ${ProgressBar.show(done / totalJobs)}\r")
+                    }
                 }
-                agent.mobilityDemand.add( Diary(i, weekday, activities) )
-                jobsDone += 1
             }
-            weekday = weekday.next()
         }
         println("Running model: " + ProgressBar.done())
         routingCache.toOOMCache() // Save routing cache
         return agents
+    }
+
+    /**
+     * Generate the mobility demand for one agent
+     *
+     * @param agent
+     * @param start_wd Weekday of the first simulated day
+     * @param n_days Number of consecutive days to simulate
+     * @return agent
+     */
+    private fun runAgent(agent: MobiAgent, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : MobiAgent {
+        var weekday = start_wd
+        for (i in 0 until n_days) {
+            val activities = if (agent.mobilityDemand.isEmpty()) {
+                getActivitySchedule(agent, weekday)
+            } else {
+                val lastActivity = agent.mobilityDemand.last().activities.last()
+                getActivitySchedule(
+                    agent,
+                    weekday,
+                    from = lastActivity.type,
+                    start = lastActivity.location
+                )
+            }
+            agent.mobilityDemand.add( Diary(i, weekday, activities) )
+            weekday = weekday.next()
+        }
+        return agent
     }
 
     /**
