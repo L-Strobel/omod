@@ -1,8 +1,8 @@
 package de.uniwuerzburg.omod.core.models
 
-import de.uniwuerzburg.omod.core.CRSTransformer
-import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
-import de.uniwuerzburg.omod.io.GeoJsonODProperties
+import de.uniwuerzburg.omod.utils.CRSTransformer
+import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection
+import de.uniwuerzburg.omod.io.geojson.GeoJsonODProperties
 import kotlinx.serialization.json.Json
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory

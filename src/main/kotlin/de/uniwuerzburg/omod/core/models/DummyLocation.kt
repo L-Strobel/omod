@@ -17,7 +17,11 @@ data class DummyLocation (
     override val latlonCoord: Coordinate,
     override var odZone: ODZone?,
     val transferActivities: Set<ActivityType>
-) : LocationOption {
+) : LocationOption, AggLocation {
     override val inFocusArea = false
     override val avgDistanceToSelf = 1.0
+
+    override fun getAggLoc() : AggLocation {
+        return this
+    }
 }

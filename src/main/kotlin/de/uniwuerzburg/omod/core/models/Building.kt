@@ -1,8 +1,9 @@
 package de.uniwuerzburg.omod.core.models
 
 import de.uniwuerzburg.omod.core.*
-import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
-import de.uniwuerzburg.omod.io.GeoJsonFeatureCollection
+import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
+import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection
+import de.uniwuerzburg.omod.utils.CRSTransformer
 import org.apache.commons.math3.ml.clustering.Clusterable
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
@@ -69,5 +70,9 @@ class Building  (
 
     override fun getPoint(): DoubleArray {
         return arrayOf(coord.x, coord.y).toDoubleArray()
+    }
+
+    override fun getAggLoc() : AggLocation? {
+        return cell
     }
 }

@@ -12,4 +12,6 @@ sealed interface LocationOption {
     var odZone: ODZone?
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
+
+    fun getAggLoc() : AggLocation?
 }

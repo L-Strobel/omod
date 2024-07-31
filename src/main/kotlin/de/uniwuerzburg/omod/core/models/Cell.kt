@@ -15,7 +15,7 @@ data class Cell (
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
     val buildings: List<Building>,
-) : RealLocation {
+) : RealLocation, AggLocation {
     // From LocationOption
     override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
 
@@ -30,6 +30,10 @@ data class Cell (
         .mapValues { it.value.sum() }
 
     override val population = buildings.sumOf { it.population }
+
+    override fun getAggLoc() : AggLocation {
+        return this
+    }
 
     override fun hashCode(): Int {
         return id

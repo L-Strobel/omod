@@ -1,0 +1,1 @@
+This package contains simple data classes and enumerations with no methods except for getters and factory methods.
