@@ -154,12 +154,13 @@ class Run : CliktCommand() {
         }
 
         println("Simulation took: $timeSim")
-        println("Saving results...")
+        print("Saving results...\r")
 
         // Store output
         FileOutputStream(out).use { f ->
-            Json.encodeToStream(agents.map { formatOutput(it) }, f)
+            Json.encodeToStream( agents.map { formatOutput(it) }, f)
         }
+        println("Saving results... Done!")
 
         // Assignment
         if (assign_trips) {
