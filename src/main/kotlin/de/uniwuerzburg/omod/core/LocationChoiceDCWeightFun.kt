@@ -2,7 +2,7 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.Landuse
 import de.uniwuerzburg.omod.core.models.RealLocation
-import de.uniwuerzburg.omod.io.GeoJsonBuildingProperties
+import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
