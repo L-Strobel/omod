@@ -1,4 +1,4 @@
-package de.uniwuerzburg.omod.io
+package de.uniwuerzburg.omod.io.osm
 
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope

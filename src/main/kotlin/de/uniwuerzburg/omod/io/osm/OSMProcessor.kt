@@ -1,4 +1,4 @@
-package de.uniwuerzburg.omod.io
+package de.uniwuerzburg.omod.io.osm
 
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.operation.linemerge.LineMerger

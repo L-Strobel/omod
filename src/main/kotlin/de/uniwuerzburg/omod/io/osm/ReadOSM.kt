@@ -1,40 +1,16 @@
-package de.uniwuerzburg.omod.io
+package de.uniwuerzburg.omod.io.osm
 
 import crosby.binary.osmosis.OsmosisReader
-import de.uniwuerzburg.omod.core.*
 import de.uniwuerzburg.omod.core.models.Landuse
+import de.uniwuerzburg.omod.io.logger
+import de.uniwuerzburg.omod.utils.CRSTransformer
+import de.uniwuerzburg.omod.utils.fastCovers
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
 import org.openstreetmap.osmosis.core.filter.common.IdTrackerType
 import java.io.File
 import java.io.FileInputStream
-
-/**
- * Data gathered about one building from all inputs.
- *
- * @param osm_id OSM ID of building
- * @param geometry Geometry of building
- */
-data class BuildingData (
-    val osm_id: Long,
-    val geometry: Geometry,
-) {
-    val area = geometry.area
-    var landuse: Landuse = Landuse.NONE
-    var nShops: Double = 0.0
-    var nOffices: Double = 0.0
-    var nSchools: Double = 0.0
-    var nUnis: Double = 0.0
-    var nRestaurant: Double = 0.0
-    var nPlaceOfWorship: Double = 0.0
-    var nCafe: Double = 0.0
-    var nFastFood: Double = 0.0
-    var nKinderGarten: Double = 0.0
-    var nTourism: Double = 0.0
-    var inFocusArea: Boolean = false
-    var population: Double? = null
-}
 
 /**
  * Read and process all the input files.
@@ -47,7 +23,9 @@ data class BuildingData (
  * @return Data retrieved for all buildings in the model area
  */
 fun readOSM (focusArea: Geometry, osmFile: File, bufferRadius: Double,
-             geometryFactory: GeometryFactory, transformer: CRSTransformer): List<BuildingData> {
+             geometryFactory: GeometryFactory, transformer: CRSTransformer
+): List<BuildingData> {
+    logger.info("Start reading OSM-File... (If this is too slow use smaller .osm.pbf file)")
     val utmFocusArea = transformer.toModelCRS(focusArea)
     val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
 
@@ -128,5 +106,6 @@ fun readOSM (focusArea: Geometry, osmFile: File, bufferRadius: Double,
                 .forEach { it.inFocusArea = true }
         }
     )
+    logger.info("OSM-File read!")
     return buildings
 }
