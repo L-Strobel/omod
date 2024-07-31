@@ -1,14 +1,23 @@
-package de.uniwuerzburg.omod.assignment
+package de.uniwuerzburg.omod.core.assignment
 
 import com.graphhopper.GraphHopper
 import de.uniwuerzburg.omod.core.*
-import de.uniwuerzburg.omod.io.OutputTDiary
-import de.uniwuerzburg.omod.io.OutputTEntry
-import de.uniwuerzburg.omod.io.OutputTrip
+import de.uniwuerzburg.omod.core.models.Building
+import de.uniwuerzburg.omod.core.models.LocationOption
+import de.uniwuerzburg.omod.core.models.MobiAgent
+import de.uniwuerzburg.omod.core.models.RealLocation
+import de.uniwuerzburg.omod.io.json.OutputTDiary
+import de.uniwuerzburg.omod.io.json.OutputTEntry
+import de.uniwuerzburg.omod.io.json.OutputTrip
 import de.uniwuerzburg.omod.routing.calcDistanceBeeline
 import de.uniwuerzburg.omod.routing.prepareQGraph
 import de.uniwuerzburg.omod.routing.querySPT
 import de.uniwuerzburg.omod.routing.routeWithCar
+import de.uniwuerzburg.omod.utils.CRSTransformer
+import de.uniwuerzburg.omod.utils.ProgressBar
+import org.locationtech.jts.geom.GeometryFactory
+
+val geometryFactory = GeometryFactory()
 
 /**
  * Determine the direct (beeline) route from origin to destination.

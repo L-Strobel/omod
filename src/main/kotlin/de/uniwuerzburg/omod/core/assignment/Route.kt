@@ -1,4 +1,4 @@
-package de.uniwuerzburg.omod.assignment
+package de.uniwuerzburg.omod.core.assignment
 
 import com.graphhopper.GHResponse
 import org.locationtech.jts.geom.Coordinate
