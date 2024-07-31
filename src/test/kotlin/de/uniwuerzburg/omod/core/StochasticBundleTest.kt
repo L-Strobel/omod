@@ -11,21 +11,21 @@ internal class StochasticBundleTest {
     @Test
     fun createCumDist() {
         val expected = 1.0
-        assert(expected == createCumDist(testWeights).last())
+        assert(expected == de.uniwuerzburg.omod.utils.createCumDist(testWeights).last())
     }
 
     @Test
     fun sampleCumDist() {
-        val distr = createCumDist(testWeights)
-        val samples = IntArray(100) { sampleCumDist(distr, rng) }
+        val distr = de.uniwuerzburg.omod.utils.createCumDist(testWeights)
+        val samples = IntArray(100) { de.uniwuerzburg.omod.utils.sampleCumDist(distr, rng) }
         assert(0 <= samples.minOrNull()!!)
         assert(testWeights.size > samples.maxOrNull()!!)
     }
 
     @Test
     fun sampleCumDistTestZeroWeight() {
-        val distr = createCumDist(testWeights)
-        val samples = IntArray(100) { sampleCumDist(distr, rng) }
+        val distr = de.uniwuerzburg.omod.utils.createCumDist(testWeights)
+        val samples = IntArray(100) { de.uniwuerzburg.omod.utils.sampleCumDist(distr, rng) }
         assert(!samples.contains(0))
     }
 }

@@ -1,8 +1,11 @@
 package de.uniwuerzburg.omod.io
 
-import de.uniwuerzburg.omod.core.CRSTransformer
+import de.uniwuerzburg.omod.utils.CRSTransformer
 import de.uniwuerzburg.omod.core.Omod
-import kotlinx.serialization.decodeFromString
+import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollectionNoProperties
+import de.uniwuerzburg.omod.io.geojson.GeoJsonGeometryCollection
+import de.uniwuerzburg.omod.io.geojson.GeoJsonNoProperties
+import de.uniwuerzburg.omod.io.osm.readOSM
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.GeometryFactory
 import java.io.File
@@ -17,7 +20,7 @@ internal class ReadOSMKtTest {
         val osmFile = File(Omod::class.java.classLoader.getResource("test.osm.pbf")!!.file)
         val geometryFactory = GeometryFactory()
 
-        val areaColl: GeoJsonNoProperties = json.decodeFromString(areaString)
+        val areaColl: GeoJsonNoProperties = jsonHandler.decodeFromString(areaString)
         val focusArea = if (areaColl is GeoJsonFeatureCollectionNoProperties) {
             geometryFactory.createGeometryCollection(
                 areaColl.features.map { it.geometry.toJTS(geometryFactory) }.toTypedArray()

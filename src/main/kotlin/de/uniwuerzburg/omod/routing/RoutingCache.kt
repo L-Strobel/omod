@@ -6,7 +6,7 @@ import com.google.common.cache.LoadingCache
 import com.graphhopper.GraphHopper
 import com.graphhopper.util.exceptions.PointNotFoundException
 import de.uniwuerzburg.omod.core.models.LocationOption
-import de.uniwuerzburg.omod.core.ProgressBar
+import de.uniwuerzburg.omod.utils.ProgressBar
 import de.uniwuerzburg.omod.core.models.RealLocation
 import kotlinx.coroutines.*
 import org.locationtech.jts.geom.Coordinate
