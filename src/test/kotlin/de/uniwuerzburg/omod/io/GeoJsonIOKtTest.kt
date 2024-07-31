@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.core.Omod
+import de.uniwuerzburg.omod.io.geojson.readGeoJson
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
