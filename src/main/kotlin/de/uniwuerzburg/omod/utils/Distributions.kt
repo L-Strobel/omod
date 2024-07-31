@@ -1,4 +1,4 @@
-package de.uniwuerzburg.omod.core
+package de.uniwuerzburg.omod.utils
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix
 import org.apache.commons.math3.linear.CholeskyDecomposition
@@ -37,7 +37,7 @@ fun sampleCumDistWOR(cumDistWOR: IntArray, rng: Random): Int {
     var i = 0
     while (i < cumDistWOR.size - 1) {
         if (thresh < cumDistWOR[i]) {
-            cumDistWOR[i] -= 1
+            cumDistWOR[i] -= 1 // TODO: [BUG] 1 Should also be subtracted from all following values.
             break
         }
         i++
@@ -121,7 +121,7 @@ fun sampleNDGaussian(means: DoubleArray, covariances: Array<DoubleArray>, rng: R
     // returns such asymmetric matrices
     val l = CholeskyDecomposition(Array2DRowRealMatrix(covariances), 0.1, 1.0E-10).l
 
-    // Get independent gaussians
+    // Get independent Gaussian's
     val u = DoubleArray(dim) { rng.nextGaussian() }
 
     // Do x = mean + l * u
