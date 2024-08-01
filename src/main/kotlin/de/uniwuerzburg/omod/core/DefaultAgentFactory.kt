@@ -4,6 +4,7 @@ import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.utils.*
 import kotlinx.coroutines.*
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 
 /**
@@ -12,12 +13,10 @@ import kotlin.collections.ArrayList
 class DefaultAgentFactory (
     private val destinationFinder: DestinationFinder,
     populationDef: PopulationDef,
-    private val rng: Random,
     private val dispatcher: CoroutineDispatcher
 ) : AgentFactory {
     private val features: List<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>
     private val featureDistribution: DoubleArray
-    private var nextID = 0
 
     init {
         val (f, fD) = getSocioDemographicFeatureDistr(populationDef)
@@ -49,11 +48,14 @@ class DefaultAgentFactory (
      * Assigns socio-demographic features, and home, work, and school locations.
      *
      * TODO: Implement populateBufferArea for this function
+     * TODO: Make parallel
+     * // Idea create function getHomes() for both createAgents and then a unified parallel function for the rest
+     * // Danger: Sample cumDistWOR is not threadsafe
      *
      * @param share Share of the population to simulate
      * @return Population of agents
      */
-    override fun createAgents(share: Double, zones: List<AggLocation>): List<MobiAgent> {
+    override fun createAgents(share: Double, zones: List<AggLocation>, rng: Random): List<MobiAgent> {
         print("Creating Population...\r")
         // Real locations
         val grid = zones.filterIsInstance<Cell>()
@@ -87,14 +89,14 @@ class DefaultAgentFactory (
         for (id in 0 until totalAgentsBuildings) {
             val i = sampleCumDistWOR(buildingPopDistr, rng)
             val home = buildings[i]
-            agents.add(createAgent(home, home.cell!!, zones))
+            agents.add(createAgent(id, home, home.cell!!, zones, rng))
         }
         // Living at dummy location
         val dummyPopDistr = createCumDistWOR(dummyZonePopulation.toIntArray())
         for (id in 0 until totalAgentsDummy) {
             val i = sampleCumDistWOR(dummyPopDistr, rng)
             val home = dummyZones[i]
-            agents.add(createAgent(home, home, zones))
+            agents.add(createAgent(id + totalAgentsBuildings, home, home, zones, rng))
         }
         agents.shuffle(rng)
         println("Creating Population...  Done!")
@@ -108,7 +110,9 @@ class DefaultAgentFactory (
      * @param nFocus number of agents in focus areas
      * @return Population of agents
      */
-    override fun createAgents(nFocus: Int, zones: List<AggLocation>, populateBufferArea: Boolean): List<MobiAgent> {
+    override fun createAgents(
+        nFocus: Int, zones: List<AggLocation>, populateBufferArea: Boolean, rng: Random
+    ): List<MobiAgent> {
         print("Creating Population...\r")
 
         // Home distributions inside and outside of focus area
@@ -128,30 +132,33 @@ class DefaultAgentFactory (
 
         // Create agent until n life in the focus area
         val agents = ArrayList<MobiAgent>(totalNAgents)
-        val agentsDef = mutableListOf<Deferred<MobiAgent>>()
-        runBlocking(dispatcher) {
-            for (id in (0 until totalNAgents)) {
-                val agent = async {
-                    // Get home zone (might be cell or dummy is node)
-                    val inside = id < nFocus // Should agent live inside focus area
-                    val homeCumDist = if ( inside ) insideCumDist else outsideCumDist
-                    val homeZoneID = sampleCumDist(homeCumDist, rng)
-                    val homeZone = zones[homeZoneID]
+        for (chunk in (0 until totalNAgents).chunked(10_000)) {
+            runBlocking(dispatcher) {
+                val agentsFutures = mutableListOf<Deferred<MobiAgent>>()
+                for (id in chunk) {
+                    val coroutineRng = Random(rng.nextLong())
+                    val agent = async {
+                        // Get home zone (might be cell or dummy is node)
+                        val inside = id < nFocus // Should agent live inside focus area
+                        val homeCumDist = if (inside) insideCumDist else outsideCumDist
+                        val homeZoneID = sampleCumDist(homeCumDist, coroutineRng)
+                        val homeZone = zones[homeZoneID]
 
-                    // Get home location
-                    val home = if (homeZone is Cell) { // Home is building
-                        val buildingsHomeDist = createCumDist(
-                            getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
-                        )
-                        homeZone.buildings[sampleCumDist(buildingsHomeDist, rng)]
-                    } else { // IS dummy location
-                        homeZone
+                        // Get home location
+                        val home = if (homeZone is Cell) { // Home is building
+                            val buildingsHomeDist = createCumDist(
+                                getHomeWeightsRestricted(homeZone.buildings, inside).toDoubleArray()
+                            )
+                            homeZone.buildings[sampleCumDist(buildingsHomeDist, coroutineRng)]
+                        } else { // IS dummy location
+                            homeZone
+                        }
+                        createAgent(id, home, homeZone, zones, coroutineRng)
                     }
-                    createAgent(home, homeZone, zones)
+                    agentsFutures.add(agent)
                 }
-                agentsDef.add( agent )
+                agents.addAll(agentsFutures.awaitAll())
             }
-            agents.addAll(agentsDef.awaitAll())
         }
         agents.shuffle(rng)
         println("Creating Population...  Done!")
@@ -165,7 +172,9 @@ class DefaultAgentFactory (
      * @param homeZone Routing cell of the home. Either a Cell or a DummyLocation
      * @return Agent
      */
-    private fun createAgent(home: LocationOption, homeZone: AggLocation, zones: List<AggLocation>) : MobiAgent {
+    private fun createAgent(
+        id: Int, home: LocationOption, homeZone: AggLocation, zones: List<AggLocation>, rng: Random
+    ) : MobiAgent {
         // Sociodemographic features
         val agentFeatures = sampleCumDist(featureDistribution, rng)
         val homogenousGroup = features[agentFeatures].first
@@ -173,11 +182,10 @@ class DefaultAgentFactory (
         val age = features[agentFeatures].third
 
         // Fixed locations
-        val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK)
-        val school = destinationFinder.getLocation(homeZone, zones, ActivityType.SCHOOL)
+        val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK, rng)
+        val school = destinationFinder.getLocation(homeZone, zones, ActivityType.SCHOOL, rng)
 
-        val agent = MobiAgent(nextID, homogenousGroup, mobilityGroup, age, home, work, school)
-        nextID += 1
+        val agent = MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school)
         return agent
     }
 

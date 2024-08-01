@@ -9,10 +9,9 @@ import de.uniwuerzburg.omod.utils.sampleNDGaussian
 import java.util.Random
 
 /**
- * @param rng Random number generator
  * @param activityGroups A list of all possible activity groups
  */
-class DefaultActivityGenerator (private val rng: Random, activityGroups: List<ActivityGroup>): ActivityGenerator {
+class DefaultActivityGenerator (activityGroups: List<ActivityGroup>): ActivityGenerator {
     private val nodes: Map<Int, GroupData> // key exists for every combination of the features weekday, homogeneous group, mobility group, and age
     private val thresh = 30 // Minimum number of samples that a valid activity chain distribution needs
 
@@ -35,7 +34,9 @@ class DefaultActivityGenerator (private val rng: Random, activityGroups: List<Ac
      * @param from The yesterday's last activity
      * @return List of activities conducted by the agent today
      */
-    override fun getActivityChain(agent: MobiAgent, weekday: Weekday, from: ActivityType) : List<ActivityType> {
+    override fun getActivityChain(
+        agent: MobiAgent, weekday: Weekday, from: ActivityType, rng: Random
+    ) : List<ActivityType> {
         val chainData = getChain(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
         val i = sampleCumDist(chainData.distr, rng)
         return chainData.chains[i]
@@ -49,7 +50,8 @@ class DefaultActivityGenerator (private val rng: Random, activityGroups: List<Ac
      * @param weekday The weekday
      * @return Stay times at each activity
      */
-    override fun getStayTimes(activityChain: List<ActivityType>, agent: MobiAgent, weekday: Weekday
+    override fun getStayTimes(
+        activityChain: List<ActivityType>, agent: MobiAgent, weekday: Weekday, rng: Random
     ) : List<Double?> {
         return if (activityChain.size == 1) {
             // Stay at one location the entire day

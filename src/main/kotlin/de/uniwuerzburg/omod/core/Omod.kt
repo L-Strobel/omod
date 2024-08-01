@@ -26,9 +26,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
-import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -72,7 +70,7 @@ class Omod(
     private val grid: List<Cell>
     private val zones: List<AggLocation> // Grid + DummyLocations for commuting locations
     private val activityGenerator: ActivityGenerator
-    private val rng: Random = if (seed != null) Random(seed) else Random()
+    private val mainRng: Random = if (seed != null) Random(seed) else Random()
     val transformer: CRSTransformer
     private val routingCache: RoutingCache
     private val logger = LoggerFactory.getLogger(Omod::class.java)
@@ -149,10 +147,10 @@ class Omod(
         }
 
         // Activity generator
-        activityGenerator = DefaultActivityGenerator(rng, activityGroups)
+        activityGenerator = DefaultActivityGenerator(activityGroups)
 
         // Destination finder
-        destinationFinder = DefaultDestinationFinder(routingCache, locChoiceWeightFuns, rng)
+        destinationFinder = DefaultDestinationFinder(routingCache, locChoiceWeightFuns)
 
         // Calibration
         if (odFile != null) {
@@ -170,7 +168,7 @@ class Omod(
         }
 
         // Agent factory
-        agentFactory = DefaultAgentFactory(destinationFinder, populationDef, rng, dispatcher)
+        agentFactory = DefaultAgentFactory(destinationFinder, populationDef, dispatcher)
     }
 
     // Factories
@@ -333,8 +331,9 @@ class Omod(
      * @param start Location the day starts at
      * @return Locations of each activity
      */
-    private fun getLocations(agent: MobiAgent, activityChain: List<ActivityType>,
-                     start: LocationOption
+    private fun getLocations(
+        agent: MobiAgent, activityChain: List<ActivityType>,
+        start: LocationOption, rng: Random
     ) : List<LocationOption> {
         val locations = mutableListOf<LocationOption>()
         locations.add(start)
@@ -345,10 +344,10 @@ class Omod(
                     ActivityType.WORK -> agent.work
                     ActivityType.SCHOOL -> agent.school
                     ActivityType.SHOPPING -> {
-                        destinationFinder.getLocation(locations[i-1].getAggLoc()!!, zones, ActivityType.SHOPPING)
+                        destinationFinder.getLocation(locations[i-1].getAggLoc()!!, zones, ActivityType.SHOPPING, rng)
                     }
                     else -> {
-                        destinationFinder.getLocation(locations[i-1].getAggLoc()!!, zones, ActivityType.OTHER)
+                        destinationFinder.getLocation(locations[i-1].getAggLoc()!!, zones, ActivityType.OTHER, rng)
                     }
                 }
             locations.add(location)
@@ -365,8 +364,9 @@ class Omod(
      * @param from Last activity yesterday
      * @return Activity schedule
      */
-    private fun getActivitySchedule(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
-                            from: ActivityType = ActivityType.HOME
+    private fun getActivitySchedule(
+        agent: MobiAgent, rng: Random, weekday: Weekday = Weekday.UNDEFINED,
+        from: ActivityType = ActivityType.HOME,
     ): List<Activity> {
         val location = when(from) {
             ActivityType.HOME -> agent.home
@@ -374,7 +374,7 @@ class Omod(
             ActivityType.SCHOOL -> agent.school
             else -> throw Exception("Start must be either Home, Work, School, or coordinates must be given. Agent: ${agent.id}")
         }
-        return getActivitySchedule(agent, weekday, from, location)
+        return getActivitySchedule(agent, rng, weekday, from, location, )
     }
 
     /**
@@ -386,12 +386,13 @@ class Omod(
      * @param start Location the day starts at
      * @return Activity schedule
      */
-    private fun getActivitySchedule(agent: MobiAgent, weekday: Weekday = Weekday.UNDEFINED,
-                            from: ActivityType = ActivityType.HOME, start: LocationOption
+    private fun getActivitySchedule(
+        agent: MobiAgent,  rng: Random, weekday: Weekday = Weekday.UNDEFINED,
+        from: ActivityType = ActivityType.HOME, start: LocationOption
     ): List<Activity> {
-        val activityChain = activityGenerator.getActivityChain(agent, weekday, from)
-        val stayTimes = activityGenerator.getStayTimes(activityChain, agent, weekday)
-        val locations = getLocations(agent, activityChain, start)
+        val activityChain = activityGenerator.getActivityChain(agent, weekday, from, rng)
+        val stayTimes = activityGenerator.getStayTimes(activityChain, agent, weekday, rng)
+        val locations = getLocations(agent, activityChain, start, rng)
         return List(activityChain.size) { i ->
             Activity(activityChain[i], stayTimes[i], locations[i], locations[i].latlonCoord.x, locations[i].latlonCoord.y)
         }
@@ -406,7 +407,7 @@ class Omod(
      * @return List of agents each with an activity schedules for every simulated day
      */
     fun run(n_agents: Int, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
-        val agents = agentFactory.createAgents(n_agents, zones, populateBufferArea)
+        val agents = agentFactory.createAgents(n_agents, zones, populateBufferArea, mainRng)
         return run(agents, start_wd, n_days)
     }
 
@@ -425,7 +426,7 @@ class Omod(
                         "Consider adding a census file with --census or use --n_agents instead.")
         }
 
-        val agents = agentFactory.createAgents(shareOfPop, zones)
+        val agents = agentFactory.createAgents(shareOfPop, zones, mainRng)
         return run(agents, start_wd, n_days)
     }
 
@@ -437,6 +438,7 @@ class Omod(
      * @param n_days Number of consecutive days to simulate
      * @return List of agents each with an activity schedules for every simulated day
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun run(agents: List<MobiAgent>, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
         val jobsDone = AtomicInteger()
         val totalJobs = (agents.size).toDouble()
@@ -444,8 +446,9 @@ class Omod(
         for (chunk in agents.chunked(10000)) { // Don't launch to many coroutines at once
             runBlocking(dispatcher) {
                 for (agent in chunk) {
+                    val coroutineRng = Random(mainRng.nextLong())
                     launch(dispatcher) {
-                        runAgent(agent, start_wd, n_days)
+                        runAgent(agent, start_wd, n_days, coroutineRng)
                         val done = jobsDone.incrementAndGet()
                         print("Running model: ${ProgressBar.show(done / totalJobs)}\r")
                     }
@@ -465,18 +468,23 @@ class Omod(
      * @param n_days Number of consecutive days to simulate
      * @return agent
      */
-    private fun runAgent(agent: MobiAgent, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : MobiAgent {
+    private fun runAgent(
+        agent: MobiAgent, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1,
+        rng: Random
+    ) : MobiAgent {
         var weekday = start_wd
         for (i in 0 until n_days) {
             val activities = if (agent.mobilityDemand.isEmpty()) {
-                getActivitySchedule(agent, weekday)
+                getActivitySchedule(agent, rng,  weekday)
             } else {
                 val lastActivity = agent.mobilityDemand.last().activities.last()
                 getActivitySchedule(
                     agent,
+                    rng,
                     weekday,
                     from = lastActivity.type,
-                    start = lastActivity.location
+                    start = lastActivity.location,
+
                 )
             }
             agent.mobilityDemand.add( Diary(i, weekday, activities) )

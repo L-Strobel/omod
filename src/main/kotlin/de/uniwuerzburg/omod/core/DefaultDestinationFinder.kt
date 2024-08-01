@@ -9,7 +9,6 @@ import java.util.Random
 class DefaultDestinationFinder(
     private val routingCache: RoutingCache,
     private val locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>,
-    private val rng: Random
 ) : DestinationFinder {
     private var calibrated = false
     private var firstOrderCFactors: Map<ActivityType, Map<ODZone, Double>> = mapOf()
@@ -148,7 +147,9 @@ class DefaultDestinationFinder(
      * @param origin Routing cell of the trip origin.
      * @return destination
      */
-    override fun getLocation(origin: AggLocation, destinations: List<AggLocation>, activityType: ActivityType
+    override fun getLocation(
+        origin: AggLocation, destinations: List<AggLocation>,
+        activityType: ActivityType, rng: Random
     ) : LocationOption {
         // Get agg zone (might be cell or dummy is node)
         val aggCumDist = getDistr(origin, destinations, activityType)
