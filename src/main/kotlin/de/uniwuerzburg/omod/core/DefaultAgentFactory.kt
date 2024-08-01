@@ -4,7 +4,6 @@ import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.utils.*
 import kotlinx.coroutines.*
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 
 /**
