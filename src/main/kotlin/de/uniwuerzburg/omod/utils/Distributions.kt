@@ -35,14 +35,18 @@ fun sampleCumDistWOR(cumDistWOR: IntArray, rng: Random): Int {
     val thresh = rng.nextInt(cumDistWOR.last())
 
     var i = 0
+    var rslt: Int? = null
     while (i < cumDistWOR.size - 1) {
         if (thresh < cumDistWOR[i]) {
-            cumDistWOR[i] -= 1 // TODO: [BUG] 1 Should also be subtracted from all following values.
-            break
+            cumDistWOR[i] -= 1
+
+            if (rslt == null) {
+                rslt = i
+            }
         }
         i++
     }
-    return i
+    return rslt ?: i
 }
 
 /**
