@@ -426,7 +426,7 @@ class Omod(
                         "Consider adding a census file with --census or use --n_agents instead.")
         }
 
-        val agents = agentFactory.createAgents(shareOfPop, zones, mainRng)
+        val agents = agentFactory.createAgents(shareOfPop, zones, populateBufferArea, mainRng)
         return run(agents, start_wd, n_days)
     }
 
