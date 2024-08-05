@@ -7,6 +7,7 @@ import de.uniwuerzburg.omod.utils.CRSTransformer
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
 import java.io.File
+import java.util.*
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -21,7 +22,8 @@ import kotlin.math.min
  */
 fun readCensus(
     osmBuildings: List<BuildingData>, transformer: CRSTransformer,
-    geometryFactory: GeometryFactory, censusFile: File
+    geometryFactory: GeometryFactory, censusFile: File,
+    rng: Random
 ) : List<BuildingData> {
 
     logger.info("Start reading census data...")
@@ -40,7 +42,7 @@ fun readCensus(
         val intersectingBuildings = buildingsTree.query(censusZone.envelopeInternal)
             .map { it as BuildingData }
             .filter { it.geometry.intersects(censusZone) }
-            .shuffled()
+            .shuffled(rng)
 
         val populationPerBuilding = ceil(population / intersectingBuildings.count().toDouble())
         for (building in intersectingBuildings) {

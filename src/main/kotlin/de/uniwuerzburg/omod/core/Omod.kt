@@ -224,7 +224,7 @@ class Omod(
 
             // Add census data if available
             if (censusFile != null) {
-                osmBuildings = readCensus(osmBuildings, transformer, geometryFactory, censusFile)
+                osmBuildings = readCensus(osmBuildings, transformer, geometryFactory, censusFile, mainRng)
             }
 
             // Convert to GeoJSON
