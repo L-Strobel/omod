@@ -35,18 +35,16 @@ fun sampleCumDistWOR(cumDistWOR: IntArray, rng: Random): Int {
     val thresh = rng.nextInt(cumDistWOR.last())
 
     var i = 0
-    var rslt: Int? = null
     while (i < cumDistWOR.size - 1) {
-        if (thresh < cumDistWOR[i]) {
-            cumDistWOR[i] -= 1
-
-            if (rslt == null) {
-                rslt = i
-            }
-        }
+        if (thresh < cumDistWOR[i]) break
         i++
     }
-    return rslt ?: i
+
+    // Remove picked sample from distribution
+    for (j in i until cumDistWOR.size) {
+        cumDistWOR[j] -= 1
+    }
+    return i
 }
 
 /**
