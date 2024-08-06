@@ -15,11 +15,16 @@
                 "in_focus_area": false,
                 "area": 240.80025695740355,
                 "population": 0.0,
-                "landuse": "AGRICULTURE",
+                "landuse": "INDUSTRIAL",
                 "number_shops": 0.0,
                 "number_offices": 0.0,
                 "number_schools": 0.0,
-                "number_universities": 0.0
+                "number_universities": 0.0,
+                "number_place_of_worship": 0.0,
+                "number_cafe": 0.0,
+                "number_fast_food": 0.0,
+                "number_kindergarten": 0.0,
+                "number_tourism": 0.0
             }
         },
         {
@@ -37,11 +42,16 @@
                 "in_focus_area": false,
                 "area": 508.49424373912626,
                 "population": 0.0,
-                "landuse": "AGRICULTURE",
+                "landuse": "INDUSTRIAL",
                 "number_shops": 0.0,
                 "number_offices": 0.0,
                 "number_schools": 0.0,
-                "number_universities": 0.0
+                "number_universities": 0.0,
+                "number_place_of_worship": 0.0,
+                "number_cafe": 0.0,
+                "number_fast_food": 0.0,
+                "number_kindergarten": 0.0,
+                "number_tourism": 0.0
             }
         },
         {
@@ -58,12 +68,17 @@
                 "region_type": 77,
                 "in_focus_area": false,
                 "area": 97.4782103774111,
-                "population": 0.5,
-                "landuse": "AGRICULTURE",
+                "population": 0.0,
+                "landuse": "INDUSTRIAL",
                 "number_shops": 0.0,
                 "number_offices": 0.0,
                 "number_schools": 0.0,
-                "number_universities": 0.0
+                "number_universities": 0.0,
+                "number_place_of_worship": 0.0,
+                "number_cafe": 0.0,
+                "number_fast_food": 0.0,
+                "number_kindergarten": 0.0,
+                "number_tourism": 0.0
             }
         },
         {
@@ -80,12 +95,17 @@
                 "region_type": 77,
                 "in_focus_area": true,
                 "area": 77.77838663202289,
-                "population": 0.8,
+                "population": 2.0,
                 "landuse": "RESIDENTIAL",
                 "number_shops": 0.0,
                 "number_offices": 0.0,
                 "number_schools": 0.0,
-                "number_universities": 0.0
+                "number_universities": 0.0,
+                "number_place_of_worship": 0.0,
+                "number_cafe": 0.0,
+                "number_fast_food": 0.0,
+                "number_kindergarten": 0.0,
+                "number_tourism": 0.0
             }
         },
         {
@@ -102,12 +122,17 @@
                 "region_type": 77,
                 "in_focus_area": false,
                 "area": 83.20712071110864,
-                "population": 0.8,
+                "population": 5.0,
                 "landuse": "RESIDENTIAL",
                 "number_shops": 0.0,
                 "number_offices": 0.0,
                 "number_schools": 0.0,
-                "number_universities": 0.0
+                "number_universities": 0.0,
+                "number_place_of_worship": 0.0,
+                "number_cafe": 0.0,
+                "number_fast_food": 0.0,
+                "number_kindergarten": 0.0,
+                "number_tourism": 0.0
             }
         }
     ]

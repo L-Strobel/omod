@@ -58,5 +58,5 @@ fun readCensus(
         logger.warn("Population in model area is zero!")
     }
     logger.info("Census data read!")
-    return  osmBuildings
+    return osmBuildings
 }

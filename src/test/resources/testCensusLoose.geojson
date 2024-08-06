@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "population": 5.0,
+        "type": "CensusEntry"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              11.6244900,
+              48.7639342
+            ],
+            [
+              11.6246060,
+              48.7639933
+            ],
+            [
+              11.62472,
+              48.76381
+            ],
+            [
+              11.62466,
+              48.76378
+            ],
+            [
+              11.6244900,
+              48.7639342
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    }
+  ]
+}
