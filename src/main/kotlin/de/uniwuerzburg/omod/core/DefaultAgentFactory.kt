@@ -198,12 +198,13 @@ class DefaultAgentFactory (
         val homogenousGroup = features[agentFeatures].first
         val mobilityGroup = features[agentFeatures].second
         val age = features[agentFeatures].third
+        val sex = if (rng.nextBoolean()) { Sex.MALE } else { Sex.FEMALE }
 
         // Fixed locations
         val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK, rng)
         val school = destinationFinder.getLocation(homeZone, zones, ActivityType.SCHOOL, rng)
 
-        val agent = MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school)
+        val agent = MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school, sex)
         return agent
     }
 

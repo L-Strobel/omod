@@ -20,5 +20,6 @@ data class MobiAgent (
     val home: LocationOption,
     val work: LocationOption,
     val school: LocationOption,
+    val sex: Sex,
     val mobilityDemand: MutableList<Diary> = mutableListOf()
 )
