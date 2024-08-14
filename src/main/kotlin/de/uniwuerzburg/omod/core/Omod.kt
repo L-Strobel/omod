@@ -471,14 +471,14 @@ class Omod(
                     launch(dispatcher) {
                         runAgent(agent, start_wd, n_days, coroutineRng)
                         val done = jobsDone.incrementAndGet()
-                        print("Trip generation: ${ProgressBar.show(done / totalJobs)}\r")
+                        print("Activity generation: ${ProgressBar.show(done / totalJobs)}\r")
                     }
                 }
             }
         }
-        println("Trip generation: " + ProgressBar.done())
+        println("Activity generation: " + ProgressBar.done())
         routingCache.toOOMCache() // Save routing cache
-        logger.info("Trip generation took: ${timeSource.markNow() - timestampStartInit}")
+        logger.info("Activity generation took: ${timeSource.markNow() - timestampStartInit}")
         return agents
     }
 
