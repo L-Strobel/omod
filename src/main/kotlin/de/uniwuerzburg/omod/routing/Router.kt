@@ -108,7 +108,7 @@ data class PreparedQGraph (
  */
 fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph {
     val encodingManager = hopper.encodingManager
-    val weighting = hopper.createWeighting(hopper.getProfile("car"), PMap());
+    val weighting = hopper.createWeighting(hopper.getProfile("car"), PMap())
 
     val snaps = mutableListOf<Snap>()
     val locNodes = mutableMapOf<LocationOption, Int>()

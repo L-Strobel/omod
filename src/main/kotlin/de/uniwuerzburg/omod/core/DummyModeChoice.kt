@@ -5,7 +5,6 @@ import de.uniwuerzburg.omod.routing.RoutingCache
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.time.Instant
 import java.util.*
 import kotlin.time.TimeSource
 
@@ -52,6 +51,7 @@ class DummyModeChoice(
                 null,
             )
             trips.add(trip)
+            currentActivity = nextActivity
         }
         return trips
     }

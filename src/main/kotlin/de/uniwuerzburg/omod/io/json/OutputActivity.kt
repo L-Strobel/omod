@@ -3,7 +3,6 @@ package de.uniwuerzburg.omod.io.json
 import de.uniwuerzburg.omod.core.models.ActivityType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.time.LocalTime
 
 /**
  * OMOD result format of on activity

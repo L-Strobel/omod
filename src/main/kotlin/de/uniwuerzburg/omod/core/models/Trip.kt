@@ -1,7 +1,5 @@
 package de.uniwuerzburg.omod.core.models
 
-import java.time.Instant
-
 data class Trip (
     val origin: LocationOption,
     val destination: LocationOption,

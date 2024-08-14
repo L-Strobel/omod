@@ -2,7 +2,6 @@ package de.uniwuerzburg.omod.io.gtfs
 
 import de.uniwuerzburg.omod.core.models.Weekday
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.inputStream
