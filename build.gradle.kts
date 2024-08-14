@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "de.uniwuerzburg.omod"
-version = "2.0.6"
+version = "2.0.7"
 
 repositories {
     mavenLocal()
@@ -30,10 +30,12 @@ dependencies {
     implementation("org.apache.commons:commons-math3:3.+")
     implementation("com.github.ajalt.clikt:clikt:4.+")
     implementation("com.graphhopper:graphhopper-core:9.+")
+    implementation("com.graphhopper:graphhopper-reader-gtfs:9.1")
     implementation("ch.qos.logback:logback-classic:1.+")
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.+")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.+")
     implementation("com.google.guava:guava:33.2.1-jre")
+    implementation("us.dustinj.timezonemap:timezonemap:4.+")
     testImplementation("org.junit.jupiter:junit-jupiter:5.+")
 }
 

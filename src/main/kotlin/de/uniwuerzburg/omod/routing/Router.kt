@@ -3,6 +3,8 @@ package de.uniwuerzburg.omod.routing
 import com.graphhopper.GHRequest
 import com.graphhopper.GHResponse
 import com.graphhopper.GraphHopper
+import com.graphhopper.gtfs.PtRouter
+import com.graphhopper.gtfs.Request
 import com.graphhopper.isochrone.algorithm.ShortestPathTree
 import com.graphhopper.routing.ev.Subnetwork
 import com.graphhopper.routing.querygraph.QueryGraph
@@ -13,6 +15,8 @@ import com.graphhopper.storage.index.Snap
 import com.graphhopper.util.PMap
 import de.uniwuerzburg.omod.core.models.LocationOption
 import de.uniwuerzburg.omod.core.models.RealLocation
+import java.time.Instant
+import kotlin.math.abs
 
 /**
  * Calculate the Euclidean distance between two locations
@@ -26,22 +30,58 @@ fun calcDistanceBeeline(origin: LocationOption, destination: LocationOption) : D
 }
 
 /**
- * Determine the shortest path between two locations using a car.
+ * Determine the best path between two locations using the given profile.
  *
  * @param origin Location A
  * @param destination Location B
  * @param hopper GraphHopper object
- * @return GHResponse (Wrapper around the fastest route)
+ * @return GHResponse (Wrapper around the best route)
  */
-fun routeWithCar (origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
+fun routeWith (profile: String, origin: RealLocation, destination: RealLocation, hopper: GraphHopper) : GHResponse {
     val req = GHRequest(
         origin.latlonCoord.x,
         origin.latlonCoord.y,
         destination.latlonCoord.x,
         destination.latlonCoord.y
     )
-    req.profile = "custom_car"
+    req.profile = profile
     return hopper.route(req)
+}
+
+/**
+ * Determine the best path between two locations using public transit.
+ *
+ * @param origin Location A
+ * @param destination Location B
+ * @param departureTime Time of earliest possible departure
+ * @param ptRouter PtRouter object
+ * @return GHResponse (Wrapper around the best route)
+ */
+fun routeGTFS (
+    origin: RealLocation, destination: RealLocation, departureTime: Instant, ptRouter: PtRouter, hopper: GraphHopper
+) : GHResponse {
+    val fromLat = origin.latlonCoord.x
+    val fromLon = origin.latlonCoord.y
+    val toLat = destination.latlonCoord.x
+    val toLon = destination.latlonCoord.y
+
+    if ((abs(fromLat - toLat) <= 0.0001) && (abs(fromLon - toLon) <= 0.0001)) {
+        return routeWith("foot", origin, destination, hopper)
+    } else {
+        val req = Request(
+            origin.latlonCoord.x,
+            origin.latlonCoord.y,
+            destination.latlonCoord.x,
+            destination.latlonCoord.y
+        )
+        req.earliestDepartureTime = departureTime
+        val resp = try {
+           ptRouter.route(req)
+        } catch (e: Exception){
+            routeWith("foot", origin, destination, hopper)
+        }
+        return resp
+    }
 }
 
 /**
@@ -68,7 +108,7 @@ data class PreparedQGraph (
  */
 fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : PreparedQGraph {
     val encodingManager = hopper.encodingManager
-    val weighting = hopper.createWeighting(hopper.getProfile("custom_car"), PMap());
+    val weighting = hopper.createWeighting(hopper.getProfile("car"), PMap());
 
     val snaps = mutableListOf<Snap>()
     val locNodes = mutableMapOf<LocationOption, Int>()
@@ -77,7 +117,7 @@ fun prepareQGraph(hopper: GraphHopper, locsToSnap: List<RealLocation>) : Prepare
         val snap = hopper.locationIndex.findClosest(
             loc.latlonCoord.x,
             loc.latlonCoord.y,
-            DefaultSnapFilter(weighting, encodingManager.getBooleanEncodedValue(Subnetwork.key("custom_car")))
+            DefaultSnapFilter(weighting, encodingManager.getBooleanEncodedValue(Subnetwork.key("car")))
         )
         if (snap.isValid) {
             snaps.add(snap)

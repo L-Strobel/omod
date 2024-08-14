@@ -37,7 +37,7 @@ enum class RoutingMode {
  * @param a location option A
  * @param b location option B
  */
-private class UnorderedODPair(a: LocationOption, b: LocationOption) {
+class UnorderedODPair(a: LocationOption, b: LocationOption) {
     val first = a
     val second = b
 
@@ -101,7 +101,7 @@ class RoutingCache(
             cacheDir.toString(),
             "routing-matrix-cache",
             "RoutingMode${mode}NCells${locations.size}" +
-                    "GridBounds${listOf(latMin, latMax, lonMin, lonMax).toString().replace(" ", "")}"
+            "GridBounds${listOf(latMin, latMax, lonMin, lonMax).toString().replace(" ", "")}"
         )
         // Fill cache
         if (cachePath!!.toFile().exists()) {
@@ -186,7 +186,7 @@ class RoutingCache(
      *
      * @param origin Origin
      * @param destinations All destinations for which the distance should be determined
-     * @return Array of distances
+     * @return Array of distances (Unit: meter)
      */
     fun getDistances(origin: LocationOption, destinations: List<LocationOption>) : FloatArray {
         when (mode) {
@@ -214,7 +214,7 @@ class RoutingCache(
      * Calculate the distance between origin and destination
      * @param origin Origin
      * @param destination Destination
-     * @return Distance
+     * @return Distance (Unit: meter)
      */
     private fun calcDistance(origin: LocationOption, destination: LocationOption) : Double {
         if (origin == destination) {
@@ -227,7 +227,7 @@ class RoutingCache(
                 if (origin in unRoutableLocs) { return calcDistanceBeeline(origin, destination) }
                 if (destination in unRoutableLocs) { return calcDistanceBeeline(origin, destination) }
 
-                val rsp = routeWithCar(origin as RealLocation, destination as RealLocation, hopper!!)
+                val rsp = routeWith("car", origin as RealLocation, destination as RealLocation, hopper!!)
                 if (rsp.hasErrors()) {
                     logger.warn(
                         "Could not route from ${origin.latlonCoord} to ${destination.latlonCoord}. Fall back to Beeline."

@@ -1,0 +1,101 @@
+[
+  {
+    "mode": "CAR_PASSENGER",
+    "timeCoeff": -0.001273,
+    "distanceCoeff": 0.054734,
+    "homGroupCoeff": {
+      "WORKING":  0.0,
+      "NON_WORKING": 0.0,
+      "PUPIL_STUDENT": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "mobGroupCoeff": {
+      "CAR_USER": 0.420717,
+      "CAR_MIXED": 0.228283,
+      "NOT_CAR": -0.956714,
+      "UNDEFINED": 0.0
+    },
+    "ageGrpCoeff": {
+      "A0_40": 1.168143,
+      "A40_60": 0.783772,
+      "A60_100": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "sexCoeff": 0.284811,
+    "carAvailableCoeff": 0.0,
+    "activityCoeff": {
+      "HOME": 0.300383,
+      "WORK": 0.010242,
+      "SCHOOL": -0.597189,
+      "SHOPPING": 1.325063,
+      "OTHER": 0.0
+    },
+    "intercept": 2.116946
+  },
+  {
+    "mode": "PUBLIC_TRANSIT",
+    "timeCoeff": -0.001273,
+    "distanceCoeff": 0.040583,
+    "homGroupCoeff": {
+      "WORKING":  0.0,
+      "NON_WORKING": 0.0,
+      "PUPIL_STUDENT": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "mobGroupCoeff": {
+      "CAR_USER": 0.247261,
+      "CAR_MIXED": 1.279333,
+      "NOT_CAR": 2.148972,
+      "UNDEFINED": 0.0
+    },
+    "ageGrpCoeff": {
+      "A0_40": 1.381106,
+      "A40_60": 1.328004,
+      "A60_100": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "sexCoeff": 1.274904,
+    "carAvailableCoeff": 0.0,
+    "activityCoeff": {
+      "HOME": 0.763728,
+      "WORK": 2.315203,
+      "SCHOOL": 2.168228,
+      "SHOPPING": 0.417453,
+      "OTHER": 0.0
+    },
+    "intercept": 0.003555
+  },
+  {
+    "mode": "FOOT",
+    "timeCoeff": -0.001273,
+    "distanceCoeff": -0.091968,
+    "homGroupCoeff": {
+      "WORKING":  0.0,
+      "NON_WORKING": 0.0,
+      "PUPIL_STUDENT": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "mobGroupCoeff": {
+      "CAR_USER": 2.332022,
+      "CAR_MIXED": 1.492384,
+      "NOT_CAR": 1.807742,
+      "UNDEFINED": 0.0
+    },
+    "ageGrpCoeff": {
+      "A0_40": 0.450751,
+      "A40_60": 0.888224,
+      "A60_100": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "sexCoeff": 1.440285,
+    "carAvailableCoeff": 0.0,
+    "activityCoeff": {
+      "HOME": 1.935890,
+      "WORK": 0.674555,
+      "SCHOOL": 1.428961,
+      "SHOPPING": 1.257485,
+      "OTHER": 0.0
+    },
+    "intercept": 0.886609
+  }
+]

@@ -10,5 +10,7 @@ package de.uniwuerzburg.omod.core.models
 data class Diary (
     val day: Int,
     val dayType: Weekday,
-    val activities: List<Activity>
-)
+    val activities: List<Activity>,
+) {
+    var trips: List<Trip>? = null
+}
