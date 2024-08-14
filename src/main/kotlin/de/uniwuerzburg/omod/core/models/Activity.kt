@@ -12,7 +12,5 @@ package de.uniwuerzburg.omod.core.models
 data class Activity (
     val type: ActivityType,
     val stayTime: Double?,
-    val location: LocationOption,
-    val lat: Double,
-    val lon: Double
+    val location: LocationOption
 )

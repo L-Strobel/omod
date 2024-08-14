@@ -19,7 +19,8 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
             val activity = diary.activities[i]
             legs.add(
                 OutputActivity(
-                    id, activity.type, currentTime.toString(), activity.stayTime, activity.lat, activity.lon,
+                    id, activity.type, currentTime.toString(), activity.stayTime,
+                    activity.location.latlonCoord.x, activity.location.latlonCoord.y,
                     activity.location is DummyLocation, activity.location.inFocusArea
                 )
             )
@@ -31,7 +32,7 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
             val trip = diary.trips!![i]
             legs.add(
                 OutputTrip(
-                    id, trip.mode, currentTime.toString(), trip.distance, trip.time, trip.lats, trip.lons, trip.isReal
+                    id, trip.mode, currentTime.toString(), trip.distance, trip.time, trip.lats, trip.lons
                 )
             )
             id += 1

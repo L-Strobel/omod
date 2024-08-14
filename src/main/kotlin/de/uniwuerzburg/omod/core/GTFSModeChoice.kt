@@ -135,9 +135,8 @@ class GTFSModeChoice(
 
             val trip = TripMCFeatures(
                 carDistance,
-                currentActivity.type,
-                nextActivity.type,
-                nextActivity.stayTime,
+                currentActivity,
+                nextActivity,
                 times
             )
             currentTour.add(trip)
@@ -159,8 +158,8 @@ class GTFSModeChoice(
             // Tour mode choice
             for (tour in tours) {
                 // Only do HOME-HOME tours as one block
-                if (tour.first().fromActivity != ActivityType.HOME) { continue }
-                if (tour.last().toActivity != ActivityType.HOME) { continue }
+                if (tour.first().fromActivity.type != ActivityType.HOME) { continue }
+                if (tour.last().toActivity.type != ActivityType.HOME) { continue }
 
                 // Aggregate distance and times
                 val carDistance = tour.sumOf { it.carDistance }
@@ -171,7 +170,7 @@ class GTFSModeChoice(
                 // Main purpose of tour is defined by the activity with the longest stay time
                 val mainPurpose = tour
                     .dropLast(1)
-                    .maxByOrNull { it.stayTimeAfter!! }?.toActivity ?: ActivityType.HOME
+                    .maxByOrNull { it.toActivity.stayTime!! }?.toActivity?.type ?: ActivityType.HOME
                 val mode = sampleUtilities(tourModeOptions, times, carDistance, agent, mainPurpose, rng)
 
                 // If the tour is a CAR or BICYCLE all trips on the tour must be conducted with the respective vehicle
@@ -187,21 +186,20 @@ class GTFSModeChoice(
                 val times = tripModeOptions.map { m ->
                     trip.time[m.mode]!!
                 }.toTypedArray()
-                val mode = sampleUtilities(tripModeOptions, times, trip.carDistance, agent, trip.toActivity, rng)
+                val mode = sampleUtilities(tripModeOptions, times, trip.carDistance, agent, trip.toActivity.type, rng)
                 trip.mode = mode
             }
 
-            // Format for output // TODO might not be real
+            // Format for output
             val outTrips = mutableListOf<Trip>()
             for (trip in tours.flatten()) {
                 outTrips.add(
                     Trip(
-                        trip.mode!!,
+                        trip.fromActivity.location,
+                        trip.toActivity.location,
                         trip.carDistance,
                         trip.time[trip.mode!!]!!,
-                        null,
-                        null,
-                        true
+                        mode = trip.mode!!,
                     )
                 )
             }
@@ -228,9 +226,8 @@ class GTFSModeChoice(
      */
     private class TripMCFeatures (
         val carDistance: Double,
-        val fromActivity: ActivityType,
-        val toActivity: ActivityType,
-        val stayTimeAfter: Double?,
+        val fromActivity: Activity,
+        val toActivity: Activity,
         val time: Map<Mode, Double>
     ) {
         var mode: Mode? = null

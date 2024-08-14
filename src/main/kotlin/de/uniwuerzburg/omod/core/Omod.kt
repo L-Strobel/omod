@@ -413,7 +413,7 @@ class Omod(
         val stayTimes = activityGenerator.getStayTimes(activityChain, agent, weekday, rng)
         val locations = getLocations(agent, activityChain, start, rng)
         return List(activityChain.size) { i ->
-            Activity(activityChain[i], stayTimes[i], locations[i], locations[i].latlonCoord.x, locations[i].latlonCoord.y)
+            Activity(activityChain[i], stayTimes[i], locations[i])
         }
     }
 

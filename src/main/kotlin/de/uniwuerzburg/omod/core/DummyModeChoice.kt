@@ -5,6 +5,7 @@ import de.uniwuerzburg.omod.routing.RoutingCache
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.time.Instant
 import java.util.*
 import kotlin.time.TimeSource
 
@@ -45,12 +46,10 @@ class DummyModeChoice(
             ).first().toDouble() / 1000
 
             val trip = Trip(
-                Mode.UNDEFINED,
+                currentActivity.location,
+                nextActivity.location,
                 carDistance,
                 null,
-                null,
-                null,
-                false
             )
             trips.add(trip)
         }
