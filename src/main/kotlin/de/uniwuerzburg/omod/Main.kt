@@ -9,8 +9,9 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
-import de.uniwuerzburg.omod.core.assignment.allOrNothing
 import de.uniwuerzburg.omod.core.Omod
+import de.uniwuerzburg.omod.core.logger
+import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
 import de.uniwuerzburg.omod.routing.RoutingMode
@@ -20,7 +21,6 @@ import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Paths
-import kotlin.time.measureTimedValue
 
 sealed interface AgentNumberDefinition
 
@@ -68,7 +68,8 @@ class Run : CliktCommand() {
         help="Output file. Should end with '.json'"
     ).file().default(File("output.json"))
     private val routing_mode by option(
-        help = "Distance calculation method. Either euclidean distance (BEELINE) or routed distance by car (GRAPHHOPPER)"
+        help = "Distance calculation method for trip distribution." +
+               "Either euclidean distance (BEELINE) or routed distance by car (GRAPHHOPPER)"
     ).enum<RoutingMode>().default(RoutingMode.GRAPHHOPPER)
     private val od by option(
         help="[Experimental] Path to an OD-Matrix in GeoJSON format. " +
@@ -89,8 +90,6 @@ class Run : CliktCommand() {
         help="Size of the buffer area that is simulated in addition to the area specified in the GeoJSON. Unit: meters"
     ).double().default(0.0)
     private val seed by option(help = "RNG seed.").long()
-    // private val cache by option(help = "Defines if the program caches the model area.")
-    //     .choice("true" to true, "false" to false).default(true)
     private val cache_dir by option(help = "Cache directory")
         .path(canBeDir = true, canBeFile = false).default(Paths.get("omod_cache/"))
     private val populate_buffer_area by option(
@@ -104,14 +103,18 @@ class Run : CliktCommand() {
                "A high value will lead to high RAM usage and long initialization times " +
                "but overall significant speed gains. Especially then rerunning the same area."
     ).long().default(400e6.toLong())
-    private val assign_trips by option(
-        help = "[Experimental] Assign trips to routes using an all-or-nothing approach. " +
-               "All trips are driven by car."
-    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
-    private val assign_with_path by option(
-        help = "[Experimental] Output the path coordinates of each trip." +
-                "Output unit of distance: meter. Output unit of time: seconds. " +
-                "Only relevant if assign_trips == y."
+    private val mode_choice by option(
+        help = "What type of mode choice todo." +
+               "NONE: Returns trips without a defined mode." +
+               "GTFS: Uses a logit Model" +
+               "(see src/main/resources/tourModeUtilities.json and" +
+               "src/main/resources/tripModeUtilities.json for the coefficients)."
+    ).choice(
+        mapOf("NONE" to ModeChoiceOption.NONE, "GTFS" to ModeChoiceOption.GTFS
+    ), ignoreCase = true).default(ModeChoiceOption.NONE)
+    private val output_path by option(
+        help = "Output the trip path coordinates." +
+                "Only relevant if mode_choice == y."
     ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     private val population_file by option(
         help="Path to file that describes the socio-demographic makeup of the population. " +
@@ -130,56 +133,35 @@ class Run : CliktCommand() {
                 "Consider adding a census file with --census or use --n_agents instead.")
         }
 
-        val (omod, timeRead) = measureTimedValue {
-            Omod(
-                area_geojson, osm_file,
-                mode = routing_mode,
-                odFile = od, censusFile = census,
-                gridPrecision = grid_precision, bufferRadius = buffer, seed = seed,
-                cache = true, cacheDir = cache_dir,
-                populateBufferArea = populate_buffer_area,
-                distanceCacheSize = distance_matrix_cache_size,
-                populationFile = population_file,
-                nWorker = n_worker
-            )
-        }
-        println("Loading data took: $timeRead")
+        // Init OMOD
+        val omod = Omod(
+            area_geojson, osm_file,
+            mode = routing_mode,
+            odFile = od, censusFile = census,
+            gridPrecision = grid_precision, bufferRadius = buffer, seed = seed,
+            cache = true, cacheDir = cache_dir,
+            populateBufferArea = populate_buffer_area,
+            distanceCacheSize = distance_matrix_cache_size,
+            populationFile = population_file,
+            nWorker = n_worker
+        )
 
         // Mobility demand
-        val (agents, timeSim) = measureTimedValue {
-            when (val aND = agentNumberDefinition ) {
-                is FixedAgentNumber -> omod.run(aND.value, start_wd, n_days)
-                is ShareOfPop -> omod.run(aND.value, start_wd, n_days)
-            }
+        val agents = when (val aND = agentNumberDefinition ) {
+            is FixedAgentNumber -> omod.run(aND.value, start_wd, n_days)
+            is ShareOfPop -> omod.run(aND.value, start_wd, n_days)
         }
 
-        println("Simulation took: $timeSim")
-        print("Saving results...\r")
+        // TODO check help
+        // Mode Choice
+        omod.doModeChoice(agents, mode_choice)
 
         // Store output
+        logger.info("Saving results...")
         FileOutputStream(out).use { f ->
             Json.encodeToStream( agents.map { formatOutput(it) }, f)
         }
-        println("Saving results... Done!")
-
-        // Assignment
-        if (assign_trips) {
-            val hopper = omod.hopper
-
-            if (hopper == null) {
-                println("Assignment only possible in GRAPHHOPPER mode.")
-            } else {
-                val (assignment, timeAssign) = measureTimedValue {
-                    allOrNothing(agents, hopper, omod.transformer, assign_with_path)
-                }
-                println("Assignment took: $timeAssign")
-                // Store assignment output
-                val assignOut = File(out.parent, out.nameWithoutExtension  + "_trips.json")
-                FileOutputStream(assignOut).use { f ->
-                    Json.encodeToStream(assignment, f)
-                }
-            }
-        }
+        logger.info("Saving results... Done!")
     }
 }
 

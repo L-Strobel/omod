@@ -1,17 +1,20 @@
 package de.uniwuerzburg.omod.core
 
 import com.graphhopper.GraphHopper
+import com.graphhopper.gtfs.GraphHopperGtfs
+import com.graphhopper.gtfs.PtRouter
+import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.io.geojson.*
-import de.uniwuerzburg.omod.io.json.ActivityGroup
-import de.uniwuerzburg.omod.io.json.readJson
-import de.uniwuerzburg.omod.io.json.readJsonFromResource
-import de.uniwuerzburg.omod.io.json.writeJson
+import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
+import de.uniwuerzburg.omod.io.gtfs.getPublicTransitSimDays
+import de.uniwuerzburg.omod.io.json.*
 import de.uniwuerzburg.omod.io.osm.readOSM
 import de.uniwuerzburg.omod.io.readCensus
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
 import de.uniwuerzburg.omod.routing.createGraphHopper
+import de.uniwuerzburg.omod.routing.createGraphHopperGTFS
 import de.uniwuerzburg.omod.utils.CRSTransformer
 import de.uniwuerzburg.omod.utils.ProgressBar
 import de.uniwuerzburg.omod.utils.fastCovers
@@ -20,13 +23,15 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
 import org.locationtech.jts.index.kdtree.KdTree
-import org.slf4j.LoggerFactory
+import us.dustinj.timezonemap.TimeZoneMap
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.TimeSource
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -48,17 +53,17 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class Omod(
     areaFile: File,
-    osmFile: File,
+    private val osmFile: File,
     mode: RoutingMode = RoutingMode.BEELINE,
     cache: Boolean = true,
-    cacheDir: Path = Paths.get("omod_cache/"),
+    private val cacheDir: Path = Paths.get("omod_cache/"),
     odFile: File? = null,
     gridPrecision: Double = 200.0,
     seed: Long? = null,
     bufferRadius: Double = 0.0,
     censusFile: File? = null,
     private val populateBufferArea: Boolean = true,
-    distanceCacheSize: Long = 400e6.toLong(),
+    val distanceCacheSize: Long = 400e6.toLong(),
     populationFile: File? = null,
     nWorker: Int? = null
 ) {
@@ -66,20 +71,25 @@ class Omod(
     val kdTree: KdTree
     @Suppress("MemberVisibilityCanBePrivate")
     val buildings: List<Building>
-    val hopper: GraphHopper?
+    private var hopper: GraphHopper?
     private val grid: List<Cell>
     private val zones: List<AggLocation> // Grid + DummyLocations for commuting locations
     private val activityGenerator: ActivityGenerator
     private val mainRng: Random = if (seed != null) Random(seed) else Random()
     val transformer: CRSTransformer
     private val routingCache: RoutingCache
-    private val logger = LoggerFactory.getLogger(Omod::class.java)
     private var censusAvailable = false
     private val dispatcher = if (nWorker != null) Dispatchers.Default.limitedParallelism(nWorker) else Dispatchers.Default
     private val destinationFinder: DestinationFinder
     private val agentFactory: AgentFactory
+    private var gtfsComponents: GTFSComponents? = null
+    private val focusArea: Geometry
+    private val fullArea: Geometry
 
     init {
+        val timeSource = TimeSource.Monotonic
+        val timestampStartInit = timeSource.markNow()
+
         // Load population distribution
         val populationDef: PopulationDef = if (populationFile != null) {
             readJson(populationFile)
@@ -104,16 +114,21 @@ class Omod(
         val geometryFactory = GeometryFactory()
 
         // Load focus area
-        val focusArea = readGeoJsonGeom(areaFile, geometryFactory).union()
+        focusArea = readGeoJsonGeom(areaFile, geometryFactory).union()
 
         // Get CRSTransformer
         val center = focusArea.centroid
         transformer = CRSTransformer( center.coordinate.y )
 
+        // Add buffer to area
+        val utmFocusArea = transformer.toModelCRS(focusArea)
+        val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
+        fullArea = transformer.toLatLon(utmArea)
+
         // Get spatial data
         buildings = getBuildings(
-            focusArea, osmFile, bufferRadius,  transformer, geometryFactory, censusFile, cacheDir, cache,
-            locChoiceWeightFuns
+            focusArea, fullArea, osmFile, bufferRadius,  transformer,
+            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns
         )
 
         // Create KD-Tree for faster access
@@ -169,6 +184,8 @@ class Omod(
 
         // Agent factory
         agentFactory = DefaultAgentFactory(destinationFinder, populationDef, dispatcher)
+
+        logger.info("Initializing OMOD took: ${timeSource.markNow() - timestampStartInit}")
     }
 
     // Factories
@@ -191,6 +208,7 @@ class Omod(
      * Caches the data if it wasn't already.
      *
      * @param focusArea Focus area in latitude longitude crs
+     * @param fullArea Buffered area in latitude longitude crs
      * @param osmFile osm.pbf file that covers the model area
      * @param bufferRadius Distance that the focus area will be buffered with
      * @param transformer Used for CRS conversions
@@ -200,7 +218,8 @@ class Omod(
      * @param cache IF false this function will always load the data anew.
      * @return List of buildings with all necessary features
      */
-    private fun getBuildings(focusArea: Geometry, osmFile: File, bufferRadius: Double = 0.0,
+    private fun getBuildings(focusArea: Geometry, fullArea: Geometry,
+                             osmFile: File, bufferRadius: Double = 0.0,
                              transformer: CRSTransformer, geometryFactory: GeometryFactory,
                              censusFile: File?, cacheDir: Path, cache: Boolean,
                              locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
@@ -220,7 +239,7 @@ class Omod(
             readJson(cachePath)
         } else {
             // Load data
-            var osmBuildings = readOSM(focusArea, osmFile, bufferRadius, geometryFactory, transformer)
+            var osmBuildings = readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
 
             // Add census data if available
             if (censusFile != null) {
@@ -440,6 +459,8 @@ class Omod(
      */
     @Suppress("MemberVisibilityCanBePrivate")
     fun run(agents: List<MobiAgent>, start_wd: Weekday = Weekday.UNDEFINED, n_days: Int = 1) : List<MobiAgent> {
+        val timeSource = TimeSource.Monotonic
+        val timestampStartInit = timeSource.markNow()
         val jobsDone = AtomicInteger()
         val totalJobs = (agents.size).toDouble()
 
@@ -450,13 +471,14 @@ class Omod(
                     launch(dispatcher) {
                         runAgent(agent, start_wd, n_days, coroutineRng)
                         val done = jobsDone.incrementAndGet()
-                        print("Running model: ${ProgressBar.show(done / totalJobs)}\r")
+                        print("Trip generation: ${ProgressBar.show(done / totalJobs)}\r")
                     }
                 }
             }
         }
-        println("Running model: " + ProgressBar.done())
+        println("Trip generation: " + ProgressBar.done())
         routingCache.toOOMCache() // Save routing cache
+        logger.info("Trip generation took: ${timeSource.markNow() - timestampStartInit}")
         return agents
     }
 
@@ -492,4 +514,86 @@ class Omod(
         }
         return agent
     }
+
+    // TODO out of RAM with ger.osm.pbf
+    fun doModeChoice(agents: List<MobiAgent>, modeChoiceOption: ModeChoiceOption) : List<MobiAgent> {
+        when (modeChoiceOption) {
+            ModeChoiceOption.NONE -> {
+                val modeChoice = DummyModeChoice(routingCache)
+                modeChoice.doModeChoice(agents, mainRng, dispatcher)
+                return  agents
+            }
+            ModeChoiceOption.GTFS -> {
+                setupGTFSModeChoice()
+                try {
+                    val modeChoice = GTFSModeChoice(
+                        hopper!!, gtfsComponents!!.ptRouter, routingCache,
+                        gtfsComponents!!.ptSimDays,  gtfsComponents!!.timeZone
+                    )
+                    modeChoice.doModeChoice(agents, mainRng, dispatcher)
+                    return agents
+                } finally {
+                    gtfsComponents!!.gtfsHopper.close()
+                }
+            }
+        }
+    }
+
+    private fun setupGTFSModeChoice() {
+        // Get a GraphHopper if none exists
+        if (hopper == null) {
+            hopper = createGraphHopper(
+                osmFile.toString(),
+                Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
+            )
+        }
+
+        // Prepare the GTFS data
+        if (gtfsComponents == null) {
+            gtfsComponents = GTFSComponents(focusArea, fullArea, cacheDir, dispatcher, osmFile)
+        }
+    }
+
+    private inner class GTFSComponents(
+        focusArea: Geometry, fullArea: Geometry, cacheDir: Path, dispatcher: CoroutineDispatcher,
+        osmFile: File
+    ) {
+        val timeZone: TimeZone
+        val ptSimDays: Map<Weekday, LocalDate>
+        val ptRouter: PtRouter
+        val gtfsHopper: GraphHopperGtfs
+
+        init {
+            clipGTFSFile(
+                fullArea.envelopeInternal,
+                Paths.get("C:/Users/les29rq/Nextcloud/Projekte/09_data/gtfs/ger"),
+                cacheDir,
+                dispatcher
+            )
+            ptSimDays = getPublicTransitSimDays(Paths.get(cacheDir.toString(), "clippedGTFS/calendar.txt"))
+            timeZone = getTimeZone(focusArea)
+
+            // Get the GTFS GraphHopper
+            val gtfsPair = createGraphHopperGTFS(
+                osmFile.toString(),
+                Paths.get(cacheDir.toString(), "clippedGTFS").toString(),
+                Paths.get(cacheDir.toString(), "gtfs-routing-graph-cache", osmFile.name).toString()
+            )
+            ptRouter = gtfsPair.first
+            gtfsHopper = gtfsPair.second
+        }
+    }
+
+    /**
+     * Determine time zone at the center of the focus area.
+     */
+    private fun getTimeZone(focusArea: Geometry) : TimeZone {
+        val map = TimeZoneMap.forRegion(
+            focusArea.envelopeInternal.minX, focusArea.envelopeInternal.minY,
+            focusArea.envelopeInternal.maxX, focusArea.envelopeInternal.maxY
+        )
+        val tzString = map.getOverlappingTimeZone(focusArea.centroid.x, focusArea.centroid.y)?.zoneId
+        return  TimeZone.getTimeZone(tzString)
+    }
+
 }
