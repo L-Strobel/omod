@@ -16,24 +16,21 @@ import java.io.FileInputStream
  * Read and process all the input files.
  *
  * @param focusArea Focus area
+ * @param fullArea Buffered area
  * @param osmFile osm.pbf file
- * @param bufferRadius Distance to buffer the focus area with in order to obtain the buffer area
  * @param geometryFactory Geometry factory
  * @param transformer Used for CRS conversion
  * @return Data retrieved for all buildings in the model area
  */
-fun readOSM (focusArea: Geometry, osmFile: File, bufferRadius: Double,
+fun readOSM (focusArea: Geometry, fullArea: Geometry, osmFile: File,
              geometryFactory: GeometryFactory, transformer: CRSTransformer
 ): List<BuildingData> {
     logger.info("Start reading OSM-File... (If this is too slow use smaller .osm.pbf file)")
-    val utmFocusArea = transformer.toModelCRS(focusArea)
-    val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
-
     // Prepare osmosis pipeline
     val reader = OsmosisReader( FileInputStream(osmFile) )
     val processor = OSMProcessor(IdTrackerType.Dynamic, geometryFactory)
     val geomFilter = GeometryFilter(
-        transformer.toLatLon(utmArea),
+        fullArea,
         geometryFactory,
         IdTrackerType.Dynamic,
         clipIncompleteEntities = true,
@@ -92,6 +89,7 @@ fun readOSM (focusArea: Geometry, osmFile: File, bufferRadius: Double,
         buildingsTree.insert(building.geometry.envelopeInternal, building)
     }
 
+    val utmFocusArea = transformer.toModelCRS(focusArea)
     fastCovers(utmFocusArea, listOf(10000.0, 5000.0, 1000.0), geometryFactory,
         ifNot = { },
         ifDoes = { e ->
