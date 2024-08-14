@@ -10,5 +10,5 @@ import kotlinx.serialization.Serializable
 data class OutputDiary (
     val day: Int,
     val dayType: Weekday,
-    val activities: List<OutputActivity>
+    val plan: List<OutputLeg>
 )
