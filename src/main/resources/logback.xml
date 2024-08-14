@@ -7,7 +7,7 @@
     <logger name="com.graphhopper.GraphHopper" level="WARN">
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="de.uniwuerzburg.omod.core.Omod" level="INFO">
+    <logger name="de.uniwuerzburg.omod.core" level="INFO">
         <appender-ref ref="STDOUT" />
     </logger>
     <logger name="de.uniwuerzburg.omod.io" level="INFO">

@@ -113,7 +113,7 @@ class DefaultAgentFactory (
     override fun createAgents(
         nFocus: Int, zones: List<AggLocation>, populateBufferArea: Boolean, rng: Random
     ): List<MobiAgent> {
-        print("Creating Population...\r")
+        logger.info("Creating Population... ")
 
         // Home distributions inside and outside of focus area
         val insideHWeights = getHomeWeightsRestricted(zones, true).toDoubleArray()
@@ -152,7 +152,7 @@ class DefaultAgentFactory (
         }
 
         val agents = createAgentsFromHomes(homes, zones, rng)
-        println("Creating Population...  Done!")
+        logger.info("Creating Population... Done!")
         return agents
     }
 
