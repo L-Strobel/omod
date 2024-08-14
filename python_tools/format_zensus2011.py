@@ -1,8 +1,5 @@
-import sys
-
 import geopandas as gpd
 import pandas as pd
-
 
 def format_zensus2011(census_path: str, grid_path: str, nuts_shape_path: str, nuts: list[str]):
     """
