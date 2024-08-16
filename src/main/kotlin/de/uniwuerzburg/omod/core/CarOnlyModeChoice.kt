@@ -37,7 +37,9 @@ class CarOnlyModeChoice(
 
     private fun tripVisitor(
         trip: Trip, originActivity: Activity, destinationActivity: Activity,
-        departureTime: LocalTime, departureWD: Weekday, finished: Boolean
+        @Suppress("UNUSED_PARAMETER") departureTime: LocalTime,
+        @Suppress("UNUSED_PARAMETER") departureWD: Weekday,
+        @Suppress("UNUSED_PARAMETER") finished: Boolean
     )  {
         val origin = originActivity.location
         val destination = destinationActivity.location

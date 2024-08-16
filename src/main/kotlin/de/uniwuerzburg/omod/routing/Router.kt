@@ -13,7 +13,6 @@ import com.graphhopper.routing.util.TraversalMode
 import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
 import com.graphhopper.util.PMap
-import de.uniwuerzburg.omod.core.assignment.beelineRoute
 import de.uniwuerzburg.omod.core.models.LocationOption
 import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.RealLocation

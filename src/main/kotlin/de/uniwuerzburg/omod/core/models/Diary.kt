@@ -1,9 +1,6 @@
 package de.uniwuerzburg.omod.core.models
 
-import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalTime
-import java.util.TimeZone
 
 /**
  * Simulation result. Daily activity dairy.

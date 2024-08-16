@@ -11,7 +11,6 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.*
 import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.core.logger
-import de.uniwuerzburg.omod.core.models.AssignmentOption
 import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
