@@ -112,13 +112,10 @@ class Run : CliktCommand() {
     ).choice(
         mapOf("NONE" to ModeChoiceOption.NONE, "GTFS" to ModeChoiceOption.GTFS
     ), ignoreCase = true).default(ModeChoiceOption.NONE)
-    private val assignment by option(
-        help = "Type of assignment. " +
-               "NONE: Trip paths are not determined. " +
-               "ALL_OR_NOTHING: Returns paths without consideration of traffic."
-    ).choice(
-        mapOf("NONE" to AssignmentOption.NONE, "ALL_OR_NOTHING" to AssignmentOption.ALL_OR_NOTHING
-    ), ignoreCase = true).default(AssignmentOption.NONE)
+    private val return_path_coords by option(
+        help = "Whether lat/lon coordinates of chosen trip paths are returned." +
+               "Paths only exist for trips with defined modes and within the focus area + buffer."
+    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
     private val population_file by option(
         help="Path to file that describes the socio-demographic makeup of the population. " +
              "Must be formatted like omod/src/main/resources/Population.json."
@@ -156,7 +153,7 @@ class Run : CliktCommand() {
         }
 
         // Mode Choice
-        omod.doModeChoice(agents, mode_choice)
+        omod.doModeChoice(agents, mode_choice, return_path_coords)
 
         // Store output
         logger.info("Saving results...")
