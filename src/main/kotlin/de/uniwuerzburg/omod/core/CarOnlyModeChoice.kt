@@ -5,11 +5,13 @@ import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.routing.Route
 import de.uniwuerzburg.omod.routing.routeFallback
 import de.uniwuerzburg.omod.routing.routeWith
+import de.uniwuerzburg.omod.utils.ProgressBar
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.time.LocalTime
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.TimeSource
 
 class CarOnlyModeChoice(
@@ -20,6 +22,9 @@ class CarOnlyModeChoice(
     ) : List<MobiAgent> {
         val timeSource = TimeSource.Monotonic
         val timestampStartInit = timeSource.markNow()
+        val jobsDone = AtomicInteger()
+        val totalJobs = (agents.size).toDouble()
+
         for (chunk in agents.chunked(10000)) { // Don't launch to many coroutines at once
             runBlocking(dispatcher) {
                 for (agent in chunk) {
@@ -27,10 +32,13 @@ class CarOnlyModeChoice(
                         for (diary in agent.mobilityDemand) {
                             diary.visitTrips( ::tripVisitor )
                         }
+                        val done = jobsDone.incrementAndGet()
+                        print("Mode Choice: ${ProgressBar.show(done / totalJobs)}\r")
                     }
                 }
             }
         }
+        println("Mode Choice: " + ProgressBar.done())
         logger.info("Mode Choice took: ${timeSource.markNow() - timestampStartInit}")
         return  agents
     }
