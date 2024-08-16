@@ -4,9 +4,7 @@ import com.graphhopper.GraphHopper
 import com.graphhopper.gtfs.PtRouter
 import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.io.json.readJsonFromResource
-import de.uniwuerzburg.omod.routing.RoutingCache
-import de.uniwuerzburg.omod.routing.routeGTFS
-import de.uniwuerzburg.omod.routing.routeWith
+import de.uniwuerzburg.omod.routing.*
 import de.uniwuerzburg.omod.utils.ProgressBar
 import de.uniwuerzburg.omod.utils.createCumDist
 import de.uniwuerzburg.omod.utils.sampleCumDist
@@ -21,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.exp
 import kotlin.time.TimeSource
 
-// TODO withPath
 // TODO car availability
 // TODO Test with no car availability or person features
 // TODO to much car trips right now
@@ -35,6 +32,7 @@ class GTFSModeChoice(
     private val routingCache: RoutingCache,
     private val ptSimDays: Map<Weekday, LocalDate>,
     private val timeZone: TimeZone,
+    private val withPath: Boolean
 ) : ModeChoice {
     private val tourModeOptions: Array<ModeUtility> = readJsonFromResource("tourModeUtilities.json")
     private val tripModeOptions: Array<ModeUtility> = readJsonFromResource("tripModeUtilities.json")
@@ -64,11 +62,11 @@ class GTFSModeChoice(
         return agents
     }
 
-    private fun getTravelTime(
-        mode: Mode, origin: LocationOption, destination: LocationOption, carDistance: Double, departureTime: Instant
-    ): Double {
+    private fun getRoutes(
+        mode: Mode, origin: LocationOption, destination: LocationOption, departureTime: Instant
+    ): Route {
         if ((origin !is RealLocation) || (destination !is RealLocation)) {
-            return fallbackTime(carDistance, mode)
+            return routeFallback(mode, origin, destination)
         } else {
             val response = when (mode) {
                 Mode.PUBLIC_TRANSIT -> routeGTFS(origin, destination, departureTime, ptRouter, hopper)
@@ -77,19 +75,10 @@ class GTFSModeChoice(
                 else -> routeWith("car", origin, destination, hopper)
             }
             return if (response.hasErrors()) {
-                fallbackTime(carDistance, mode)
+                routeFallback(mode, origin, destination)
             } else {
-                response.best.time.toDouble() / 1000 / 60
+                Route.fromGHResponse(response, withPath)
             }
-        }
-    }
-
-    private fun fallbackTime(carDistance: Double, mode: Mode) : Double {
-        return when (mode) {
-            Mode.PUBLIC_TRANSIT -> carDistance / (20 * 1000) * 60 // 20 km/h
-            Mode.FOOT -> carDistance / (5 * 1000) * 60 // 5 km/h
-            Mode.BICYCLE -> carDistance / (10 * 1000) * 60 // 10 km/h
-            else -> carDistance / (50 * 1000) * 60 // 50 km/h
         }
     }
 
@@ -101,53 +90,38 @@ class GTFSModeChoice(
     private fun getTours(diary: Diary) : List<List<TripMCFeatures>> {
         val tours = mutableListOf<List<TripMCFeatures>>()
         var currentTour = mutableListOf<TripMCFeatures>()
-        if (diary.activities.size <= 1) { return  tours } // No mobility that day
 
-        // Run through day
-        var wd = diary.dayType
-        var currentActivity = diary.activities.first()
-        var currentMinute = 0.0
-        for ((i, nextActivity) in diary.activities.withIndex().drop(1)) {
-            currentMinute += currentActivity.stayTime ?: 0.0
-
-            // Update Weekday
-            var cnt = 0
-            while (currentMinute >= 60 * 24) {
-                wd = wd.next()
-                currentMinute -= 60 * 24
-                cnt += 1
-            }
-
-            // Departure time
-            val currentTime = LocalTime.of(currentMinute.toInt() / 60, currentMinute.toInt() % 60)
-            val departureTime = ptSimDays[wd]!!.atTime(currentTime).atZone(timeZone.toZoneId()).toInstant()
+        val visitor = {
+            trip: Trip, originActivity: Activity, destinationActivity: Activity,
+            departureTime: LocalTime, wd: Weekday, finished: Boolean ->
+            val departureInstant = ptSimDays[wd]!!.atTime(departureTime).atZone(timeZone.toZoneId()).toInstant()
 
             // Get car distance and travel times of trip
             val carDistance = routingCache.getDistances(
-                currentActivity.location, listOf(nextActivity.location)
+                originActivity.location, listOf(destinationActivity.location)
             ).first().toDouble() / 1000
-            val times = Mode.entries.associateWith {
-                getTravelTime(it, currentActivity.location, nextActivity.location, carDistance, departureTime)
+            val routes = Mode.entries.associateWith {
+                getRoutes(it, originActivity.location, destinationActivity.location, departureInstant)
             }
 
-            // Add estimated travel time
-            currentMinute += times[Mode.CAR_DRIVER]!!
-
-            val trip = TripMCFeatures(
+            val tripFeatures = TripMCFeatures(
                 carDistance,
-                currentActivity,
-                nextActivity,
-                times
+                originActivity,
+                destinationActivity,
+                routes
             )
-            currentTour.add(trip)
+            currentTour.add(tripFeatures)
 
             // Tour ends
-            if ((nextActivity.type == ActivityType.HOME) || (i == diary.activities.size - 1)){
+            if ((destinationActivity.type == ActivityType.HOME) || finished){
                 tours.add(currentTour)
                 currentTour = mutableListOf()
             }
-            currentActivity = nextActivity
+
+            // Add estimated travel time
+            trip.time = routes[Mode.CAR_DRIVER]!!.time
         }
+        diary.visitTrips(visitor) // Run through day
         return tours
     }
 
@@ -164,7 +138,7 @@ class GTFSModeChoice(
                 // Aggregate distance and times
                 val carDistance = tour.sumOf { it.carDistance }
                 val times = tourModeOptions.map { m ->
-                    tour.sumOf { it.time[m.mode]!! }
+                    tour.sumOf { it.routes[m.mode]!!.time }
                 }.toTypedArray()
 
                 // Main purpose of tour is defined by the activity with the longest stay time
@@ -184,7 +158,7 @@ class GTFSModeChoice(
             // Trip mode choice
             for (trip in tours.flatten().filter { it.mode == null }) {
                 val times = tripModeOptions.map { m ->
-                    trip.time[m.mode]!!
+                    trip.routes[m.mode]!!.time
                 }.toTypedArray()
                 val mode = sampleUtilities(tripModeOptions, times, trip.carDistance, agent, trip.toActivity.type, rng)
                 trip.mode = mode
@@ -195,11 +169,11 @@ class GTFSModeChoice(
             for (trip in tours.flatten()) {
                 outTrips.add(
                     Trip(
-                        trip.fromActivity.location,
-                        trip.toActivity.location,
                         trip.carDistance,
-                        trip.time[trip.mode!!]!!,
+                        trip.routes[trip.mode!!]!!.time,
                         mode = trip.mode!!,
+                        lats =  trip.routes[trip.mode!!]!!.lats,
+                        lons =  trip.routes[trip.mode!!]!!.lons
                     )
                 )
             }
@@ -228,7 +202,7 @@ class GTFSModeChoice(
         val carDistance: Double,
         val fromActivity: Activity,
         val toActivity: Activity,
-        val time: Map<Mode, Double>
+        val routes: Map<Mode, Route>
     ) {
         var mode: Mode? = null
     }

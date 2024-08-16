@@ -13,7 +13,9 @@ import com.graphhopper.routing.util.TraversalMode
 import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
 import com.graphhopper.util.PMap
+import de.uniwuerzburg.omod.core.assignment.beelineRoute
 import de.uniwuerzburg.omod.core.models.LocationOption
+import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.RealLocation
 import java.time.Instant
 import kotlin.math.abs
@@ -82,6 +84,17 @@ fun routeGTFS (
         }
         return resp
     }
+}
+
+fun routeFallback(mode: Mode, origin: LocationOption, destination: LocationOption): Route {
+    val beelineDistance = calcDistanceBeeline(origin, destination)
+    val time = when (mode) {
+        Mode.PUBLIC_TRANSIT -> beelineDistance / (20 * 1000) * 60 // 20 km/h
+        Mode.FOOT -> beelineDistance / (5 * 1000) * 60 // 5 km/h
+        Mode.BICYCLE -> beelineDistance / (10 * 1000) * 60 // 10 km/h
+        else -> beelineDistance / (50 * 1000) * 60 // 50 km/h
+    }
+    return Route(beelineDistance, time, null, null)
 }
 
 /**

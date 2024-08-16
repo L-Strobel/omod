@@ -515,20 +515,25 @@ class Omod(
         return agent
     }
 
-    // TODO out of RAM with ger.osm.pbf
-    fun doModeChoice(agents: List<MobiAgent>, modeChoiceOption: ModeChoiceOption) : List<MobiAgent> {
+    fun doModeChoice(
+        agents: List<MobiAgent>, modeChoiceOption: ModeChoiceOption, withPath: Boolean
+    ) : List<MobiAgent> {
         when (modeChoiceOption) {
-            ModeChoiceOption.NONE -> {
-                val modeChoice = DummyModeChoice(routingCache)
+            ModeChoiceOption.NONE -> { return agents } // Do nothing
+            ModeChoiceOption.CAR_ONLY -> {
+                setupHopper()
+                val modeChoice = CarOnlyModeChoice(hopper!!, withPath)
                 modeChoice.doModeChoice(agents, mainRng, dispatcher)
-                return  agents
+                return agents
             }
             ModeChoiceOption.GTFS -> {
-                setupGTFSModeChoice()
+                setupHopper()
+                setupGTFS()
                 try {
                     val modeChoice = GTFSModeChoice(
                         hopper!!, gtfsComponents!!.ptRouter, routingCache,
-                        gtfsComponents!!.ptSimDays,  gtfsComponents!!.timeZone
+                        gtfsComponents!!.ptSimDays,  gtfsComponents!!.timeZone,
+                        withPath
                     )
                     modeChoice.doModeChoice(agents, mainRng, dispatcher)
                     return agents
@@ -539,7 +544,7 @@ class Omod(
         }
     }
 
-    private fun setupGTFSModeChoice() {
+    private fun setupHopper() {
         // Get a GraphHopper if none exists
         if (hopper == null) {
             hopper = createGraphHopper(
@@ -547,7 +552,9 @@ class Omod(
                 Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
             )
         }
+    }
 
+    private fun setupGTFS() {
         // Prepare the GTFS data
         if (gtfsComponents == null) {
             gtfsComponents = GTFSComponents(focusArea, fullArea, cacheDir, dispatcher, osmFile)
