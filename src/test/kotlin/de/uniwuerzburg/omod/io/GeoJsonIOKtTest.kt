@@ -35,7 +35,7 @@ internal class GeoJsonIOKtTest {
     @Test
     fun readGeoJsonTestCollection() {
         val file = File(Omod::class.java.classLoader.getResource("geoJsonCollectionTest.geojson")!!.file)
-        val geom = readGeoJsonGeom(file, geometryFactory)
+        val geom = readGeoJsonGeom(file, geometryFactory).union()
         val coords = mutableListOf<Coordinate>()
         coords.add( Coordinate( 48.76447901844995, 11.625266400072974) )
         coords.add( Coordinate( 48.764015824711265, 11.624144613116698) )

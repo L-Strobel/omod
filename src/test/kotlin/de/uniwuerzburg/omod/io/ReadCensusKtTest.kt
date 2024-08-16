@@ -19,7 +19,6 @@ class ReadCensusKtTest {
         val areaString = Omod::class.java.classLoader.getResource("test_area.geojson")!!.readText(Charsets.UTF_8)
         val osmFile = File(Omod::class.java.classLoader.getResource("test.osm.pbf")!!.file)
 
-
         // Read OSM-File
         val areaColl: GeoJsonNoProperties = jsonHandler.decodeFromString(areaString)
         val focusArea = if (areaColl is GeoJsonFeatureCollectionNoProperties) {
@@ -31,7 +30,7 @@ class ReadCensusKtTest {
         }
 
         val transformer = CRSTransformer( focusArea.centroid.coordinate.y )
-        val buildings = readOSM(focusArea, osmFile, 0.0, geometryFactory, transformer)
+        val buildings = readOSM(focusArea, focusArea, osmFile, geometryFactory, transformer)
         return Pair(buildings, transformer)
     }
 
