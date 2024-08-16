@@ -98,7 +98,7 @@ class Run : CliktCommand() {
                "If set to 'y' additional agents will be created so that the proportion of agents in and " +
                "outside the focus area is the same as in the census data. " +
                "The focus area will always be populated by n_agents agents."
-    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
+    ).boolean().default(false)
     private val distance_matrix_cache_size by option(
         help = "Maximum number of entries of the distance matrix to precompute (only if routing_mode is GRAPHHOPPER). " +
                "A high value will lead to high RAM usage and long initialization times " +
@@ -108,13 +108,11 @@ class Run : CliktCommand() {
         help = "Type of mode choice. " +
                "NONE: Returns trips with undefined modes." +
                "GTFS: Uses a logit model with public transit as an option"
-    ).choice(
-        mapOf("NONE" to ModeChoiceOption.NONE, "GTFS" to ModeChoiceOption.GTFS
-    ), ignoreCase = true).default(ModeChoiceOption.NONE)
+    ).enum<ModeChoiceOption>().default(ModeChoiceOption.NONE)
     private val return_path_coords by option(
         help = "Whether lat/lon coordinates of chosen trip paths are returned." +
                "Paths only exist for trips with defined modes and within the focus area + buffer."
-    ).choice( mapOf("y" to true, "n" to false), ignoreCase = true).default(false)
+    ).boolean().default(false)
     private val population_file by option(
         help="Path to file that describes the socio-demographic makeup of the population. " +
              "Must be formatted like omod/src/main/resources/Population.json."
