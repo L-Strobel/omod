@@ -121,6 +121,13 @@ class Run : CliktCommand() {
         help="Number of parallel coroutines that can be executed at the same time. " +
              "Default: Number of CPU-Cores available."
     ).int()
+   private val gtfs_file by option(
+        help = "Path to an General Transit Feed Specification (GTFS) for the area. " +
+               "Required for public transit routing," +
+               "for example if public transit is an option in mode choice." +
+               "Must be a .zip file or a directory (see https://gtfs.org/)." +
+               "Recommended download platform for Germany: https://gtfs.de/"
+    ).file(mustExist = true, mustBeReadable = true)
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
@@ -128,6 +135,11 @@ class Run : CliktCommand() {
             throw Exception(
                 "Agent population is supposed to be based on the population but no census file is provided." +
                 "Consider adding a census file with --census or use --n_agents instead.")
+        }
+        if ((gtfs_file == null) && (mode_choice == ModeChoiceOption.GTFS)) {
+            throw Exception(
+                "Mode choice includes public transit as option but no GTFS file is provided." +
+                "Add a gtfs file with --gtfs_file")
         }
 
         // Init OMOD
@@ -140,7 +152,8 @@ class Run : CliktCommand() {
             populateBufferArea = populate_buffer_area,
             distanceCacheSize = distance_matrix_cache_size,
             populationFile = population_file,
-            nWorker = n_worker
+            nWorker = n_worker,
+            gtfsFile = gtfs_file
         )
 
         // Mobility demand

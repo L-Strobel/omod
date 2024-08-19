@@ -66,7 +66,8 @@ class Omod(
     private val populateBufferArea: Boolean = true,
     val distanceCacheSize: Long = 400e6.toLong(),
     populationFile: File? = null,
-    nWorker: Int? = null
+    nWorker: Int? = null,
+    private val gtfsFile: File? = null
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
@@ -593,7 +594,7 @@ class Omod(
             if (!clippedGtfsPath.exists()) {
                 clipGTFSFile(
                     fullArea.envelopeInternal,
-                    Paths.get("C:/Users/les29rq/Nextcloud/Projekte/09_data/gtfs/ger"),
+                    gtfsFile!!.toPath(),
                     gtfsCachePath,
                     dispatcher
                 )
