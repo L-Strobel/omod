@@ -1,5 +1,6 @@
 package de.uniwuerzburg.omod.io.gtfs
 
+import de.uniwuerzburg.omod.io.logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
@@ -29,6 +30,7 @@ import kotlin.io.path.*
  * @param cacheDir Cache directory
  */
 fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: CoroutineDispatcher) {
+    logger.info("Clipping GTFS to bounding box...")
     val inputStreams: MutableMap<String, InputStream> = mutableMapOf()
     if (gtfsPath.isDirectory()){
         for (file in gtfsPath.listDirectoryEntries("*.txt")) {
@@ -110,6 +112,7 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
         ForeignKeyFilter(services, "service_id"),
         dispatcher
     )
+    logger.info("Clipping GTFS to bounding box... Done!")
 }
 
 /**

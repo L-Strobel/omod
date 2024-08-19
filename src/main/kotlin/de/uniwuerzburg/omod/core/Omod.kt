@@ -31,6 +31,7 @@ import java.nio.file.Paths
 import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.io.path.exists
 import kotlin.time.TimeSource
 
 /**
@@ -571,21 +572,42 @@ class Omod(
         val gtfsHopper: GraphHopperGtfs
 
         init {
-            clipGTFSFile(
-                fullArea.envelopeInternal,
-                Paths.get("C:/Users/les29rq/Nextcloud/Projekte/09_data/gtfs/ger"),
-                cacheDir,
-                dispatcher
+            // Bounds
+            val latMin = fullArea.envelopeInternal.minX
+            val lonMin = fullArea.envelopeInternal.minY
+            val latMax = fullArea.envelopeInternal.maxX
+            val lonMax = fullArea.envelopeInternal.maxY
+
+            // Unique cache path
+            val gtfsCachePath = Paths.get(
+                cacheDir.toString(),
+                "gtfs/",
+                "BoundsLLAT${latMin}ULAT${latMax}LLON${lonMin}ULON${lonMax}"
             )
-            ptSimDays = getPublicTransitSimDays(Paths.get(cacheDir.toString(), "clippedGTFS/calendar.txt"))
+
+            // Create directory in cache
+            Files.createDirectories(gtfsCachePath)
+
+            // Clip GTFS file to bounding box
+            val clippedGtfsPath = Paths.get(gtfsCachePath.toString(), "clippedGTFS")
+            if (!clippedGtfsPath.exists()) {
+                clipGTFSFile(
+                    fullArea.envelopeInternal,
+                    Paths.get("C:/Users/les29rq/Nextcloud/Projekte/09_data/gtfs/ger"),
+                    gtfsCachePath,
+                    dispatcher
+                )
+            }
+
+            // Extract temporal information
+            ptSimDays = getPublicTransitSimDays(Paths.get(clippedGtfsPath.toString(), "calendar.txt"))
             timeZone = getTimeZone(focusArea)
 
             // Get the GTFS GraphHopper
-            // TODO define dir in terms of fullArea
             val gtfsPair = createGraphHopperGTFS(
                 osmFile.toString(),
-                Paths.get(cacheDir.toString(), "clippedGTFS").toString(),
-                Paths.get(cacheDir.toString(), "gtfs-routing-graph-cache", osmFile.name).toString()
+                clippedGtfsPath.toString(),
+                Paths.get(gtfsCachePath.toString(), "gtfs-routing-graph-cache", osmFile.name).toString()
             )
             ptRouter = gtfsPair.first
             gtfsHopper = gtfsPair.second
@@ -603,5 +625,4 @@ class Omod(
         val tzString = map.getOverlappingTimeZone(focusArea.centroid.x, focusArea.centroid.y)?.zoneId
         return  TimeZone.getTimeZone(tzString)
     }
-
 }
