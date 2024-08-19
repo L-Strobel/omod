@@ -12,20 +12,22 @@ data class ModeUtility (
     val homGroupCoeff: Map<HomogeneousGrp, Double>,
     val mobGroupCoeff: Map<MobilityGrp, Double>,
     val ageGrpCoeff: Map<AgeGrp, Double>,
-    val sexCoeff: Double, // IS Male?
-    val carAvailableCoeff: Double,
+    val sexCoeff: Map<Sex, Double>,
+    val carAvailableCoeff: Map<Boolean, Double>,
     val activityCoeff: Map<ActivityType, Double>,
     val intercept: Double
 ) {
-    fun calc(time: Double, distance: Double, activity: ActivityType, carAvailable: Boolean, agent: MobiAgent) : Double {
+    fun calc(
+        time: Double, distance: Double, activity: ActivityType, carAvailable: Boolean?, agent: MobiAgent
+    ) : Double {
         return time * timeCoeff +
                distance * distanceCoeff +
-               homGroupCoeff[agent.homogenousGroup]!! +
-               mobGroupCoeff[agent.mobilityGroup]!! +
-               ageGrpCoeff[agent.age]!! +
-               sexCoeff * agent.sex.value +
-               carAvailableCoeff * carAvailable.toDouble() +
-               activityCoeff[activity]!! +
+                (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
+                (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
+                (ageGrpCoeff[agent.age] ?: 0.0) +
+                (sexCoeff[agent.sex] ?: 0.0) +
+                (carAvailableCoeff[carAvailable] ?: 0.0) +
+                (activityCoeff[activity] ?: 0.0) +
                intercept
     }
 }

@@ -581,6 +581,7 @@ class Omod(
             timeZone = getTimeZone(focusArea)
 
             // Get the GTFS GraphHopper
+            // TODO define dir in terms of fullArea
             val gtfsPair = createGraphHopperGTFS(
                 osmFile.toString(),
                 Paths.get(cacheDir.toString(), "clippedGTFS").toString(),

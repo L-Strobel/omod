@@ -20,11 +20,9 @@ import kotlin.math.exp
 import kotlin.time.TimeSource
 
 // TODO car availability
-// TODO Test with no car availability or person features
-// TODO to much car trips right now
-// TODO test somewhere with better OPNV
-// TODO why is bicycle unlikely? Maybe because of Tour main activity -> H is high coefficient
+// TODO Check tour lengths
 // TODO Caching options
+// TODO without GTFS
 
 class GTFSModeChoice(
     private val hopper: GraphHopper,
@@ -189,7 +187,7 @@ class GTFSModeChoice(
         carDistance: Double, agent: MobiAgent, activity: ActivityType, rng: Random
     ) : Mode {
         val weights = options.withIndex()
-            .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, true, agent)) }
+            .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, null, agent)) }
             .toDoubleArray()
         val distr = createCumDist(weights)
         return options[sampleCumDist(distr, rng)].mode
