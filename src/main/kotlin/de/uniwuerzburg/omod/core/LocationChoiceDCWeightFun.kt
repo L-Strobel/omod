@@ -120,7 +120,7 @@ sealed class LocationChoiceDCWeightFun {
             }
         }
 
-        return 1.0 +
+        return  1.0 +
                 attractionLanduse +
                 coeffOfficeArea * areaOffice +
                 coeffShopArea * areaShop +
