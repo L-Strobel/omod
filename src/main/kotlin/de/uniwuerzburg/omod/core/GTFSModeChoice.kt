@@ -170,8 +170,8 @@ class GTFSModeChoice(
                         trip.carDistance,
                         trip.routes[trip.mode!!]!!.time,
                         mode = trip.mode!!,
-                        lats =  trip.routes[trip.mode!!]!!.lats,
-                        lons =  trip.routes[trip.mode!!]!!.lons
+                        lats = trip.routes[trip.mode!!]!!.lats,
+                        lons = trip.routes[trip.mode!!]!!.lons
                     )
                 )
             }
