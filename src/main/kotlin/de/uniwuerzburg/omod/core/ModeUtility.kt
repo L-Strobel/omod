@@ -1,7 +1,6 @@
 package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
-import de.uniwuerzburg.omod.utils.toDouble
 import kotlinx.serialization.Serializable
 
 @Serializable
