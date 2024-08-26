@@ -88,10 +88,10 @@ fun routeGTFS (
 fun routeFallback(mode: Mode, origin: LocationOption, destination: LocationOption): Route {
     val beelineDistance = calcDistanceBeeline(origin, destination)
     val time = when (mode) {
-        Mode.PUBLIC_TRANSIT -> beelineDistance / (20 * 1000) * 60 // 20 km/h
+        Mode.PUBLIC_TRANSIT -> beelineDistance / (22.5 * 1000) * 60 // 22.5 km/h
         Mode.FOOT -> beelineDistance / (5 * 1000) * 60 // 5 km/h
-        Mode.BICYCLE -> beelineDistance / (10 * 1000) * 60 // 10 km/h
-        else -> beelineDistance / (50 * 1000) * 60 // 50 km/h
+        Mode.BICYCLE -> beelineDistance / (18 * 1000) * 60 // 18 km/h
+        else -> beelineDistance / (75 * 1000) * 60 // 75 km/h
     }
     return Route(beelineDistance, time, null, null)
 }
