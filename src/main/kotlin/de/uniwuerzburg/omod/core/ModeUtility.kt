@@ -2,12 +2,14 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
 import kotlinx.serialization.Serializable
+import kotlin.math.ln
 
 @Serializable
 data class ModeUtility (
     val mode: Mode,
     val timeCoeff: Double,
     val distanceCoeff: Double,
+    val logDistanceCoeff: Double,
     val homGroupCoeff: Map<HomogeneousGrp, Double>,
     val mobGroupCoeff: Map<MobilityGrp, Double>,
     val ageGrpCoeff: Map<AgeGrp, Double>,
@@ -21,6 +23,7 @@ data class ModeUtility (
     ) : Double {
         return time * timeCoeff +
                distance * distanceCoeff +
+               ln(distance) * distanceCoeff +
                 (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
                 (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
                 (ageGrpCoeff[agent.age] ?: 0.0) +

@@ -1,8 +1,9 @@
 [
   {
     "mode": "CAR_DRIVER",
-    "timeCoeff": -0.019416503538749956,
-    "distanceCoeff": 0.09395082244238032,
+    "timeCoeff": -0.02382248364103303,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": 0.3085040083666586,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -16,30 +17,26 @@
       "UNDEFINED": 0.0
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 0.7574372561958765,
-      "CAR_USER": 2.1770988758944188,
-      "NOT_CAR": -1.0349380369261456
+      "CAR_MIXED": 0.9112513054120152,
+      "CAR_USER": 2.1508088794064935,
+      "NOT_CAR": -0.9576932103664157
     },
     "sexCoeff": {
-      "MALE": 1.3118866780173695,
-      "FEMALE": 0.7857041036067903
+      "MALE": 1.1947485510106524,
+      "FEMALE": 0.9104579526628528
     },
     "carAvailableCoeff": {
-      "False": -21.30924415752024,
-      "True": 1.4053741739396732
+      "False": -37.39029539171776,
+      "True": 1.2074480477180662
     },
-    "activityCoeff": {
-      "HOME": -0.04295461924913352,
-      "SHOPPING": 1.307207085564429,
-      "SCHOOL": -0.464279357361602,
-      "WORK": 1.8170483613955069
-    },
-    "intercept": 1.3897692365057215
+    "activityCoeff": {},
+    "intercept": 1.431279267480098
   },
   {
-    "mode": "PUBLIC_TRANSIT",
-    "timeCoeff": -0.019416503538749956,
-    "distanceCoeff": 0.11479218959739898,
+    "mode": "FOOT",
+    "timeCoeff": -0.02382248364103303,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": -1.0966205126808504,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -53,30 +50,26 @@
       "UNDEFINED": 0.0
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 1.2645111454083056,
-      "CAR_USER": 0.3855763120067283,
-      "NOT_CAR": 2.601132890560171
+      "CAR_MIXED": 0.8184077119794717,
+      "CAR_USER": 1.840249422589743,
+      "NOT_CAR": 1.646936973139925
     },
     "sexCoeff": {
-      "MALE": 0.9211318729400975,
-      "FEMALE": 1.0099046646769392
+      "MALE": 1.1200752089096668,
+      "FEMALE": 0.895105024988568
     },
     "carAvailableCoeff": {
-      "False": 8.565195456922384,
-      "True": 0.6406719947853912
+      "False": 10.326004722698183,
+      "True": 1.0850688838895461
     },
-    "activityCoeff": {
-      "HOME": 1.089209506625345,
-      "SHOPPING": 0.7294942239686221,
-      "SCHOOL": 2.2361799010419374,
-      "WORK": 2.1643806055418646
-    },
-    "intercept": 1.2863757280078558
+    "activityCoeff": {},
+    "intercept": 2.8534470002695382
   },
   {
     "mode": "BICYCLE",
-    "timeCoeff": -0.019416503538749956,
-    "distanceCoeff": -0.2928598634319497,
+    "timeCoeff": -0.02382248364103303,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": -0.5036570494031329,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -90,30 +83,26 @@
       "UNDEFINED": 0.0
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 1.6187895857084635,
-      "CAR_USER": 0.07421832509936326,
-      "NOT_CAR": 2.2922110636022848
+      "CAR_MIXED": 1.3669809399584958,
+      "CAR_USER": 0.050099838236865875,
+      "NOT_CAR": 1.7591341272622523
     },
     "sexCoeff": {
-      "MALE": 1.0725657371522204,
-      "FEMALE": 0.9023368093449917
+      "MALE": 1.339666746281824,
+      "FEMALE": 0.6729707333704861
     },
     "carAvailableCoeff": {
-      "False": 8.503478873960923,
-      "True": 0.8256011712666199
+      "False": 10.682842167590467,
+      "True": 0.9396633173187224
     },
-    "activityCoeff": {
-      "HOME": 3.097503598041379,
-      "SHOPPING": 1.3311038282677221,
-      "SCHOOL": 1.4796177030767872,
-      "WORK": 0.14528862909870127
-    },
-    "intercept": 0.4881448233661834
+    "activityCoeff": {},
+    "intercept": 1.7818712559064656
   },
   {
     "mode": "CAR_PASSENGER",
-    "timeCoeff": -0.019416503538749956,
-    "distanceCoeff": 0.08979225652323562,
+    "timeCoeff": -0.02382248364103303,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": 0.20124570196542596,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -127,24 +116,52 @@
       "UNDEFINED": 0.0
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 0.35926193632351316,
-      "CAR_USER": 1.3631064629334122,
-      "NOT_CAR": 0.14159413977426896
+      "CAR_MIXED": 1.0362152326077954,
+      "CAR_USER": 2.0219752571390885,
+      "NOT_CAR": 0.3957714439875604
     },
     "sexCoeff": {
-      "MALE": 0.6944157342702094,
-      "FEMALE": 1.3020544814817647
+      "MALE": 0.4386457079884224,
+      "FEMALE": 1.3513875124336525
     },
     "carAvailableCoeff": {
-      "False": 8.24056984398904,
-      "True": 1.1283525376764814
+      "False": 10.28919227470517,
+      "True": 1.0683785872606057
     },
-    "activityCoeff": {
-      "HOME": -0.14375847963894683,
-      "SHOPPING": 0.6321948736717502,
-      "SCHOOL": 0.7484817395387084,
-      "WORK": -0.1267175832598199
+    "activityCoeff": {},
+    "intercept": 0.12317551512709098
+  },
+  {
+    "mode": "PUBLIC_TRANSIT",
+    "timeCoeff": -0.02382248364103303,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": 1.0932000639838657,
+    "homGroupCoeff": {
+      "WORKING": 0.0,
+      "NON_WORKING": 0.0,
+      "PUPIL_STUDENT": 0.0,
+      "UNDEFINED": 0.0
     },
-    "intercept": 0.8357102224424977
+    "ageGrpCoeff": {
+      "A0_40": 0.0,
+      "A40_60": 0.0,
+      "A60_100": 0.0,
+      "UNDEFINED": 0.0
+    },
+    "mobGroupCoeff": {
+      "CAR_MIXED": 0.8671448100644045,
+      "CAR_USER": -1.0631333973149615,
+      "NOT_CAR": 2.1558506660155636
+    },
+    "sexCoeff": {
+      "MALE": 0.9068637858416216,
+      "FEMALE": 1.17007877658782
+    },
+    "carAvailableCoeff": {
+      "False": 11.092256226714397,
+      "True": 0.699441163780326
+    },
+    "activityCoeff": {},
+    "intercept": -1.1897730389002343
   }
 ]
