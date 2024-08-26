@@ -3,6 +3,7 @@ package de.uniwuerzburg.omod.io.json
 import de.uniwuerzburg.omod.core.models.AgeGrp
 import de.uniwuerzburg.omod.core.models.HomogeneousGrp
 import de.uniwuerzburg.omod.core.models.MobilityGrp
+import de.uniwuerzburg.omod.core.models.Sex
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,5 +15,6 @@ data class OutputEntry (
     val homogenousGroup: HomogeneousGrp,
     val mobilityGroup: MobilityGrp,
     val age: AgeGrp,
+    val sex: Sex,
     val mobilityDemand: List<OutputDiary>
 )

@@ -27,9 +27,8 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
             id += 1
             currentTime = currentTime.plusMinutes(activity.stayTime?.toLong() ?: 0)
 
-            if (diary.trips == null) { continue }
-            if (i >= diary.trips!!.size) { continue }
-            val trip = diary.trips!![i]
+            if (i >= diary.trips.size) { continue }
+            val trip = diary.trips[i]
             legs.add(
                 OutputTrip(
                     id, trip.mode, currentTime.toString(), trip.distance, trip.time, trip.lats, trip.lons
@@ -40,6 +39,6 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
         }
         OutputDiary(diary.day, diary.dayType, legs)
     }
-    return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, mobilityDemand)
+    return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, agent.sex, mobilityDemand)
 }
 
