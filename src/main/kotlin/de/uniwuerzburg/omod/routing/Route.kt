@@ -1,15 +1,51 @@
 package de.uniwuerzburg.omod.routing
 
 import com.graphhopper.GHResponse
+import com.graphhopper.GraphHopper
+import com.graphhopper.gtfs.PtRouter
+import de.uniwuerzburg.omod.core.models.LocationOption
+import de.uniwuerzburg.omod.core.models.Mode
+import de.uniwuerzburg.omod.core.models.RealLocation
+import java.time.Instant
 
 class Route (
-    val distance: Double,           // Unit: meter
-    val time: Double,               // Unit: seconds
+    val distance: Double,           // Unit: kilometer
+    val time: Double,               // Unit: minutes
     val lats: List<Double>?,
     val lons: List<Double>?
 ) {
     companion object {
-        fun fromGHResponse(response: GHResponse, withPath: Boolean) : Route {
+        fun getWithFallback(
+            mode: Mode, origin: LocationOption, destination: LocationOption, hopper: GraphHopper, withPath: Boolean,
+            departureTime: Instant?, ptRouter: PtRouter?
+        ): Route {
+            if (((departureTime == null) || (ptRouter == null)) && (mode == Mode.PUBLIC_TRANSIT)) {
+                throw IllegalArgumentException("A ptRouter and departureTime is required for public transit routing!")
+            }
+
+            val route = if ((origin !is RealLocation) || (destination !is RealLocation)) {
+                routeFallback(mode, origin, destination)
+            } else {
+                val response = when (mode) {
+                    Mode.PUBLIC_TRANSIT -> routeGTFS(origin, destination, departureTime!!, ptRouter!!, hopper)
+                    Mode.FOOT           -> routeWith("foot", origin, destination, hopper)
+                    Mode.BICYCLE        -> routeWith("bike", origin, destination, hopper)
+                    else                -> routeWith("car", origin, destination, hopper)
+                }
+                if (response.hasErrors()) {
+                    routeFallback(mode, origin, destination)
+                } else {
+                    fromGHResponse(response, withPath)
+                }
+            }
+
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                return Route(route.distance, route.time + 5, route.lats, route.lons) // 5min for parking
+            }
+            return route
+        }
+
+        private fun fromGHResponse(response: GHResponse, withPath: Boolean) : Route {
             val (lats, lons) = if (withPath) {
                 Pair(
                     response.best.points.map { it.lat },
@@ -18,6 +54,7 @@ class Route (
             } else {
                 Pair(null, null)
             }
+
             return Route (
                 response.best.distance / 1000,
                 (response.best.time / 1000 / 60).toDouble(),

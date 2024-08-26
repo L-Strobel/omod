@@ -49,19 +49,10 @@ class CarOnlyModeChoice(
         @Suppress("UNUSED_PARAMETER") departureWD: Weekday,
         @Suppress("UNUSED_PARAMETER") finished: Boolean
     )  {
-        val origin = originActivity.location
-        val destination = destinationActivity.location
-
-        val route = if ((origin is RealLocation) && (destination is RealLocation)) {
-            val response  = routeWith("car", origin, destination, hopper)
-            if (!response.hasErrors()) {
-                Route.fromGHResponse(response, withPath)
-            } else {
-                routeFallback(Mode.CAR_DRIVER, origin, destination)
-            }
-        } else {
-            routeFallback(Mode.CAR_DRIVER, origin, destination)
-        }
+        val route = Route.getWithFallback(
+            Mode.CAR_DRIVER, originActivity.location, destinationActivity.location,
+            hopper, withPath, null, null
+        )
 
         trip.mode = Mode.CAR_DRIVER
         trip.time = route.time

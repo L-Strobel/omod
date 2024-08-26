@@ -22,7 +22,7 @@ import kotlin.time.TimeSource
 // TODO car availability
 // TODO Check tour lengths
 // TODO Caching options
-// TODO without GTFS
+// TODO take lower of foot and pt for pt
 
 class GTFSModeChoice(
     private val hopper: GraphHopper,
@@ -60,26 +60,6 @@ class GTFSModeChoice(
         return agents
     }
 
-    private fun getRoutes(
-        mode: Mode, origin: LocationOption, destination: LocationOption, departureTime: Instant
-    ): Route {
-        if ((origin !is RealLocation) || (destination !is RealLocation)) {
-            return routeFallback(mode, origin, destination)
-        } else {
-            val response = when (mode) {
-                Mode.PUBLIC_TRANSIT -> routeGTFS(origin, destination, departureTime, ptRouter, hopper)
-                Mode.FOOT -> routeWith("foot", origin, destination, hopper)
-                Mode.BICYCLE -> routeWith("bike", origin, destination, hopper)
-                else -> routeWith("car", origin, destination, hopper)
-            }
-            return if (response.hasErrors()) {
-                routeFallback(mode, origin, destination)
-            } else {
-                Route.fromGHResponse(response, withPath)
-            }
-        }
-    }
-
     /**
      * Run through day and get all HOME-HOME tours. If the day does not start with a HOME activity,
      * all the trips before the first HOME activity are counted as a tour. The same is true for all the trips after the
@@ -99,7 +79,10 @@ class GTFSModeChoice(
                 originActivity.location, listOf(destinationActivity.location)
             ).first().toDouble() / 1000
             val routes = Mode.entries.associateWith {
-                getRoutes(it, originActivity.location, destinationActivity.location, departureInstant)
+                Route.getWithFallback(
+                    it, originActivity.location, destinationActivity.location,
+                    hopper, withPath, departureInstant, ptRouter
+                )
             }
 
             val tripFeatures = TripMCFeatures(
@@ -135,9 +118,7 @@ class GTFSModeChoice(
 
                 // Aggregate distance and times
                 val carDistance = tour.sumOf { it.carDistance }
-                val times = tourModeOptions.map { m ->
-                    tour.sumOf { it.routes[m.mode]!!.time }
-                }.toTypedArray()
+                val times = tourModeOptions.map { m -> tour.sumOf { it.routes[m.mode]!!.time } }.toTypedArray()
 
                 // Main purpose of tour is defined by the activity with the longest stay time
                 val mainPurpose = tour
