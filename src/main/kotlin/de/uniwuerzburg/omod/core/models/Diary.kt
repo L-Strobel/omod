@@ -1,6 +1,12 @@
 package de.uniwuerzburg.omod.core.models
 
 import java.time.LocalTime
+import java.util.Random
+
+typealias TripVisitor = (
+    trip: Trip, originActivity: Activity, destinationActivity: Activity,
+    departureTime: LocalTime, departureWD: Weekday, finished: Boolean
+) -> Unit
 
 /**
  * Simulation result. Daily activity dairy.
@@ -17,9 +23,8 @@ data class Diary (
     var trips: List<Trip> = List(activities.size - 1) { Trip() }
 
     fun visitTrips(
-        visitor:(
-            trip: Trip, originActivity: Activity, destinationActivity: Activity,
-            departureTime: LocalTime, departureWD: Weekday, finished: Boolean) -> Unit) {
+        visitor: TripVisitor
+    ){
         if (this.activities.size <= 1) {
             return
         }
