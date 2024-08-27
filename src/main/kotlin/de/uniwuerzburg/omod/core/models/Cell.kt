@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.core.models
 
 import org.locationtech.jts.geom.Coordinate
+import kotlin.math.PI
 
 /**
  * Routing cell. Group of buildings used to faster calculate the approximate distance by car.
@@ -16,8 +17,8 @@ data class Cell (
     override val latlonCoord: Coordinate,
     val buildings: List<Building>,
 ) : RealLocation, AggLocation {
-    // From LocationOption
-    override val avgDistanceToSelf = buildings.map { it.coord.distance(coord) }.average()
+    // Approximation: average distance between to random points on a disc
+    override val avgDistanceToSelf = (buildings.maxOfOrNull { it.coord.distance(coord) } ?: 0.0) * 2 * 64 / (45 * PI)
 
     // Most common taz (Normally null here)
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
