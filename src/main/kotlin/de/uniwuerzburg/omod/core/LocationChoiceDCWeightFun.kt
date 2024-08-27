@@ -1,13 +1,13 @@
 package de.uniwuerzburg.omod.core
 
+import de.uniwuerzburg.omod.core.models.ActivityType
 import de.uniwuerzburg.omod.core.models.Landuse
 import de.uniwuerzburg.omod.core.models.RealLocation
 import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlin.math.exp
-import kotlin.math.ln
+import kotlin.math.*
 
 /**
  * Return unique IDs used for the destination choice functions.
@@ -72,9 +72,10 @@ sealed class LocationChoiceDCWeightFun {
      * @return probabilistic weight
      */
     open fun calcFor(destination: RealLocation, distance: Double) : Double {
-        // Log is undefined for 0
-        val distanceAdj = if (distance == 0.0) {
-            Double.MIN_VALUE
+        // Minimum distance where at which distance has an influence. The left side of the deterrence functions
+        // are poorly fitted due to the maximum resolution in the MID being 500m.
+        val distanceAdj = if (distance <= 2000) {
+            2.0
         } else {
             distance / 1000
         }
@@ -130,7 +131,7 @@ sealed class LocationChoiceDCWeightFun {
                 coeffShopUnits * properties.number_shops +
                 coeffSchoolUnits * properties.number_schools +
                 coeffUniUnits * properties.number_universities +
-                coeffPlaceOfWorshipUnits *  properties.number_place_of_worship +
+                coeffPlaceOfWorshipUnits * properties.number_place_of_worship +
                 coeffCafeUnits * properties.number_cafe +
                 coeffFastFoodUnits * properties.number_fast_food +
                 coeffKinderGartenUnits * properties.number_kindergarten +

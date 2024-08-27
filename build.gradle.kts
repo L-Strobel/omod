@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "de.uniwuerzburg.omod"
-version = "2.0.12"
+version = "2.0.13"
 
 repositories {
     mavenLocal()

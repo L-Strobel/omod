@@ -1,7 +1,6 @@
 package de.uniwuerzburg.omod.core.models
 
 import java.time.LocalTime
-import java.util.Random
 
 typealias TripVisitor = (
     trip: Trip, originActivity: Activity, destinationActivity: Activity,
