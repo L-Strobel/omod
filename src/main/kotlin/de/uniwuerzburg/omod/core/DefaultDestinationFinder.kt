@@ -2,9 +2,11 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.routing.RoutingCache
+import de.uniwuerzburg.omod.routing.calcDistanceBeeline
 import de.uniwuerzburg.omod.utils.createCumDist
 import de.uniwuerzburg.omod.utils.sampleCumDist
 import java.util.Random
+import kotlin.math.*
 
 class DefaultDestinationFinder(
     private val routingCache: RoutingCache,
@@ -48,7 +50,7 @@ class DefaultDestinationFinder(
                 else -> {
                     destination as RealLocation
                     val distance = distances[i].toDouble()
-                    weightFunction.calcFor(destination, distance)
+                    weightFunction.calcFor(destination, distance, activityType)
                 }
             }
         }
@@ -137,6 +139,92 @@ class DefaultDestinationFinder(
     private fun getDistrNoOrigin(destinations: List<LocationOption>, activityType: ActivityType) : DoubleArray {
         val weights = getWeightsNoOrigin(destinations, activityType)
         return createCumDist(weights.toDoubleArray())
+    }
+
+
+    fun getWeights(
+        origin: LocationOption, destinations: List<LocationOption>, nextFixed: LocationOption,
+        activityType: ActivityType
+    ): List<Double> {
+        require(activityType != ActivityType.HOME) { "For HOME activities call getWeightsNoOrigin()!" }
+
+        // Don't leave dummy location except OD-Matrix defines it
+        if (origin is DummyLocation) {
+            if (activityType !in origin.transferActivities) {
+                return destinations.map { if (origin == it) 1.0 else 0.0 }
+            }
+        }
+
+        fun gaussianPDF(x: Double) : Double {
+            val sigma = PI / 8
+            //val sigma = PI
+            return 1 / (sqrt(2 * PI * sigma.pow(2))) * exp(- x.pow(2) / (2 * sigma.pow(2)))
+        }
+
+        val distances = routingCache.getDistances(origin, destinations)
+        /*val beelineDistancesOrg  = destinations.map{ calcDistanceBeeline(origin, it).toFloat() }
+        val beelineDistancesNext = destinations.map{ calcDistanceBeeline(nextFixed, it).toFloat() }
+        for (i in distances.indices) {
+            distances[i] = min(0.0f, distances[i] + (beelineDistancesNext[i] - beelineDistancesOrg[i]))
+        }*/
+        val weightFunction = locChoiceWeightFuns[activityType]!!
+
+        val weights = destinations.mapIndexed { i, destination ->
+            // Get angle
+            val absA = calcDistanceBeeline(origin, destination)
+            val absB = calcDistanceBeeline(nextFixed, destination)
+            val absC = calcDistanceBeeline(nextFixed, origin)
+            val sigma = acos((absA.pow(2) + absC.pow(2) - absB.pow(2)) / (2 * absA * absC))
+            val sigmaFixed = if (sigma.isNaN()) { 0.0 } else { sigma }
+            val dirScaler = gaussianPDF(sigmaFixed)
+
+            when(destination) {
+                is DummyLocation -> {
+                    if (activityType !in destination.transferActivities) {
+                        0.0
+                    } else {
+                        1.0
+                    }
+                }
+                else -> {
+                    destination as RealLocation
+                    val distance = distances[i].toDouble()
+                    weightFunction.calcFor(destination, distance, activityType)
+                }
+            }
+        }
+
+        if (!calibrated) { return weights }
+
+        return if (activityType == ActivityType.WORK) {
+            destinations.mapIndexed { i, destination ->
+                val foFactor = firstOrderCFactors[activityType]?.get(destination.odZone) ?: 1.0
+                val soFactor = secondOrderCFactors[Pair(ActivityType.HOME, activityType)]
+                    ?.get(Pair(origin.odZone, destination.odZone)) ?: 1.0
+                foFactor * soFactor * weights[i]
+            }
+        } else {
+            weights
+        }
+    }
+
+    override fun getLocation(
+        origin: AggLocation, destinations: List<AggLocation>, nextFixed: LocationOption,
+        activityType: ActivityType, rng: Random
+    ) : LocationOption {
+        // Get agg zone (might be cell or dummy is node)
+        val weights = getWeights(origin, destinations, nextFixed, activityType)
+        val aggCumDist = createCumDist(weights.toDoubleArray())
+        val aggZone = destinations[sampleCumDist(aggCumDist, rng)]
+
+        // Get fine-grained location
+        val destination = if (aggZone is Cell) {
+            val buildingsCumDist = getDistrNoOrigin(aggZone.buildings, activityType) // No origin for speed up
+            aggZone.buildings[sampleCumDist(buildingsCumDist, rng)]
+        } else {
+            aggZone
+        }
+        return destination
     }
 
     /**
