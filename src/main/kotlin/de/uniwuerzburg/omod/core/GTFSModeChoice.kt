@@ -11,7 +11,6 @@ import de.uniwuerzburg.omod.utils.sampleCumDist
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.*
@@ -65,7 +64,7 @@ class GTFSModeChoice(
      * all the trips before the first HOME activity are counted as a tour. The same is true for all the trips after the
      * last HOME activity if the day does not end with a HOME activity.
      */
-    private fun getTours(diary: Diary) : List<List<TripMCFeatures>> {
+    private fun getTours(diary: Diary, rng: Random) : List<List<TripMCFeatures>> {
         val tours = mutableListOf<List<TripMCFeatures>>()
         var currentTour = mutableListOf<TripMCFeatures>()
 
@@ -74,15 +73,22 @@ class GTFSModeChoice(
             departureTime: LocalTime, wd: Weekday, finished: Boolean ->
             val departureInstant = ptSimDays[wd]!!.atTime(departureTime).atZone(timeZone.toZoneId()).toInstant()
 
-            // Get car distance and travel times of trip
+            // Get car distance
             val carDistance = routingCache.getDistances(
                 originActivity.location, listOf(destinationActivity.location)
             ).first().toDouble() / 1000
+
+            // Routes for possible trips
+            val hhDistance = Route.sampleDistanceHomeHomeTrip(rng)
             val routes = Mode.entries.associateWith {
-                Route.getWithFallback(
-                    it, originActivity.location, destinationActivity.location,
-                    hopper, withPath, departureInstant, ptRouter
-                )
+                if ((originActivity.type == ActivityType.HOME) && (destinationActivity.type == ActivityType.HOME)) {
+                    Route.routeFallbackFromDistance(it, hhDistance)
+                } else {
+                    Route.getWithFallback(
+                        it, originActivity.location, destinationActivity.location,
+                        hopper, withPath, departureInstant, ptRouter
+                    )
+                }
             }
 
             val tripFeatures = TripMCFeatures(
@@ -108,7 +114,7 @@ class GTFSModeChoice(
 
     private fun doModeChoiceFor(agent: MobiAgent, rng:Random) {
         for (diary in agent.mobilityDemand) {
-            val tours = getTours(diary)
+            val tours = getTours(diary, rng)
 
             // Tour mode choice
             for (tour in tours) {
