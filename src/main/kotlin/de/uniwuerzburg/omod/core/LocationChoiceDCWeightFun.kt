@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.core
 
-import de.uniwuerzburg.omod.core.models.ActivityType
 import de.uniwuerzburg.omod.core.models.Landuse
 import de.uniwuerzburg.omod.core.models.RealLocation
 import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
@@ -74,8 +73,8 @@ sealed class LocationChoiceDCWeightFun {
     open fun calcFor(destination: RealLocation, distance: Double) : Double {
         // Minimum distance where at which distance has an influence. The left side of the deterrence functions
         // are poorly fitted due to the maximum resolution in the MID being 500m.
-        val distanceAdj = if (distance <= 2000) {
-            2.0
+        val distanceAdj = if (distance <= 0) {
+            Double.MIN_VALUE
         } else {
             distance / 1000
         }

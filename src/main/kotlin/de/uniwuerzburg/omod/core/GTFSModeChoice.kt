@@ -19,8 +19,6 @@ import kotlin.math.exp
 import kotlin.time.TimeSource
 
 // TODO car availability
-// TODO Check tour lengths
-// TODO Caching options
 // TODO take lower of foot and pt for pt
 
 class GTFSModeChoice(
