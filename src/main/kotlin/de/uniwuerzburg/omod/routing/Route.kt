@@ -3,6 +3,7 @@ package de.uniwuerzburg.omod.routing
 import com.graphhopper.GHResponse
 import com.graphhopper.GraphHopper
 import com.graphhopper.gtfs.PtRouter
+import de.uniwuerzburg.omod.core.models.ActivityType
 import de.uniwuerzburg.omod.core.models.LocationOption
 import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.RealLocation
@@ -84,8 +85,15 @@ class Route (
             return Route(distance, time, null, null)
         }
 
-        fun sampleDistanceHomeHomeTrip(rng: Random): Double {
-            val lambda = 1.0 / 12.0 // TODO
+        fun sampleDistanceRoundTrip(activityType: ActivityType, rng: Random): Double {
+            val lambda: Double = when (activityType) {
+                ActivityType.HOME   -> 1.0 / 11.9
+                ActivityType.WORK   -> 1.0 / 12.7
+                ActivityType.SCHOOL -> 1.0 / 7.7
+                else -> throw IllegalArgumentException(
+                    "Round-trips must start and end at a fixed location (HOME, WORK, SCHOOL)."
+                )
+            }
             return 1 / (-lambda) * ln(1-rng.nextDouble())
         }
     }
