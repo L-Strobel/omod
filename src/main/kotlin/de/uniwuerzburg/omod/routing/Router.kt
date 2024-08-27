@@ -17,7 +17,9 @@ import de.uniwuerzburg.omod.core.models.LocationOption
 import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.RealLocation
 import java.time.Instant
+import java.util.Random
 import kotlin.math.abs
+import kotlin.math.ln
 
 /**
  * Calculate the Euclidean distance between two locations
@@ -83,17 +85,6 @@ fun routeGTFS (
         }
         return resp
     }
-}
-
-fun routeFallback(mode: Mode, origin: LocationOption, destination: LocationOption): Route {
-    val beelineDistance = calcDistanceBeeline(origin, destination) / 1000
-    val time = when (mode) {
-        Mode.PUBLIC_TRANSIT -> beelineDistance / 22.5 * 60 // 22.5 km/h
-        Mode.FOOT -> beelineDistance / 5 * 60 // 5 km/h
-        Mode.BICYCLE -> beelineDistance / 18 * 60 // 18 km/h
-        else -> beelineDistance / 75  * 60 // 75 km/h + 5 min for Parking
-    }
-    return Route(beelineDistance, time, null, null)
 }
 
 /**
