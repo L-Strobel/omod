@@ -6,7 +6,8 @@ import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlin.math.*
+import kotlin.math.exp
+import kotlin.math.ln
 
 /**
  * Return unique IDs used for the destination choice functions.
