@@ -46,9 +46,17 @@ class CarOnlyModeChoice(
         val visitor = {
                 trip: Trip, originActivity: Activity, destinationActivity: Activity,
                 _: LocalTime, _: Weekday, _: Boolean ->
-            val route = if ((originActivity.type == ActivityType.HOME) && (destinationActivity.type == ActivityType.HOME)) {
-                val hhDistance = Route.sampleDistanceHomeHomeTrip(rng)
-                Route.routeFallbackFromDistance(Mode.CAR_DRIVER, hhDistance)
+            val route = if (
+                    (originActivity.type == destinationActivity.type) &&
+                    (
+                        (originActivity.type == ActivityType.HOME) ||
+                        (originActivity.type == ActivityType.WORK) ||
+                        (originActivity.type == ActivityType.SCHOOL)
+                    )
+                ) {
+                // IF trip is from fixed location to same fixed location. Impute a randomly sampled Round-trip.
+                val rtDistance = Route.sampleDistanceRoundTrip(originActivity.type, rng)
+                Route.routeFallbackFromDistance(Mode.CAR_DRIVER, rtDistance)
             } else {
                 Route.getWithFallback(
                     Mode.CAR_DRIVER, originActivity.location, destinationActivity.location,

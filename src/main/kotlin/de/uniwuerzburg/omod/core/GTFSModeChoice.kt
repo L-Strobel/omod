@@ -73,22 +73,40 @@ class GTFSModeChoice(
             departureTime: LocalTime, wd: Weekday, finished: Boolean ->
             val departureInstant = ptSimDays[wd]!!.atTime(departureTime).atZone(timeZone.toZoneId()).toInstant()
 
-            // Get car distance
-            val carDistance = routingCache.getDistances(
-                originActivity.location, listOf(destinationActivity.location)
-            ).first().toDouble() / 1000
-
             // Routes for possible trips
-            val hhDistance = Route.sampleDistanceHomeHomeTrip(rng)
-            val routes = Mode.entries.associateWith {
-                if ((originActivity.type == ActivityType.HOME) && (destinationActivity.type == ActivityType.HOME)) {
-                    Route.routeFallbackFromDistance(it, hhDistance)
-                } else {
+            val rtDistances = mapOf(
+                ActivityType.HOME to Route.sampleDistanceRoundTrip(ActivityType.HOME, rng),
+                ActivityType.WORK to Route.sampleDistanceRoundTrip(ActivityType.WORK, rng),
+                ActivityType.SCHOOL to Route.sampleDistanceRoundTrip(ActivityType.SCHOOL, rng)
+            )
+
+            // Get car distance and routes per mode
+            val (carDistance, routes) = if (
+                (originActivity.type == destinationActivity.type) &&
+                (
+                    (originActivity.type == ActivityType.HOME) ||
+                    (originActivity.type == ActivityType.WORK) ||
+                    (originActivity.type == ActivityType.SCHOOL)
+                )
+            ) {
+                // IF trip is from fixed location to same fixed location. Impute a randomly sampled Round-trip.
+                val carDistance = rtDistances[originActivity.type]!!
+                val routes = Mode.entries.associateWith {
+                    Route.routeFallbackFromDistance(it, carDistance)
+                }
+                carDistance to routes
+            }  else {
+                val carDistance = routingCache.getDistances(
+                    originActivity.location, listOf(destinationActivity.location)
+                ).first().toDouble() / 1000
+
+                val routes = Mode.entries.associateWith {
                     Route.getWithFallback(
                         it, originActivity.location, destinationActivity.location,
                         hopper, withPath, departureInstant, ptRouter
                     )
                 }
+                carDistance to routes
             }
 
             val tripFeatures = TripMCFeatures(
