@@ -23,7 +23,7 @@ data class ModeUtility (
     ) : Double {
         return time * timeCoeff +
                distance * distanceCoeff +
-               ln(distance) * distanceCoeff +
+               ln(distance) * logDistanceCoeff +
                 (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
                 (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
                 (ageGrpCoeff[agent.age] ?: 0.0) +
