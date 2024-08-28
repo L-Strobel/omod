@@ -74,8 +74,8 @@ sealed class LocationChoiceDCWeightFun {
     open fun calcFor(destination: RealLocation, distance: Double) : Double {
         // Minimum distance where at which distance has an influence. The left side of the deterrence functions
         // are poorly fitted due to the maximum resolution in the MID being 500m.
-        val distanceAdj = if (distance <= 0) {
-            Double.MIN_VALUE
+        val distanceAdj = if (distance <= 750) {
+            0.150
         } else {
             distance / 1000
         }
