@@ -66,7 +66,7 @@ class Route (
             )
         }
 
-        fun routeFallback(mode: Mode, origin: LocationOption, destination: LocationOption): Route {
+        private fun routeFallback(mode: Mode, origin: LocationOption, destination: LocationOption): Route {
             val beelineDistance = calcDistanceBeeline(origin, destination) / 1000
             return routeFallbackFromDistance(mode, beelineDistance)
         }
@@ -75,7 +75,7 @@ class Route (
          * @param mode Travel mode
          * @param distance Distance of trip. Unit: Kilometer
          */
-        fun routeFallbackFromDistance(mode: Mode, distance: Double): Route {
+        private fun routeFallbackFromDistance(mode: Mode, distance: Double): Route {
             val time = when (mode) {
                 Mode.PUBLIC_TRANSIT -> distance / 22.5 * 60 // 22.5 km/h
                 Mode.FOOT -> distance / 5 * 60 // 5 km/h
@@ -95,6 +95,15 @@ class Route (
                 )
             }
             return 1 / (-lambda) * ln(1-rng.nextDouble())
+        }
+
+        fun getRoundTripRoute(mode: Mode, distance: Double): Route  {
+            val route = routeFallbackFromDistance(mode, distance)
+
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                return Route(route.distance, route.time + 5, route.lats, route.lons) // 5min for parking
+            }
+            return route
         }
     }
 }

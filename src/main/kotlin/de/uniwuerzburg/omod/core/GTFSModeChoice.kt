@@ -24,7 +24,6 @@ import kotlin.time.TimeSource
 class GTFSModeChoice(
     private val hopper: GraphHopper,
     private val ptRouter: PtRouter,
-    private val routingCache: RoutingCache,
     private val ptSimDays: Map<Weekday, LocalDate>,
     private val timeZone: TimeZone,
     private val withPath: Boolean
@@ -90,20 +89,17 @@ class GTFSModeChoice(
                 // IF trip is from fixed location to same fixed location. Impute a randomly sampled Round-trip.
                 val carDistance = rtDistances[originActivity.type]!!
                 val routes = Mode.entries.associateWith {
-                    Route.routeFallbackFromDistance(it, carDistance)
+                    Route.getRoundTripRoute(it, carDistance)
                 }
                 carDistance to routes
             }  else {
-                val carDistance = routingCache.getDistances(
-                    originActivity.location, listOf(destinationActivity.location)
-                ).first().toDouble() / 1000
-
                 val routes = Mode.entries.associateWith {
                     Route.getWithFallback(
                         it, originActivity.location, destinationActivity.location,
                         hopper, withPath, departureInstant, ptRouter
                     )
                 }
+                val carDistance = routes[Mode.CAR_DRIVER]!!.distance
                 carDistance to routes
             }
 
@@ -193,7 +189,8 @@ class GTFSModeChoice(
             .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, null, agent)) }
             .toDoubleArray()
         val distr = createCumDist(weights)
-        return options[sampleCumDist(distr, rng)].mode
+        val mode = options[sampleCumDist(distr, rng)].mode
+        return mode
     }
 
     /**

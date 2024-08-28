@@ -56,7 +56,7 @@ class CarOnlyModeChoice(
                 ) {
                 // IF trip is from fixed location to same fixed location. Impute a randomly sampled Round-trip.
                 val rtDistance = Route.sampleDistanceRoundTrip(originActivity.type, rng)
-                Route.routeFallbackFromDistance(Mode.CAR_DRIVER, rtDistance)
+                Route.getRoundTripRoute(Mode.CAR_DRIVER, rtDistance)
             } else {
                 Route.getWithFallback(
                     Mode.CAR_DRIVER, originActivity.location, destinationActivity.location,
