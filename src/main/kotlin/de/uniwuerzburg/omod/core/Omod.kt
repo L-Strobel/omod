@@ -533,8 +533,8 @@ class Omod(
                 setupGTFS()
                 try {
                     val modeChoice = GTFSModeChoice(
-                        hopper!!, gtfsComponents!!.ptRouter, routingCache,
-                        gtfsComponents!!.ptSimDays,  gtfsComponents!!.timeZone,
+                        hopper!!, gtfsComponents!!.ptRouter,
+                        gtfsComponents!!.ptSimDays, gtfsComponents!!.timeZone,
                         withPath
                     )
                     modeChoice.doModeChoice(agents, mainRng, dispatcher)
