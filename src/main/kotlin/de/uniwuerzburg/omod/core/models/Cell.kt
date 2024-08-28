@@ -20,7 +20,7 @@ data class Cell (
     // Approximation: average distance between to random points on a disc
     override val avgDistanceToSelf = (buildings.maxOfOrNull { it.coord.distance(coord) } ?: 0.0) * 2 * 64 / (45 * PI)
 
-    // Most common taz (Normally null here)
+    // Most common taz (Normally null at initialization)
     override var odZone = buildings.groupingBy { it.odZone }.eachCount().maxByOrNull { it.value }!!.key
 
     override val inFocusArea = buildings.any { it.inFocusArea }
