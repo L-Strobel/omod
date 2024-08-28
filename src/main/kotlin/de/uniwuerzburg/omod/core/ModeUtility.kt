@@ -21,15 +21,21 @@ data class ModeUtility (
     fun calc(
         time: Double, distance: Double, activity: ActivityType, carAvailable: Boolean?, agent: MobiAgent
     ) : Double {
+        val distanceAdj = if (distance <= 0.001) { // Minimum distance: 1 meter
+            0.001
+        } else {
+            distance
+        }
+
         return time * timeCoeff +
-               distance * distanceCoeff +
-               ln(distance) * logDistanceCoeff +
-                (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
-                (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
-                (ageGrpCoeff[agent.age] ?: 0.0) +
-                (sexCoeff[agent.sex] ?: 0.0) +
-                (carAvailableCoeff[carAvailable] ?: 0.0) +
-                (activityCoeff[activity] ?: 0.0) +
+               distanceAdj * distanceCoeff +
+               ln(distanceAdj) * logDistanceCoeff +
+               (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
+               (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
+               (ageGrpCoeff[agent.age] ?: 0.0) +
+               (sexCoeff[agent.sex] ?: 0.0) +
+               (carAvailableCoeff[carAvailable] ?: 0.0) +
+               (activityCoeff[activity] ?: 0.0) +
                intercept
     }
 }
