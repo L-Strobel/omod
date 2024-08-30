@@ -21,6 +21,16 @@ data class Diary (
 ) {
     var trips: List<Trip> = List(activities.size - 1) { Trip() }
 
+    /**
+     * Apply a function to every trip in the diary.
+     * Use this over direct accesses to trips to get the start time of a trip.
+     * This function is needed because the start times of all consecutive trips change then a trip is modified.
+     *
+     * Argument "finished": TRUE for the last trip in the diary else FALSE.
+     *
+     * @param visitor Function that determines what to do with every trip of the diary.
+     * For example, changing the mode of that trip.
+     */
     fun visitTrips(
         visitor: TripVisitor
     ){

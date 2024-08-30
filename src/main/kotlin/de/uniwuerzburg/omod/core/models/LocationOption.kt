@@ -13,5 +13,8 @@ sealed interface LocationOption {
     val avgDistanceToSelf: Double
     val inFocusArea: Boolean
 
+    /**
+     * Get the aggregate location this location is inside in.
+     */
     fun getAggLoc() : AggLocation?
 }

@@ -17,7 +17,9 @@ import org.locationtech.jts.geom.Point
  * @param latlonCoord coordinates in lat-lon
  * @param odZone origin-destination zone (TAZ). Only relevant if OD-data is provided.
  * @param inFocusArea is the building inside the focus area?
- * @param attractions Attraction value of that building for the distance choice function with id: KEY
+ * @param attractions KEY: id, VAL: Attraction value of that building for the distance choice function with that id
+ * @param point Coordinates of the building as a geometry type
+ * @param cell Grid cell the building is inside in
  */
 class Building  (
     @Suppress("unused")
@@ -40,6 +42,9 @@ class Building  (
          * @param collection GeoJSON object
          * @param geometryFactory GeometryFactory
          * @param transformer Used for CRS conversion
+         * @param dcFunctions destination choice functions for which we need to compute the attraction value. There can
+         * only be one destination function per activity type right now.
+         * @return buildings
          */
         fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
                         transformer: CRSTransformer,

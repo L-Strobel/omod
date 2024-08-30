@@ -10,7 +10,9 @@ package de.uniwuerzburg.omod.core.models
  * @param home Home location of agent
  * @param work Work location of agent (Is also defined if the agent does not work)
  * @param school School location of agent (Is also defined if the agent does not go to school)
+ * @param sex Sex of agent
  * @param mobilityDemand Simulation result of agent
+ *
  */
 data class MobiAgent (
     val id: Int,
