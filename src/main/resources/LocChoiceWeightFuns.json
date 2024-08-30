@@ -107,8 +107,8 @@
         "coeffCommercialUnits":  0.0,
         "coeffRetailUnits": 0.0,
         "coeffIndustrialUnits":  0.0,
-        "coeff0": -0.21453819,
-        "coeff1": -1.41422879
+        "coeff0": -9.898e-02,
+        "coeff1": -1.701e+00
     },
     "OTHER": {
         "type": "LogNorm",
@@ -135,7 +135,7 @@
         "coeffCommercialUnits" : 0.0,
         "coeffRetailUnits": 0.0,
         "coeffIndustrialUnits": 0.0,
-        "coeff0": -0.18017856,
-        "coeff1": -1.06680609
+        "coeff0": -1.384e-01,
+        "coeff1": -1.225e+00
     }
 }
