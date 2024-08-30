@@ -3,11 +3,13 @@ package de.uniwuerzburg.omod.core
 import de.uniwuerzburg.omod.core.models.*
 import kotlinx.serialization.Serializable
 import kotlin.math.ln
+import kotlin.math.max
 
 @Serializable
 data class ModeUtility (
     val mode: Mode,
     val timeCoeff: Double,
+    val logTimeCoeff: Double,
     val distanceCoeff: Double,
     val logDistanceCoeff: Double,
     val homGroupCoeff: Map<HomogeneousGrp, Double>,
@@ -21,15 +23,13 @@ data class ModeUtility (
     fun calc(
         time: Double, distance: Double, activity: ActivityType, carAvailable: Boolean?, agent: MobiAgent
     ) : Double {
-        val distanceAdj = if (distance <= 0.001) { // Minimum distance: 1 meter
-            0.001
-        } else {
-            distance
-        }
+        val timeClipped = max(time, 1.0) // Minimum time: 1 minute
+        val distanceClipped = max(distance, 0.001) // Minimum distance: 1 meter
 
-        return time * timeCoeff +
-               distanceAdj * distanceCoeff +
-               ln(distanceAdj) * logDistanceCoeff +
+        return timeClipped * timeCoeff +
+               ln(timeClipped) * logTimeCoeff +
+               distanceClipped * distanceCoeff +
+               ln(distanceClipped) * logDistanceCoeff +
                (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
                (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
                (ageGrpCoeff[agent.age] ?: 0.0) +

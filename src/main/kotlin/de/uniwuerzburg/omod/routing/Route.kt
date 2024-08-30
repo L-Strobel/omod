@@ -15,7 +15,8 @@ class Route (
     val distance: Double,           // Unit: kilometer
     val time: Double,               // Unit: minutes
     val lats: List<Double>?,
-    val lons: List<Double>?
+    val lons: List<Double>?,
+    val onlyWalk: Boolean = false
 ) {
     companion object {
         fun getWithFallback(
@@ -30,7 +31,7 @@ class Route (
                 routeFallback(mode, origin, destination)
             } else {
                 val response = when (mode) {
-                    Mode.PUBLIC_TRANSIT -> routeGTFS(origin, destination, departureTime!!, ptRouter!!, hopper)
+                    Mode.PUBLIC_TRANSIT -> { routeGTFS(origin, destination, departureTime!!, ptRouter!!, hopper) }
                     Mode.FOOT           -> routeWith("foot", origin, destination, hopper)
                     Mode.BICYCLE        -> routeWith("bike", origin, destination, hopper)
                     else                -> routeWith("car", origin, destination, hopper)
@@ -41,11 +42,7 @@ class Route (
                     fromGHResponse(response, withPath)
                 }
             }
-
-            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
-                return Route(route.distance, route.time + 5, route.lats, route.lons) // 5min for parking
-            }
-            return route
+            return addConstantTimeCost(mode, route)
         }
 
         private fun fromGHResponse(response: GHResponse, withPath: Boolean) : Route {
@@ -58,11 +55,15 @@ class Route (
                 Pair(null, null)
             }
 
+            // Check if only walking occurred
+            val onlyWalk = response.best.legs.all { it.type == "walk" }
+
             return Route (
                 response.best.distance / 1000,
                 (response.best.time / 1000 / 60).toDouble(),
                 lats,
-                lons
+                lons,
+                onlyWalk
             )
         }
 
@@ -82,7 +83,7 @@ class Route (
                 Mode.BICYCLE -> distance / 18 * 60 // 18 km/h
                 else -> distance / 75  * 60 // 75 km/h + 5 min for Parking
             }
-            return Route(distance, time, null, null)
+            return Route(distance, time,null, null)
         }
 
         fun sampleDistanceRoundTrip(activityType: ActivityType, rng: Random): Double {
@@ -99,11 +100,20 @@ class Route (
 
         fun getRoundTripRoute(mode: Mode, distance: Double): Route  {
             val route = routeFallbackFromDistance(mode, distance)
+            return addConstantTimeCost(mode, route)
+        }
 
-            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
-                return Route(route.distance, route.time + 5, route.lats, route.lons) // 5min for parking
+        private fun addConstantTimeCost(mode: Mode, route: Route) : Route {
+            return when (mode) {
+                Mode.CAR_DRIVER    -> addTimeAndCopy(5, route) // 5min for parking
+                Mode.CAR_PASSENGER -> addTimeAndCopy(5, route) // 5min for parking
+                Mode.BICYCLE       -> addTimeAndCopy(1, route) // 1min locking/unlocking and parking
+                else               -> route
             }
-            return route
+        }
+
+        private fun addTimeAndCopy(time: Int, route: Route) : Route {
+            return Route(route.distance, route.time + time, route.lats, route.lons)
         }
     }
 }

@@ -15,11 +15,9 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.time.TimeSource
-
-// TODO car availability
-// TODO take lower of foot and pt for pt
 
 class GTFSModeChoice(
     private val hopper: GraphHopper,
@@ -88,12 +86,12 @@ class GTFSModeChoice(
             ) {
                 // IF trip is from fixed location to same fixed location. Impute a randomly sampled Round-trip.
                 val carDistance = rtDistances[originActivity.type]!!
-                val routes = Mode.entries.associateWith {
+                val routes = Mode.entries.filter { it != Mode.UNDEFINED }.associateWith {
                     Route.getRoundTripRoute(it, carDistance)
                 }
                 carDistance to routes
             }  else {
-                val routes = Mode.entries.associateWith {
+                val routes = Mode.entries.filter { it != Mode.UNDEFINED }.associateWith {
                     Route.getWithFallback(
                         it, originActivity.location, destinationActivity.location,
                         hopper, withPath, departureInstant, ptRouter
@@ -180,11 +178,11 @@ class GTFSModeChoice(
 
                 outTrips.add(
                     Trip(
-                        trip.carDistance,
-                        trip.routes[trip.mode!!]!!.time,
-                        mode = trip.mode!!,
-                        lats = trip.routes[trip.mode!!]!!.lats,
-                        lons = trip.routes[trip.mode!!]!!.lons
+                        distance,
+                        trip.routes[mode]!!.time,
+                        mode = mode,
+                        lats = trip.routes[mode]!!.lats,
+                        lons = trip.routes[mode]!!.lons
                     )
                 )
             }
@@ -199,6 +197,16 @@ class GTFSModeChoice(
         options: Array<ModeUtility>, times: Array<Double>,
         carDistance: Double, agent: MobiAgent, activity: ActivityType, rng: Random
     ) : Mode {
+        // If public transit and foot routes are the same, add 20 minutes to public transit to differentiate the options
+        val footIdx = options.withIndex().find { (_, o) -> o.mode == Mode.FOOT }?.index
+        val ptIdx = options.withIndex().find { (_, o) -> o.mode == Mode.PUBLIC_TRANSIT }?.index
+        if ((footIdx != null) && (ptIdx != null)) {
+            if (abs(times[footIdx] - times[ptIdx]) <= 3) {
+                times[ptIdx] = times[ptIdx] + 20.0
+            }
+        }
+
+        // Sampling
         val weights = options.withIndex()
             .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, null, agent)) }
             .toDoubleArray()
