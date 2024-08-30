@@ -164,6 +164,20 @@ class GTFSModeChoice(
             // Format for output
             val outTrips = mutableListOf<Trip>()
             for (trip in tours.flatten()) {
+                // Check if gtfs routing used any public transit or only walked
+                val mode = if (trip.routes[trip.mode!!]!!.onlyWalk) {
+                   Mode.FOOT
+                } else {
+                   trip.mode!!
+                }
+
+                // GraphHopper PT-Distance currently only includes the walking portion
+                val distance = if (mode == Mode.PUBLIC_TRANSIT) {
+                    trip.carDistance
+                } else {
+                    trip.routes[mode]!!.distance
+                }
+
                 outTrips.add(
                     Trip(
                         trip.carDistance,
