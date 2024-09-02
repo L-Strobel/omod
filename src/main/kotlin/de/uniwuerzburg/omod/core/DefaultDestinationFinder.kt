@@ -6,6 +6,9 @@ import de.uniwuerzburg.omod.utils.createCumDist
 import de.uniwuerzburg.omod.utils.sampleCumDist
 import java.util.Random
 
+/**
+ * Gravity model based destination finder.
+ */
 class DefaultDestinationFinder(
     private val routingCache: RoutingCache,
     private val locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>,
@@ -145,6 +148,9 @@ class DefaultDestinationFinder(
      * The building level location is determined based only on the attraction values of the buildings inside the
      * aggregated location.
      * @param origin Routing cell of the trip origin.
+     * @param destinations Possible destinations
+     * @param activityType Activity for which a location is searched
+     * @param rng Random number generator
      * @return destination
      */
     override fun getLocation(
@@ -166,7 +172,9 @@ class DefaultDestinationFinder(
     }
 
     /**
-     *  Get calibration factors based on OD-Matrix
+     * Calibrate the destination finder with a OD-Matrix.
+     * @param zones Possible destinations (Should be all that this destination finder applies to).
+     * @param odZones OD-Matrix
      */
     override fun calibrate(zones: List<AggLocation>, odZones: List<ODZone>) {
         val (kfo, vfo) = calcFirstOrderScaling(zones, odZones)

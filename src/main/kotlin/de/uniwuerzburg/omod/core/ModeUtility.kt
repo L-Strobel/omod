@@ -5,6 +5,9 @@ import kotlinx.serialization.Serializable
 import kotlin.math.ln
 import kotlin.math.max
 
+/**
+ * Utility formula for a mode in a mode choice logit model.
+ */
 @Serializable
 data class ModeUtility (
     val mode: Mode,
@@ -20,6 +23,16 @@ data class ModeUtility (
     val activityCoeff: Map<ActivityType, Double>,
     val intercept: Double
 ) {
+    /**
+     * Calculate utility.
+     *
+     * @param time Travel time of the trip/tour with that mode.
+     * @param distance Reference distance of the trip/tour (Usually car distance)
+     * @param activity Main activity of tour or purpose of trip.
+     * @param carAvailable Is a car available at time the decision is made.
+     * @param agent Agent
+     * @return Utility
+     */
     fun calc(
         time: Double, distance: Double, activity: ActivityType, carAvailable: Boolean?, agent: MobiAgent
     ) : Double {

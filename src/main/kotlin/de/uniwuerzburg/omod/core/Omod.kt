@@ -40,7 +40,7 @@ import kotlin.time.TimeSource
  *
  * @param areaFile GeoJSON of the focus area
  * @param osmFile osm.pbf file that covers at least the focus area and buffer area
- * @param mode Method of distance calculation used in the simulation
+ * @param routingMode Method of distance calculation used in the simulation
  * @param cache Option to cache the routing matrix for subsequent runs
  * @param cacheDir Directory where the cache should be located
  * @param odFile Origin-Destination Matrix in GeoJSON format. Optional input used for calibration.
@@ -51,11 +51,14 @@ import kotlin.time.TimeSource
  * @param populateBufferArea Option to populate the buffer area with agents
  * @param distanceCacheSize Maximum size of the routing matrix cache
  * @param populationFile File that defines the distribution of socio-demographic features for the agent population
+ * @param nWorker Number of parallel coroutines that can be executed at the same time.
+ * NULL = Number of CPU-Cores available.
+ * @param gtfsFile GTFS location (Directory or .zip file)
  */
 class Omod(
     areaFile: File,
     private val osmFile: File,
-    mode: RoutingMode = RoutingMode.BEELINE,
+    routingMode: RoutingMode = RoutingMode.BEELINE,
     cache: Boolean = true,
     private val cacheDir: Path = Paths.get("omod_cache/"),
     odFile: File? = null,
@@ -146,7 +149,7 @@ class Omod(
         }
 
         // Create graphhopper
-        hopper = if (mode == RoutingMode.GRAPHHOPPER) {
+        hopper = if (routingMode == RoutingMode.GRAPHHOPPER) {
             createGraphHopper(
                 osmFile.toString(),
                 Paths.get(cacheDir.toString(), "routing-graph-cache", osmFile.name).toString()
@@ -156,8 +159,8 @@ class Omod(
         }
 
         // Create routing cache
-        routingCache = RoutingCache(mode, hopper, distanceCacheSize, dispatcher)
-        if (mode == RoutingMode.GRAPHHOPPER) {
+        routingCache = RoutingCache(routingMode, hopper, distanceCacheSize, dispatcher)
+        if (routingMode == RoutingMode.GRAPHHOPPER) {
             val weightFunction = locChoiceWeightFuns[ ActivityType.OTHER]!!
             val priorityValues = grid.map { weightFunction.calcForNoOrigin(it) } // Priority of cells for caching
             routingCache.load(grid, cacheDir, priorityValues)
@@ -517,6 +520,14 @@ class Omod(
         return agent
     }
 
+    /**
+     * Determine the mode of each trip and calculate the distance and time.
+     *
+     * @param agents Agents with trips (usually the trips have an UNDEFINED mode at this point)
+     * @param modeChoiceOption Mode choice strategy.
+     * @param withPath Return the lat-lon coordinates of the car trips.
+     * @return agents. Now their trips have specified modes.
+     */
     fun doModeChoice(
         agents: List<MobiAgent>, modeChoiceOption: ModeChoiceOption, withPath: Boolean
     ) : List<MobiAgent> {
@@ -546,6 +557,9 @@ class Omod(
         }
     }
 
+    /**
+     * Init GraphHopper.
+     */
     private fun setupHopper() {
         // Get a GraphHopper if none exists
         if (hopper == null) {
@@ -556,6 +570,9 @@ class Omod(
         }
     }
 
+    /**
+     * Init GTFS routing.
+     */
     private fun setupGTFS() {
         // Prepare the GTFS data
         if (gtfsComponents == null) {
@@ -563,6 +580,9 @@ class Omod(
         }
     }
 
+    /**
+     * Bundle of everything required for GTFS routing.
+     */
     private inner class GTFSComponents(
         focusArea: Geometry, fullArea: Geometry, cacheDir: Path, dispatcher: CoroutineDispatcher,
         osmFile: File

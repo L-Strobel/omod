@@ -49,6 +49,9 @@ class DefaultAgentFactory (
      * Assigns socio-demographic features, and home, work, and school locations.
      *
      * @param share Share of the population to simulate
+     * @param zones Possible home locations
+     * @param populateBufferArea False: Only place agents in the focus area
+     * @param rng Random number generator
      * @return Population of agents
      */
     override fun createAgents(
@@ -110,6 +113,9 @@ class DefaultAgentFactory (
      * Assigns socio-demographic features, and home, work, and school locations.
      *
      * @param nFocus number of agents in focus areas
+     * @param zones Possible home locations
+     * @param populateBufferArea False: Only place agents in the focus area
+     * @param rng Random number generator
      * @return Population of agents
      */
     override fun createAgents(

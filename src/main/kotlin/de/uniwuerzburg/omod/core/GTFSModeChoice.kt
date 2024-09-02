@@ -19,6 +19,16 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.time.TimeSource
 
+/**
+ * Do mode choice with the mode options: FOOT, BICYCLE, CAR_DRIVER, CAR_PASSENGER, PUBLIC_TRANSIT
+ * Uses a multinomial logit model at its core.
+ *
+ * @param hopper GraphHopper for routing
+ * @param ptRouter GTFS router
+ * @param ptSimDays Maps simulated weekday to a real date in the GTFS data.
+ * @param timeZone Time zone of GTFS information. Necessary because GraphHopper works with time zone aware time.
+ * @param withPath Return the lat-lon coordinates of the car trips.
+ */
 class GTFSModeChoice(
     private val hopper: GraphHopper,
     private val ptRouter: PtRouter,
@@ -29,6 +39,14 @@ class GTFSModeChoice(
     private val tourModeOptions: Array<ModeUtility> = readJsonFromResource("tourModeUtilities.json")
     private val tripModeOptions: Array<ModeUtility> = readJsonFromResource("tripModeUtilities.json")
 
+    /**
+     * Determine the mode of each trip and calculate the distance and time.
+     *
+     * @param agents Agents with trips (usually the trips have an UNDEFINED mode at this point)
+     * @param mainRng Random number generator of the main thread
+     * @param dispatcher Coroutine dispatcher used for concurrency
+     * @return agents. Now their trips have specified modes.
+     */
     override fun doModeChoice(
         agents: List<MobiAgent>, mainRng: Random, dispatcher: CoroutineDispatcher
     ) : List<MobiAgent> {
@@ -58,6 +76,10 @@ class GTFSModeChoice(
      * Run through day and get all HOME-HOME tours. If the day does not start with a HOME activity,
      * all the trips before the first HOME activity are counted as a tour. The same is true for all the trips after the
      * last HOME activity if the day does not end with a HOME activity.
+     *
+     * @param diary Mobility pattern on a given day
+     * @param rng Random number generator
+     * @return Tours
      */
     private fun getTours(diary: Diary, rng: Random) : List<List<TripMCFeatures>> {
         val tours = mutableListOf<List<TripMCFeatures>>()
@@ -122,7 +144,14 @@ class GTFSModeChoice(
         return tours
     }
 
-    private fun doModeChoiceFor(agent: MobiAgent, rng:Random) {
+    /**
+     * Do Mode choice for a single Agent.
+     * The result is directly stored in the agents diaries.
+     *
+     * @param agent Agent
+     * @param rng Random number generator
+     */
+    private fun doModeChoiceFor(agent: MobiAgent, rng: Random) {
         for (diary in agent.mobilityDemand) {
             val tours = getTours(diary, rng)
 
@@ -192,6 +221,14 @@ class GTFSModeChoice(
 
     /**
      * Sample logit model defined by the given utilities.
+     *
+     * @param options Possible modes for the decision (Different for tours and trips)
+     * @param times Travel times for each option
+     * @param carDistance Distance by car. Used as the reference distance.
+     * @param agent Agent
+     * @param activity Main activity of the tour or purpose of the trip.
+     * @param rng Random number generator
+     * @return Chosen mode
      */
     private fun sampleUtilities(
         options: Array<ModeUtility>, times: Array<Double>,
@@ -217,6 +254,12 @@ class GTFSModeChoice(
 
     /**
      * Utility data class that stores all features of a trip required by the logit model.
+     * Also stores the result of the tour level decision for trip level decisions.
+     *
+     * @param carDistance Distance by car
+     * @param fromActivity Activity before the trip
+     * @param toActivity Activity after the trip
+     * @param routes Best routes with each mode
      */
     private class TripMCFeatures (
         val carDistance: Double,

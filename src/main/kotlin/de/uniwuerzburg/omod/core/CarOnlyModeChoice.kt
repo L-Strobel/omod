@@ -12,9 +12,23 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.TimeSource
 
+/**
+ * Turn every trip into a char trip.
+ *
+ * @param hopper GraphHopper for routing
+ * @param withPath Return the lat-lon coordinates of the car trips.
+ */
 class CarOnlyModeChoice(
     private val hopper: GraphHopper, private val withPath: Boolean
 ): ModeChoice {
+    /**
+     * Determine the mode of each trip and calculate the distance and time.
+     *
+     * @param agents Agents with trips (usually the trips have an UNDEFINED mode at this point)
+     * @param mainRng Random number generator of the main thread
+     * @param dispatcher Coroutine dispatcher used for concurrency
+     * @return agents. Now their trips have specified modes.
+     */
     override fun doModeChoice(
         agents: List<MobiAgent>, mainRng: Random, dispatcher: CoroutineDispatcher
     ) : List<MobiAgent> {
@@ -42,6 +56,12 @@ class CarOnlyModeChoice(
         return agents
     }
 
+    /**
+     * Set all trips in a diary to car trips and route them,
+     *
+     * @param diary Mobility pattern on a day
+     * @param rng Random number generator used in the thread.
+     */
     private fun tripsToCar(diary: Diary, rng: Random) {
         val visitor = {
                 trip: Trip, originActivity: Activity, destinationActivity: Activity,

@@ -145,7 +145,7 @@ class Run : CliktCommand() {
         // Init OMOD
         val omod = Omod(
             area_geojson, osm_file,
-            mode = routing_mode,
+            routingMode = routing_mode,
             odFile = od, censusFile = census,
             gridPrecision = grid_precision, bufferRadius = buffer, seed = seed,
             cache = true, cacheDir = cache_dir,
