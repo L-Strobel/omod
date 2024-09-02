@@ -14,7 +14,7 @@ class DefaultAgentFactory (
     populationDef: PopulationDef,
     private val dispatcher: CoroutineDispatcher
 ) : AgentFactory {
-    private val features: List<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>
+    private val features: List<SocioDemFeatureSet>
     private val featureDistribution: DoubleArray
 
     init {
@@ -28,14 +28,16 @@ class DefaultAgentFactory (
      * @return Pair<Possible feature combinations, probability of the combination>
      */
     private fun getSocioDemographicFeatureDistr(populationDef: PopulationDef
-    ): Pair<List<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>, DoubleArray> {
-        val features = mutableListOf<Triple<HomogeneousGrp, MobilityGrp, AgeGrp>>()
+    ): Pair<List<SocioDemFeatureSet>, DoubleArray> {
+        val features = mutableListOf<SocioDemFeatureSet>()
         val jointProbability = mutableListOf<Double>()
         for ((hom, pHom) in populationDef.homogenousGroup) {
             for ((mob, pMob) in populationDef.mobilityGroup) {
                 for ((age, pAge) in populationDef.age) {
-                    features.add(Triple(hom, mob, age))
-                    jointProbability.add(pHom*pMob*pAge)
+                    for((sex, pSex) in populationDef.sex) {
+                        features.add(SocioDemFeatureSet(hom, mob, age, sex))
+                        jointProbability.add(pHom*pMob*pAge*pSex)
+                    }
                 }
             }
         }
@@ -195,10 +197,10 @@ class DefaultAgentFactory (
     ) : MobiAgent {
         // Sociodemographic features
         val agentFeatures = sampleCumDist(featureDistribution, rng)
-        val homogenousGroup = features[agentFeatures].first
-        val mobilityGroup = features[agentFeatures].second
-        val age = features[agentFeatures].third
-        val sex = if (rng.nextBoolean()) { Sex.MALE } else { Sex.FEMALE }
+        val homogenousGroup = features[agentFeatures].hom
+        val mobilityGroup = features[agentFeatures].mob
+        val age = features[agentFeatures].age
+        val sex = features[agentFeatures].sex
 
         // Fixed locations
         val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK, rng)
