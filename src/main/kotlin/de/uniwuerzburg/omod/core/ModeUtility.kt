@@ -45,7 +45,7 @@ data class ModeUtility (
                ln(distanceClipped) * logDistanceCoeff +
                (homGroupCoeff[agent.homogenousGroup] ?: 0.0) +
                (mobGroupCoeff[agent.mobilityGroup] ?: 0.0) +
-               (ageGrpCoeff[agent.age] ?: 0.0) +
+               (ageGrpCoeff[agent.ageGrp] ?: 0.0) +
                (sexCoeff[agent.sex] ?: 0.0) +
                (carAvailableCoeff[carAvailable] ?: 0.0) +
                (activityCoeff[activity] ?: 0.0) +

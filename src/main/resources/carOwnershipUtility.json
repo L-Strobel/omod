@@ -1,0 +1,20 @@
+{
+  "homGroupCoeff": {
+    "WORKING":  0.560611,
+    "NON_WORKING": -0.106731,
+    "PUPIL_STUDENT": -1.588810,
+    "UNDEFINED": 0.0
+  },
+  "ageGrpCoeff": {
+    "A0_40": -0.742905,
+    "A40_60": 0.343429,
+    "A60_100": 0.194425,
+    "UNDEFINED": 0.0
+  },
+  "mobGroupCoeff": {
+    "CAR_MIXED": 1.439606,
+    "CAR_USER": 2.044394,
+    "NOT_CAR": -1.841481
+  },
+  "intercept": 1.695516
+}

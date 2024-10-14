@@ -18,10 +18,13 @@ data class MobiAgent (
     val id: Int,
     val homogenousGroup: HomogeneousGrp,
     val mobilityGroup: MobilityGrp,
-    val age: AgeGrp,
+    val age: Int?,
     val home: LocationOption,
     val work: LocationOption,
     val school: LocationOption,
     val sex: Sex,
+    val carAccess: Boolean,
     val mobilityDemand: MutableList<Diary> = mutableListOf()
-)
+) {
+    val ageGrp = AgeGrp.fromInt(age)
+}

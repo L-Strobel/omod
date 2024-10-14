@@ -14,7 +14,8 @@ data class OutputEntry (
     val id: Int,
     val homogenousGroup: HomogeneousGrp,
     val mobilityGroup: MobilityGrp,
-    val age: AgeGrp,
+    val age: Int?,
     val sex: Sex,
+    val carAccess: Boolean,
     val mobilityDemand: List<OutputDiary>
 )

@@ -96,7 +96,7 @@ class Omod(
         val timestampStartInit = timeSource.markNow()
 
         // Load population distribution
-        val populationDef: PopulationDef = if (populationFile != null) {
+        val popStrata: List<PopStratum> = if (populationFile != null) {
             readJson(populationFile)
         } else {
             readJsonFromResource("Population.json")
@@ -188,7 +188,7 @@ class Omod(
         }
 
         // Agent factory
-        agentFactory = DefaultAgentFactory(destinationFinder, populationDef, dispatcher)
+        agentFactory = DefaultAgentFactory(destinationFinder, popStrata, dispatcher)
 
         logger.info("Initializing OMOD took: ${timeSource.markNow() - timestampStartInit}")
     }

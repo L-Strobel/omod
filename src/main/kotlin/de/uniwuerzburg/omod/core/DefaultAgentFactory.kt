@@ -1,48 +1,24 @@
 package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
+import de.uniwuerzburg.omod.io.json.readJsonFromResource
 import de.uniwuerzburg.omod.utils.*
 import kotlinx.coroutines.*
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.math.abs
+import kotlin.math.exp
 
 /**
  * Creates agents by determining socio-demographic features as well as work and school locations.
  */
 class DefaultAgentFactory (
     private val destinationFinder: DestinationFinder,
-    populationDef: PopulationDef,
+    private val popStrata: List<PopStratum>,
     private val dispatcher: CoroutineDispatcher
 ) : AgentFactory {
-    private val features: List<SocioDemFeatureSet>
-    private val featureDistribution: DoubleArray
-
-    init {
-        val (f, fD) = getSocioDemographicFeatureDistr(populationDef)
-        features = f
-        featureDistribution = fD
-    }
-
-    /**
-     * Create sociodemographic feature distribution form populationDef
-     * @return Pair<Possible feature combinations, probability of the combination>
-     */
-    private fun getSocioDemographicFeatureDistr(populationDef: PopulationDef
-    ): Pair<List<SocioDemFeatureSet>, DoubleArray> {
-        val features = mutableListOf<SocioDemFeatureSet>()
-        val jointProbability = mutableListOf<Double>()
-        for ((hom, pHom) in populationDef.homogenousGroup) {
-            for ((mob, pMob) in populationDef.mobilityGroup) {
-                for ((age, pAge) in populationDef.age) {
-                    for((sex, pSex) in populationDef.sex) {
-                        features.add(SocioDemFeatureSet(hom, mob, age, sex))
-                        jointProbability.add(pHom*pMob*pAge*pSex)
-                    }
-                }
-            }
-        }
-        return Pair(features, createCumDist(jointProbability.toDoubleArray()))
-    }
+    private val strataDistr: DoubleArray = createCumDist(popStrata.map{it.stratumShare}.toDoubleArray())
+    private val carOwnershipUtility: CarOwnershipUtility = readJsonFromResource("carOwnershipUtility.json")
 
     /**
      * Initialize population based on a share of the existing population.
@@ -202,17 +178,19 @@ class DefaultAgentFactory (
         id: Int, home: LocationOption, homeZone: AggLocation, zones: List<AggLocation>, rng: Random
     ) : MobiAgent {
         // Sociodemographic features
-        val agentFeatures = sampleCumDist(featureDistribution, rng)
-        val homogenousGroup = features[agentFeatures].hom
-        val mobilityGroup = features[agentFeatures].mob
-        val age = features[agentFeatures].age
-        val sex = features[agentFeatures].sex
+        val stratum = popStrata[sampleCumDist(strataDistr, rng)]
+        val featureSet = stratum.sampleSocDemFeatures(rng)
+        val ageGrp = AgeGrp.fromInt(featureSet.age)
 
         // Fixed locations
         val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK, rng)
         val school = destinationFinder.getLocation(homeZone, zones, ActivityType.SCHOOL, rng)
 
-        val agent = MobiAgent(id, homogenousGroup, mobilityGroup, age, home, work, school, sex)
+        val ownsCar = sampleOwnership( featureSet.hom, featureSet.mob, ageGrp, rng )
+
+        val agent = MobiAgent(
+            id, featureSet.hom, featureSet.mob, featureSet.age, home, work, school, featureSet.sex, ownsCar
+        )
         return agent
     }
 
@@ -230,5 +208,13 @@ class DefaultAgentFactory (
         } else {
             originalWeights.mapIndexed { i, weight -> (!destinations[i].inFocusArea).toDouble() * weight }
         }
+    }
+
+    private fun sampleOwnership(
+        homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp, rng: Random
+    ) : Boolean {
+        val utility = carOwnershipUtility.calc( homogenousGroup, mobilityGroup, age )
+        val p = 1 / (1 + exp(-utility))
+        return rng.nextDouble() < p
     }
 }

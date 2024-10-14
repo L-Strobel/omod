@@ -1,25 +1,28 @@
-{
-  "homogenousGroup": {
-    "WORKING":  0.0,
-    "NON_WORKING": 0.0,
-    "PUPIL_STUDENT": 0.0,
-    "UNDEFINED": 1.0
-  },
-  "mobilityGroup": {
-    "CAR_USER": 0.0,
-    "CAR_MIXED": 0.0,
-    "NOT_CAR": 0.0,
-    "UNDEFINED": 1.0
-  },
-  "age": {
-    "A0_40": 0.0,
-    "A40_60": 0.0,
-    "A60_100": 0.0,
-    "UNDEFINED": 1.0
-  },
-  "sex": {
-    "MALE": 0.0,
-    "FEMALE": 0.0,
-    "UNDEFINED": 1.0
+[
+  {
+    "stratumName": "NationalAverage",
+    "stratumShare": 1.0,
+    "age": {
+      "limits": [10, 20],
+      "shares": [0.0, 0.0],
+      "UNDEFINED": 1.0
+    },
+    "homogenousGroup": {
+      "WORKING":  0.0,
+      "NON_WORKING": 0.0,
+      "PUPIL_STUDENT": 0.0,
+      "UNDEFINED": 1.0
+    },
+    "mobilityGroup": {
+      "CAR_USER": 0.0,
+      "CAR_MIXED": 0.0,
+      "NOT_CAR": 0.0,
+      "UNDEFINED": 1.0
+    },
+    "sex": {
+      "MALE": 0.0,
+      "FEMALE": 0.0,
+      "UNDEFINED": 1.0
+    }
   }
-}
+]

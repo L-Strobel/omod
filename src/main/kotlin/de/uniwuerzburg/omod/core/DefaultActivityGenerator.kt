@@ -37,7 +37,7 @@ class DefaultActivityGenerator (activityGroups: List<ActivityGroup>): ActivityGe
     override fun getActivityChain(
         agent: MobiAgent, weekday: Weekday, from: ActivityType, rng: Random
     ) : List<ActivityType> {
-        val chainData = getChain(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, from)
+        val chainData = getChain(weekday, agent.homogenousGroup, agent.mobilityGroup, agent.ageGrp, from)
         val i = sampleCumDist(chainData.distr, rng)
         return chainData.chains[i]
     }
@@ -59,7 +59,7 @@ class DefaultActivityGenerator (activityGroups: List<ActivityGroup>): ActivityGe
         } else {
             // Sample stay times from gaussian mixture
             val mixture = getMixture(
-                weekday, agent.homogenousGroup, agent.mobilityGroup, agent.age, activityChain
+                weekday, agent.homogenousGroup, agent.mobilityGroup, agent.ageGrp, activityChain
             )
             val i = sampleCumDist(mixture.distr, rng)
             val stayTimes = sampleNDGaussian(mixture.means[i], mixture.covariances[i], rng).toList()

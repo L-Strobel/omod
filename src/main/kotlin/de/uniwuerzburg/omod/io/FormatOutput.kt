@@ -39,6 +39,8 @@ fun formatOutput(agent: MobiAgent) : OutputEntry {
         }
         OutputDiary(diary.day, diary.dayType, legs)
     }
-    return OutputEntry(agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, agent.sex, mobilityDemand)
+    return OutputEntry(
+        agent.id, agent.homogenousGroup, agent.mobilityGroup, agent.age, agent.sex, agent.carAccess, mobilityDemand
+    )
 }
 

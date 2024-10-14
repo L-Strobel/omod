@@ -245,7 +245,7 @@ class GTFSModeChoice(
 
         // Sampling
         val weights = options.withIndex()
-            .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, null, agent)) }
+            .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, agent.carAccess, agent)) }
             .toDoubleArray()
         val distr = createCumDist(weights)
         val mode = options[sampleCumDist(distr, rng)].mode
