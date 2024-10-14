@@ -6,7 +6,6 @@ import de.uniwuerzburg.omod.utils.*
 import kotlinx.coroutines.*
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.abs
 import kotlin.math.exp
 
 /**

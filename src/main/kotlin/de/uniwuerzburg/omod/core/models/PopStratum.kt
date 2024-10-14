@@ -7,9 +7,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.util.Random
 
+@Suppress("CanBeParameter")
 @Serializable
 class PopStratum (
-    val stratumName: String,
+    @Suppress("unused") val stratumName: String,
     val stratumShare: Double,
     private val age: AgeDistribution,
     private val homogenousGroup: Map<HomogeneousGrp, Double>,

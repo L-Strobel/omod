@@ -2,8 +2,6 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
 import kotlinx.serialization.Serializable
-import kotlin.math.ln
-import kotlin.math.max
 
 @Serializable
 class CarOwnershipUtility (
