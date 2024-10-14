@@ -186,7 +186,11 @@ class DefaultAgentFactory (
         val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK, rng)
         val school = destinationFinder.getLocation(homeZone, zones, ActivityType.SCHOOL, rng)
 
-        val ownsCar = sampleOwnership( featureSet.hom, featureSet.mob, ageGrp, rng )
+        val ownsCar = if ((featureSet.age != null) and (featureSet.age!! < 17)) {
+            false // You must be 17 to have a driver's license. Limit should be moved to config.
+        } else {
+            sampleOwnership( featureSet.hom, featureSet.mob, ageGrp, rng )
+        }
 
         val agent = MobiAgent(
             id, featureSet.hom, featureSet.mob, featureSet.age, home, work, school, featureSet.sex, ownsCar
