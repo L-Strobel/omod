@@ -1,5 +1,6 @@
 package de.uniwuerzburg.omod.core.models
 
+import de.uniwuerzburg.omod.core.CarOwnership
 import de.uniwuerzburg.omod.io.logger
 import de.uniwuerzburg.omod.utils.createCumDist
 import de.uniwuerzburg.omod.utils.sampleCumDist
@@ -12,6 +13,7 @@ import java.util.Random
 class PopStratum (
     @Suppress("unused") val stratumName: String,
     val stratumShare: Double,
+    val carOwnership: Double,
     private val age: AgeDistribution,
     private val homogenousGroup: Map<HomogeneousGrp, Double>,
     private val mobilityGroup: Map<MobilityGrp, Double>,

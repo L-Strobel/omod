@@ -2,9 +2,9 @@
   {
     "mode": "FOOT",
     "timeCoeff": 0.0,
-    "logTimeCoeff": -0.9569027124015683,
-    "distanceCoeff": -0.33729467419762876,
-    "logDistanceCoeff": 0.0,
+    "logTimeCoeff": -0.636111,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": -0.971999,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -17,32 +17,41 @@
       "A60_100": 1.0843199878940346
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 0.9468200008174031,
-      "CAR_USER": 1.427508741280017,
-      "NOT_CAR": 0.9695881098239618
+      "CAR_MIXED": 1.038866,
+      "CAR_USER": 1.503165,
+      "NOT_CAR": 0.985509
     },
     "sexCoeff": {
-      "MALE": 1.2973274168089972,
-      "FEMALE": 0.8127790861795401
+      "MALE": 1.225086,
+      "FEMALE": 0.853256
     },
     "carAvailableCoeff": {
       "True": 0.0,
       "False": 0.0
     },
     "activityCoeff": {
-      "HOME": 0.6340533444629701,
-      "SHOPPING": 0.7426216275279613,
-      "SCHOOL": 0.6142632658676499,
-      "WORK": 0.9628659765906198
+      "HOME": 0.228863,
+      "SHOPPING": 0.404667,
+      "SCHOOL": -0.073877,
+      "WORK": 0.263517
     },
-    "intercept": 3.107789854079602
+    "weekdayCoeff": {
+      "MO": 0.995905,
+      "TU": 0.989653,
+      "WE": 0.938916,
+      "TH": 0.957762,
+      "FR": 0.879693,
+      "SA": 0.950767,
+      "SU": 1.417982
+    },
+    "intercept": 3.117658
   },
   {
     "mode": "CAR_PASSENGER",
     "timeCoeff": 0.0,
-    "logTimeCoeff": -0.9569027124015683,
-    "distanceCoeff": 0.1680426088513949,
-    "logDistanceCoeff": 0.0,
+    "logTimeCoeff": -0.636111,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": 0.639050,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -50,37 +59,46 @@
       "UNDEFINED": 0.0
     },
     "ageGrpCoeff": {
-      "A0_40": 0.9695308160922889,
-      "A40_60": 0.8654186953488229,
-      "A60_100": 1.1370225113383434
+      "A0_40": 0.0,
+      "A40_60": 0.0,
+      "A60_100": 0.0
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 0.9869845110860941,
-      "CAR_USER": 1.7455541403031882,
-      "NOT_CAR": 0.3603586201405888
+      "CAR_MIXED": 0.968118,
+      "CAR_USER": 1.709666,
+      "NOT_CAR": 0.257472
     },
     "sexCoeff": {
-      "MALE": 0.6113517121040637,
-      "FEMALE": 1.222580900309271
+      "MALE": 0.657304,
+      "FEMALE": 1.205450
     },
     "carAvailableCoeff": {
       "True": 0.0,
       "False": 0.0
     },
     "activityCoeff": {
-      "HOME": 0.9313380378664008,
-      "SHOPPING": 1.5174925190833657,
-      "SCHOOL": -0.30829394241851515,
-      "WORK": -0.07751604343850753
+      "HOME": 1.185875,
+      "SHOPPING": 1.493079,
+      "SCHOOL": 0.626119,
+      "WORK": 0.444694
     },
-    "intercept": -0.03787066572382457
+    "weekdayCoeff": {
+      "MO": 0.898083,
+      "TU": 0.879173,
+      "WE": 0.863779,
+      "TH": 0.887328,
+      "FR": 1.039520,
+      "SA": 1.292259,
+      "SU": 1.210377
+    },
+    "intercept": 0.092715
   },
   {
     "mode": "PUBLIC_TRANSIT",
     "timeCoeff": 0.0,
-    "logTimeCoeff": -0.9569027124015683,
-    "distanceCoeff": 0.17566232175645138,
-    "logDistanceCoeff": 0.0,
+    "logTimeCoeff": -0.636111,
+    "distanceCoeff": 0.0,
+    "logDistanceCoeff": 0.773970,
     "homGroupCoeff": {
       "WORKING": 0.0,
       "NON_WORKING": 0.0,
@@ -88,14 +106,14 @@
       "UNDEFINED": 0.0
     },
     "ageGrpCoeff": {
-      "A0_40": 1.2246153582916672,
-      "A40_60": 1.0636702643962588,
-      "A60_100": 0.7786575007673107
+      "A0_40": 0.0,
+      "A40_60": 0.0,
+      "A60_100": 0.0
     },
     "mobGroupCoeff": {
-      "CAR_MIXED": 1.066195488095718,
-      "CAR_USER": -0.17306288158021926,
-      "NOT_CAR": 1.6700532700358284
+      "CAR_MIXED": 0.993016,
+      "CAR_USER": -0.212831,
+      "NOT_CAR": 1.757019
     },
     "sexCoeff": {
       "MALE": 1.0913208710872842,
@@ -106,11 +124,20 @@
       "False": 0.0
     },
     "activityCoeff": {
-      "HOME": 1.4346086176701502,
-      "SHOPPING": 0.7398858533915428,
-      "SCHOOL": 2.6940306765509106,
-      "WORK": 2.114650066847199
+      "HOME": 1.585262,
+      "SHOPPING": 1.102254,
+      "SCHOOL": 2.447758,
+      "WORK": 2.291789
     },
-    "intercept": -0.06991918835166085
+    "weekdayCoeff": {
+      "MO": 1.106013,
+      "TU": 1.131174,
+      "WE": 1.197305,
+      "TH": 1.154911,
+      "FR": 1.080787,
+      "SA": 0.756974,
+      "SU": 0.371641
+    },
+    "intercept": -0.210373
   }
 ]

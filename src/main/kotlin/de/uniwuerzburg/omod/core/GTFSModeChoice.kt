@@ -127,6 +127,7 @@ class GTFSModeChoice(
                 carDistance,
                 originActivity,
                 destinationActivity,
+                wd,
                 routes
             )
             currentTour.add(tripFeatures)
@@ -169,7 +170,11 @@ class GTFSModeChoice(
                 val mainPurpose = tour
                     .dropLast(1)
                     .maxByOrNull { it.toActivity.stayTime!! }?.toActivity?.type ?: ActivityType.HOME
-                val mode = sampleUtilities(tourModeOptions, times, carDistance, agent, mainPurpose, rng)
+
+                // Weekday
+                val weekday = tour.first().weekday
+
+                val mode = sampleUtilities(tourModeOptions, times, carDistance, agent, mainPurpose, weekday, rng)
 
                 // If the tour is a CAR or BICYCLE all trips on the tour must be conducted with the respective vehicle
                 if ((mode == Mode.CAR_DRIVER) || (mode == Mode.BICYCLE)) {
@@ -184,7 +189,9 @@ class GTFSModeChoice(
                 val times = tripModeOptions.map { m ->
                     trip.routes[m.mode]!!.time
                 }.toTypedArray()
-                val mode = sampleUtilities(tripModeOptions, times, trip.carDistance, agent, trip.toActivity.type, rng)
+                val mode = sampleUtilities(
+                    tripModeOptions, times, trip.carDistance, agent, trip.toActivity.type, trip.weekday, rng
+                )
                 trip.mode = mode
             }
 
@@ -232,7 +239,8 @@ class GTFSModeChoice(
      */
     private fun sampleUtilities(
         options: Array<ModeUtility>, times: Array<Double>,
-        carDistance: Double, agent: MobiAgent, activity: ActivityType, rng: Random
+        carDistance: Double, agent: MobiAgent, activity: ActivityType,
+        weekday: Weekday, rng: Random
     ) : Mode {
         // If public transit and foot routes are the same, add 20 minutes to public transit to differentiate the options
         val footIdx = options.withIndex().find { (_, o) -> o.mode == Mode.FOOT }?.index
@@ -245,7 +253,7 @@ class GTFSModeChoice(
 
         // Sampling
         val weights = options.withIndex()
-            .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, agent.carAccess, agent)) }
+            .map { (i, util) -> exp(util.calc(times[i], carDistance, activity, agent.carAccess, weekday, agent)) }
             .toDoubleArray()
         val distr = createCumDist(weights)
         val mode = options[sampleCumDist(distr, rng)].mode
@@ -265,6 +273,7 @@ class GTFSModeChoice(
         val carDistance: Double,
         val fromActivity: Activity,
         val toActivity: Activity,
+        val weekday: Weekday,
         val routes: Map<Mode, Route>
     ) {
         var mode: Mode? = null
