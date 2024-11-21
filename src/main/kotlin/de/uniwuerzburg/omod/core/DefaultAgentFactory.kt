@@ -1,23 +1,21 @@
 package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
-import de.uniwuerzburg.omod.io.json.readJsonFromResource
 import de.uniwuerzburg.omod.utils.*
 import kotlinx.coroutines.*
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.exp
 
 /**
  * Creates agents by determining socio-demographic features as well as work and school locations.
  */
 class DefaultAgentFactory (
     private val destinationFinder: DestinationFinder,
+    private val carOwnership: CarOwnership,
     private val popStrata: List<PopStratum>,
     private val dispatcher: CoroutineDispatcher
 ) : AgentFactory {
     private val strataDistr: DoubleArray = createCumDist(popStrata.map{it.stratumShare}.toDoubleArray())
-    private val carOwnershipUtility: CarOwnershipUtility = readJsonFromResource("carOwnershipUtility.json")
 
     /**
      * Initialize population based on a share of the existing population.
@@ -179,21 +177,15 @@ class DefaultAgentFactory (
         // Sociodemographic features
         val stratum = popStrata[sampleCumDist(strataDistr, rng)]
         val featureSet = stratum.sampleSocDemFeatures(rng)
-        val ageGrp = AgeGrp.fromInt(featureSet.age)
 
         // Fixed locations
         val work = destinationFinder.getLocation(homeZone, zones, ActivityType.WORK, rng)
         val school = destinationFinder.getLocation(homeZone, zones, ActivityType.SCHOOL, rng)
 
-        val ownsCar = if ((featureSet.age != null) and (featureSet.age!! < 17)) {
-            false // You must be 17 to have a driver's license. Limit should be moved to config.
-        } else {
-            sampleOwnership( featureSet.hom, featureSet.mob, ageGrp, rng )
-        }
-
         val agent = MobiAgent(
-            id, featureSet.hom, featureSet.mob, featureSet.age, home, work, school, featureSet.sex, ownsCar
+            id, featureSet.hom, featureSet.mob, featureSet.age, home, work, school, featureSet.sex
         )
+        agent.carAccess = carOwnership.determine(agent, stratum, rng)
         return agent
     }
 
@@ -211,13 +203,5 @@ class DefaultAgentFactory (
         } else {
             originalWeights.mapIndexed { i, weight -> (!destinations[i].inFocusArea).toDouble() * weight }
         }
-    }
-
-    private fun sampleOwnership(
-        homogenousGroup: HomogeneousGrp, mobilityGroup: MobilityGrp, age: AgeGrp, rng: Random
-    ) : Boolean {
-        val utility = carOwnershipUtility.calc( homogenousGroup, mobilityGroup, age )
-        val p = 1 / (1 + exp(-utility))
-        return rng.nextDouble() < p
     }
 }

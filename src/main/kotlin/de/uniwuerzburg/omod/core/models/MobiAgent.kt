@@ -23,7 +23,7 @@ data class MobiAgent (
     val work: LocationOption,
     val school: LocationOption,
     val sex: Sex,
-    val carAccess: Boolean,
+    var carAccess: Boolean = false,
     val mobilityDemand: MutableList<Diary> = mutableListOf()
 ) {
     val ageGrp = AgeGrp.fromInt(age)

@@ -70,7 +70,8 @@ class Omod(
     val distanceCacheSize: Long = 400e6.toLong(),
     populationFile: File? = null,
     nWorker: Int? = null,
-    private val gtfsFile: File? = null
+    private val gtfsFile: File? = null,
+    private val carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
@@ -90,7 +91,6 @@ class Omod(
     private var gtfsComponents: GTFSComponents? = null
     private val focusArea: Geometry
     private val fullArea: Geometry
-
     init {
         val timeSource = TimeSource.Monotonic
         val timestampStartInit = timeSource.markNow()
@@ -187,8 +187,19 @@ class Omod(
             zones = grid
         }
 
+        // Car Ownership
+        val carOwnership = when (carOwnershipOption) {
+            CarOwnershipOption.FIX -> {
+                CarOwnershipFixedProbability(17)
+            }
+            CarOwnershipOption.MNL -> {
+                val carOwnershipUtility: CarOwnershipUtility = readJsonFromResource("carOwnershipUtility.json")
+                CarOwnershipMNL(carOwnershipUtility, 17)
+            }
+        }
+
         // Agent factory
-        agentFactory = DefaultAgentFactory(destinationFinder, popStrata, dispatcher)
+        agentFactory = DefaultAgentFactory(destinationFinder, carOwnership, popStrata, dispatcher)
 
         logger.info("Initializing OMOD took: ${timeSource.markNow() - timestampStartInit}")
     }
