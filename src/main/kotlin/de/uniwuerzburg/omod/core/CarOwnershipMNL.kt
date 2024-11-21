@@ -9,7 +9,7 @@ class CarOwnershipMNL(
     private val minDrivingAge: Int
 ) : CarOwnership {
     override fun determine(agent: MobiAgent, stratum: PopStratum, rng: Random) : Boolean {
-        return if ((agent.age != null) and (agent.age!! < minDrivingAge)) {
+        return if ((agent.age != null) && (agent.age < minDrivingAge)) {
             false
         } else {
             sampleOwnership( agent.homogenousGroup, agent.mobilityGroup, agent.ageGrp, rng )
