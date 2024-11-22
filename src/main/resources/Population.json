@@ -2,7 +2,7 @@
   {
     "stratumName": "NationalAverage",
     "stratumShare": 1.0,
-    "carOwnership": 0.7,
+    "carOwnership": 0.60,
     "age": {
       "limits": [10, 20],
       "shares": [0.0, 0.0],
