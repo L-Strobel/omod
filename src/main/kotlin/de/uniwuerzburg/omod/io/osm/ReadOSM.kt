@@ -26,28 +26,13 @@ fun readOSM (focusArea: Geometry, fullArea: Geometry, osmFile: File,
              geometryFactory: GeometryFactory, transformer: CRSTransformer
 ): List<BuildingData> {
     logger.info("Start reading OSM-File... (If this is too slow use smaller .osm.pbf file)")
-    // Prepare osmosis pipeline
-    val reader = OsmosisReader( FileInputStream(osmFile) )
-    val processor = OSMProcessor(IdTrackerType.Dynamic, geometryFactory)
-    val geomFilter = GeometryFilter(
-        fullArea,
-        geometryFactory,
-        IdTrackerType.Dynamic,
-        clipIncompleteEntities = true,
-        completeWays = false,
-        completeRelations = false,
-        cascadingRelations = false
-    )
-    geomFilter.setSink(processor)
-    reader.setSink(geomFilter)
-
-    // Read osm.pbf
-    reader.run()
+    val mapObjects = getMapObjects(fullArea, osmFile, geometryFactory, transformer)
 
     // Filter objects, transform the coordinates, and create spatial index
     val buildings = mutableListOf<BuildingData>()
     val extraInfoTree = HPRtree()
-    for (mapObject in processor.mapObjects) {
+    while (mapObjects.isNotEmpty()) {
+        val mapObject = mapObjects.removeLast()
         val geom = transformer.toModelCRS(mapObject.geometry)
         if (mapObject.type == MapObjectType.BUILDING) {
             buildings.add ( BuildingData(mapObject.id, geom) )
