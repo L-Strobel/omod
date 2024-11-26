@@ -4,12 +4,13 @@ package de.uniwuerzburg.omod.io.json
 import de.uniwuerzburg.omod.io.jsonHandler
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Path
 
+
+@Suppress("unused")
 inline fun <reified T> writeJson(data: T, path: Path) {
     writeJson(data, path.toFile())
 }

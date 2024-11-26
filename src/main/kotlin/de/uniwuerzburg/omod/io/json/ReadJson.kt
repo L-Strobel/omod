@@ -7,6 +7,7 @@ import kotlinx.serialization.json.decodeFromStream
 import java.io.File
 import java.nio.file.Path
 
+@Suppress("unused")
 inline fun <reified T>readJson(path: Path): T {
     return readJson(path.toFile())
 }

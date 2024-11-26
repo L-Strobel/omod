@@ -71,7 +71,7 @@ class Omod(
     populationFile: File? = null,
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
-    private val carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
+    carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree

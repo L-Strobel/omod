@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.io.osm
 
-import crosby.binary.osmosis.OsmosisReader
 import de.uniwuerzburg.omod.core.models.Landuse
 import de.uniwuerzburg.omod.io.logger
 import de.uniwuerzburg.omod.utils.CRSTransformer
@@ -8,9 +7,7 @@ import de.uniwuerzburg.omod.utils.fastCovers
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
-import org.openstreetmap.osmosis.core.filter.common.IdTrackerType
 import java.io.File
-import java.io.FileInputStream
 
 /**
  * Read and process all the input files.
@@ -26,7 +23,7 @@ fun readOSM (focusArea: Geometry, fullArea: Geometry, osmFile: File,
              geometryFactory: GeometryFactory, transformer: CRSTransformer
 ): List<BuildingData> {
     logger.info("Start reading OSM-File... (If this is too slow use smaller .osm.pbf file)")
-    val mapObjects = getMapObjects(fullArea, osmFile, geometryFactory, transformer)
+    val mapObjects = getMapObjects(fullArea, osmFile, geometryFactory)
 
     // Filter objects, transform the coordinates, and create spatial index
     val buildings = mutableListOf<BuildingData>()
