@@ -1,7 +1,7 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.io.geojson.*
-import de.uniwuerzburg.omod.io.json.readJson
+import de.uniwuerzburg.omod.io.json.readJsonStream
 import de.uniwuerzburg.omod.io.osm.BuildingData
 import de.uniwuerzburg.omod.utils.CRSTransformer
 import org.locationtech.jts.geom.GeometryFactory
@@ -33,10 +33,12 @@ fun readCensus(
         buildingsTree.insert(building.geometry.envelopeInternal, building)
     }
 
-    val censusData: GeoJsonFeatureCollection = readJson(censusFile)
+    val censusData: GeoJsonFeatureCollection = readJsonStream(censusFile)
 
     for (censusEntree in censusData.features) {
         var population = (censusEntree.properties as GeoJsonCensusProperties).population
+        if (population <= 0) { continue }
+
         val censusZone = transformer.toModelCRS( censusEntree.geometry.toJTS(geometryFactory) )
 
         val intersectingBuildings = buildingsTree.query(censusZone.envelopeInternal)

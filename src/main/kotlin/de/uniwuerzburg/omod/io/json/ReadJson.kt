@@ -2,6 +2,8 @@ package de.uniwuerzburg.omod.io.json
 
 import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.io.jsonHandler
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.decodeFromStream
 import java.io.File
 import java.nio.file.Path
 
@@ -20,4 +22,14 @@ inline fun <reified T> readJsonFromResource(res: String): T {
 
 inline fun <reified T> readJson(txt: String): T {
     return jsonHandler.decodeFromString(txt)
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+inline fun <reified T> readJsonStream(file: File): T {
+    return jsonHandler.decodeFromStream(file.inputStream())
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+inline fun <reified T> readJsonStream(path: Path): T {
+    return jsonHandler.decodeFromStream(path.toFile().inputStream())
 }

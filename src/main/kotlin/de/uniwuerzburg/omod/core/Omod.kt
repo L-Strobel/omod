@@ -252,7 +252,7 @@ class Omod(
 
         // Check cache
         val collection: GeoJsonFeatureCollection =  if (cache and cachePath.toFile().exists()) {
-            readJson(cachePath)
+            readJsonStream(cachePath)
         } else {
             // Load data
             var osmBuildings = readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
@@ -292,7 +292,7 @@ class Omod(
             // Put into cache
             if (cache) {
                 Files.createDirectories(cachePath.parent)
-                writeJson(collection, cachePath)
+                writeJsonStream(collection, cachePath)
             }
             collection
         }
