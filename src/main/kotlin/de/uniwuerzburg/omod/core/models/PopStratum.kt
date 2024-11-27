@@ -1,6 +1,5 @@
 package de.uniwuerzburg.omod.core.models
 
-import de.uniwuerzburg.omod.core.CarOwnership
 import de.uniwuerzburg.omod.io.logger
 import de.uniwuerzburg.omod.utils.createCumDist
 import de.uniwuerzburg.omod.utils.sampleCumDist
