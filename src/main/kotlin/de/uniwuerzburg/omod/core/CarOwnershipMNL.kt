@@ -4,6 +4,14 @@ import de.uniwuerzburg.omod.core.models.*
 import java.util.*
 import kotlin.math.exp
 
+/**
+ * Determines with an MNL model.
+ * The MNL model is only used for agent's above the minimum driving age,
+ * younger agent's never have car ownership.
+ *
+ * @param carOwnershipUtility Coefficients of the MNL
+ * @param minDrivingAge Minimum driving age
+ */
 class CarOwnershipMNL(
     private val carOwnershipUtility: CarOwnershipUtility,
     private val minDrivingAge: Int

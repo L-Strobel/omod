@@ -8,7 +8,17 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.util.Random
 
-@Suppress("CanBeParameter")
+/**
+ * Population stratum.
+ * Models a homogenous group in the population, for example a generation.
+ *
+ * @param stratumShare Share of the stratum of the entire population <=1.0
+ * @param carOwnership Percentage of car ownership in the adult part of the stratum
+ * @param age Age distribution of the stratum
+ * @param homogenousGroup Distribution of different homogenousGroup/Occupation levels in the stratum
+ * @param mobilityGroup Distribution of different mobility groups in the stratum
+ * @param sex Distribution of different genders in the stratum
+ */
 @Serializable
 class PopStratum (
     @Suppress("unused") val stratumName: String,
@@ -102,6 +112,18 @@ class PopStratum (
         return SocioDemFeatureSet(hom, mob, age, sex)
     }
 
+    /**
+     * Demographics of group.
+     * The limits and shares define a histogram.
+     * shares[0] defines the share of agents in the age range 0 <= age < limits[0]
+     * shares[1] defines the share of agents in the age range  limits[0] <= age < limits[1]
+     * ...
+     *
+     * The age distribution inside a bin is considered to be uniform.
+     *
+     * @param limits Bin limits
+     * @param shares Bin sizes
+     */
     @Serializable
     class AgeDistribution (
         val limits: List<Int>,

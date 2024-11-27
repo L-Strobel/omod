@@ -3,6 +3,9 @@ package de.uniwuerzburg.omod.core
 import de.uniwuerzburg.omod.core.models.*
 import kotlinx.serialization.Serializable
 
+/**
+ * Utility formula for car ownership MNL.
+ */
 @Serializable
 class CarOwnershipUtility (
     val homGroupCoeff: Map<HomogeneousGrp, Double>,
