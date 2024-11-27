@@ -11,7 +11,7 @@ import java.util.Random
 /**
  * @param activityGroups A list of all possible activity groups
  */
-class DefaultActivityGenerator (activityGroups: List<ActivityGroup>): ActivityGenerator {
+class ActivityGeneratorDefault (activityGroups: List<ActivityGroup>): ActivityGenerator {
     private val nodes: Map<Int, GroupData> // key exists for every combination of the features weekday, homogeneous group, mobility group, and age
     private val thresh = 30 // Minimum number of samples that a valid activity chain distribution needs
 
