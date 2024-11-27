@@ -26,10 +26,11 @@ class DefaultAgentFactoryTest {
         val locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
         val routingCache = RoutingCache(RoutingMode.BEELINE, null, 0, Dispatchers.Default)
-        val destinationFinder = DefaultDestinationFinder(routingCache, locChoiceWeightFuns)
+        val destinationFinder = DestinationFinderDefault(routingCache, locChoiceWeightFuns)
 
         val popStrata: List<PopStratum> = readJsonFromResource("testPopulation.json")
-        val agentFactory = DefaultAgentFactory(destinationFinder, popStrata, Dispatchers.Default)
+        val carOwnership = CarOwnershipFixedProbability(17)
+        val agentFactory = AgentFactoryDefault(destinationFinder, carOwnership, popStrata, Dispatchers.Default)
 
         // Get buildings
         val buildingFile = File(Omod::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
@@ -73,10 +74,11 @@ class DefaultAgentFactoryTest {
         val locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
         val routingCache = RoutingCache(RoutingMode.BEELINE, null, 0, Dispatchers.Default)
-        val destinationFinder = DefaultDestinationFinder(routingCache, locChoiceWeightFuns)
+        val destinationFinder = DestinationFinderDefault(routingCache, locChoiceWeightFuns)
 
         val popStrata: List<PopStratum> = readJsonFromResource("testPopulation.json")
-        val agentFactory = DefaultAgentFactory(destinationFinder, popStrata, Dispatchers.Default)
+        val carOwnership = CarOwnershipFixedProbability(17)
+        val agentFactory = AgentFactoryDefault(destinationFinder, carOwnership, popStrata, Dispatchers.Default)
 
         // Get buildings
         val buildingFile = File(Omod::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
@@ -109,10 +111,12 @@ class DefaultAgentFactoryTest {
         mutLocChoiceFuns[ActivityType.BUSINESS] = mutLocChoiceFuns[ActivityType.OTHER]!!
         val locChoiceWeightFuns = mutLocChoiceFuns.toMap()
 
+        val carOwnership = CarOwnershipFixedProbability(17)
+
         val routingCache = RoutingCache(RoutingMode.BEELINE, null, 0, Dispatchers.Default)
-        val destinationFinder = DefaultDestinationFinder(routingCache, locChoiceWeightFuns)
+        val destinationFinder = DestinationFinderDefault(routingCache, locChoiceWeightFuns)
         val popStrata: List<PopStratum> = readJsonFromResource("testPopulation.json")
-        val agentFactory = DefaultAgentFactory(destinationFinder, popStrata, Dispatchers.Default)
+        val agentFactory = AgentFactoryDefault(destinationFinder, carOwnership, popStrata, Dispatchers.Default)
 
         // Get buildings
         val buildingFile = File(Omod::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
