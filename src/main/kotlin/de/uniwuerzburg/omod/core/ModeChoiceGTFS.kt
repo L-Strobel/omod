@@ -29,7 +29,7 @@ import kotlin.time.TimeSource
  * @param timeZone Time zone of GTFS information. Necessary because GraphHopper works with time zone aware time.
  * @param withPath Return the lat-lon coordinates of the car trips.
  */
-class GTFSModeChoice(
+class ModeChoiceGTFS(
     private val hopper: GraphHopper,
     private val ptRouter: PtRouter,
     private val ptSimDays: Map<Weekday, LocalDate>,

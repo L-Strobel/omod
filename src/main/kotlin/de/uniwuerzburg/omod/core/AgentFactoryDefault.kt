@@ -9,7 +9,7 @@ import kotlin.collections.ArrayList
 /**
  * Creates agents by determining socio-demographic features as well as work and school locations.
  */
-class DefaultAgentFactory (
+class AgentFactoryDefault (
     private val destinationFinder: DestinationFinder,
     private val carOwnership: CarOwnership,
     private val popStrata: List<PopStratum>,

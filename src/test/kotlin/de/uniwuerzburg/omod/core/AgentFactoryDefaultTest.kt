@@ -14,7 +14,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import java.io.File
 import java.util.*
 
-class DefaultAgentFactoryTest {
+class AgentFactoryDefaultTest {
 
     @Test
     fun ageTest() {

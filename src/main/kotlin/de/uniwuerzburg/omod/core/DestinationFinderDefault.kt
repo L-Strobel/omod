@@ -9,7 +9,7 @@ import java.util.Random
 /**
  * Gravity model based destination finder.
  */
-class DefaultDestinationFinder(
+class DestinationFinderDefault(
     private val routingCache: RoutingCache,
     private val locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>,
 ) : DestinationFinder {

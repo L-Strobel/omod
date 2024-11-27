@@ -18,7 +18,7 @@ import kotlin.time.TimeSource
  * @param hopper GraphHopper for routing
  * @param withPath Return the lat-lon coordinates of the car trips.
  */
-class CarOnlyModeChoice(
+class ModeChoiceCarOnly(
     private val hopper: GraphHopper, private val withPath: Boolean
 ): ModeChoice {
     /**
