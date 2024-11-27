@@ -167,10 +167,10 @@ class Omod(
         }
 
         // Activity generator
-        activityGenerator = DefaultActivityGenerator(activityGroups)
+        activityGenerator = ActivityGeneratorDefault(activityGroups)
 
         // Destination finder
-        destinationFinder = DefaultDestinationFinder(routingCache, locChoiceWeightFuns)
+        destinationFinder = DestinationFinderDefault(routingCache, locChoiceWeightFuns)
 
         // Calibration
         if (odFile != null) {
@@ -199,7 +199,7 @@ class Omod(
         }
 
         // Agent factory
-        agentFactory = DefaultAgentFactory(destinationFinder, carOwnership, popStrata, dispatcher)
+        agentFactory = AgentFactoryDefault(destinationFinder, carOwnership, popStrata, dispatcher)
 
         logger.info("Initializing OMOD took: ${timeSource.markNow() - timestampStartInit}")
     }
@@ -546,7 +546,7 @@ class Omod(
             ModeChoiceOption.NONE -> { return agents } // Do nothing
             ModeChoiceOption.CAR_ONLY -> {
                 setupHopper()
-                val modeChoice = CarOnlyModeChoice(hopper!!, withPath)
+                val modeChoice = ModeChoiceCarOnly(hopper!!, withPath)
                 modeChoice.doModeChoice(agents, mainRng, dispatcher)
                 return agents
             }
@@ -554,7 +554,7 @@ class Omod(
                 setupHopper()
                 setupGTFS()
                 try {
-                    val modeChoice = GTFSModeChoice(
+                    val modeChoice = ModeChoiceGTFS(
                         hopper!!, gtfsComponents!!.ptRouter,
                         gtfsComponents!!.ptSimDays, gtfsComponents!!.timeZone,
                         withPath
