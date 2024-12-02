@@ -14,6 +14,7 @@ import de.uniwuerzburg.omod.core.logger
 import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
+import de.uniwuerzburg.omod.io.sqlite.writeSQLite
 import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -167,10 +168,33 @@ class Run : CliktCommand() {
 
         // Store output
         logger.info("Saving results...")
-        FileOutputStream(out).use { f ->
-            Json.encodeToStream( agents.map { formatOutput(it) }, f)
+        val success: Boolean
+        when (out.extension) {
+            "json" -> {
+                FileOutputStream(out).use { f ->
+                    Json.encodeToStream( agents.map { formatOutput(it) }, f)
+                }
+                success = true
+            }
+            "db" -> {
+                success = writeSQLite(agents.map { formatOutput(it) }, out)
+            }
+            else -> {
+                logger.info(
+                    "Warning! output file extension ${out.extension} is not implemented." +
+                    "Available output formats: .json, .db (sqlite)" +
+                    "Falling back to JSON"
+                )
+                val newOut = File(out.parent, out.nameWithoutExtension + ".json")
+                FileOutputStream(newOut).use { f ->
+                    Json.encodeToStream( agents.map { formatOutput(it) }, f)
+                }
+                success = true
+            }
         }
-        logger.info("Saving results... Done!")
+        if (success) {
+            logger.info("Saving results... Done!")
+        }
     }
 }
 

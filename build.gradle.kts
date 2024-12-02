@@ -36,6 +36,7 @@ dependencies {
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.+")
     implementation("com.google.guava:guava:33.2.1-jre")
     implementation("us.dustinj.timezonemap:timezonemap:4.+")
+    implementation("org.xerial:sqlite-jdbc:3.+")
     testImplementation("org.junit.jupiter:junit-jupiter:5.+")
 }
 
