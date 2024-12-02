@@ -14,6 +14,7 @@ import de.uniwuerzburg.omod.core.logger
 import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
+import de.uniwuerzburg.omod.io.matsim.writeMatSim
 import de.uniwuerzburg.omod.io.sqlite.writeSQLite
 import de.uniwuerzburg.omod.routing.RoutingMode
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -179,10 +180,13 @@ class Run : CliktCommand() {
             "db" -> {
                 success = writeSQLite(agents.map { formatOutput(it) }, out)
             }
+            "xml" -> {
+                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days)
+            }
             else -> {
                 logger.info(
                     "Warning! output file extension ${out.extension} is not implemented." +
-                    "Available output formats: .json, .db (sqlite)" +
+                    "Available output formats: .json, .db (sqlite), .xml (MATSim)" +
                     "Falling back to JSON"
                 )
                 val newOut = File(out.parent, out.nameWithoutExtension + ".json")

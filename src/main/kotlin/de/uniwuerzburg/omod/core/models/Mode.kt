@@ -5,4 +5,15 @@ package de.uniwuerzburg.omod.core.models
  */
 enum class Mode {
     CAR_DRIVER, CAR_PASSENGER, PUBLIC_TRANSIT, BICYCLE, FOOT, UNDEFINED;
+
+    fun matSimName() : String {
+        return when(this) {
+            CAR_DRIVER -> "car"
+            CAR_PASSENGER -> "car"
+            PUBLIC_TRANSIT -> "bus"
+            BICYCLE -> "bike"
+            FOOT -> "foot"
+            UNDEFINED -> "car"
+        }
+    }
 }
