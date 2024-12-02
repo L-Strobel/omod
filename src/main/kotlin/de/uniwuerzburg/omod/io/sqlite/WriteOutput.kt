@@ -1,9 +1,7 @@
 package de.uniwuerzburg.omod.io.sqlite
 
-import de.uniwuerzburg.omod.core.models.Activity
 import de.uniwuerzburg.omod.io.json.OutputActivity
 import de.uniwuerzburg.omod.io.json.OutputEntry
-import de.uniwuerzburg.omod.io.json.OutputLeg
 import de.uniwuerzburg.omod.io.json.OutputTrip
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
@@ -47,14 +45,13 @@ fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
         )
         conn.createStatement().execute(dayTableSQL)
 
-        // Person table
-        conn.createStatement().execute("DROP TABLE IF EXISTS plan;")
-        val planTableSQL = (
-            "CREATE TABLE plan (" +
+        // Activity table
+        conn.createStatement().execute("DROP TABLE IF EXISTS activity;")
+        val actTableSQL = (
+            "CREATE TABLE activity (" +
             "	id INTEGER PRIMARY KEY," +
             "	person INTEGER NOT NULL," +
             "	day INTEGER NOT NULL," +
-            "	type text NOT NULL," +
             "	legID INTEGER NOT NULL," +
             "	activityType text," +
             "	startTime text," +
@@ -63,15 +60,30 @@ fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
             "	lon REAL," +
             "	dummyLoc Int," +
             "	inFocusArea Int," +
-            "	mode text," +
-            "	distanceKilometer REAL," +
-            "	timeMinute REAL," +
-            "   route text," +
             "	FOREIGN KEY(person) REFERENCES person(id)," +
             "	FOREIGN KEY(day) REFERENCES day(id)" +
             ");"
         )
-        conn.createStatement().execute(planTableSQL)
+        conn.createStatement().execute(actTableSQL)
+
+        // Trip table
+        conn.createStatement().execute("DROP TABLE IF EXISTS trip;")
+        val tripTableSQL = (
+        "CREATE TABLE trip (" +
+                "	id INTEGER PRIMARY KEY," +
+                "	person INTEGER NOT NULL," +
+                "	day INTEGER NOT NULL," +
+                "	legID INTEGER NOT NULL," +
+                "	startTime text," +
+                "	mode text," +
+                "	distanceKilometer REAL," +
+                "	timeMinute REAL," +
+                "   route BLOB," +
+                "	FOREIGN KEY(person) REFERENCES person(id)," +
+                "	FOREIGN KEY(day) REFERENCES day(id)" +
+                ");"
+        )
+        conn.createStatement().execute(tripTableSQL)
 
         // Prepare statements
         val personPStmt = conn.prepareStatement(
@@ -85,11 +97,16 @@ fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
             " VALUES(?,?)"
         )
         val knownDayIds = mutableSetOf<Int>()
-        val legPStmt = conn.prepareStatement(
-            "INSERT INTO plan" +
-                 "(person, day, type, legID, activityType, startTime, stayTimeMinute, lat, lon," +
-                  "dummyLoc, inFocusArea, mode, distanceKilometer, timeMinute, route)" +
-                 " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        val actPStmt = conn.prepareStatement(
+        "INSERT INTO activity" +
+             "(person, day, legID, activityType, startTime, stayTimeMinute, lat, lon," +
+              "dummyLoc, inFocusArea)" +
+             " VALUES(?,?,?,?,?,?,?,?,?,?)"
+        )
+        val tripPStmt = conn.prepareStatement(
+        "INSERT INTO trip" +
+            "(person, day, legID, startTime, mode, distanceKilometer, timeMinute, route)" +
+            " VALUES(?,?,?,?,?,?,?,?)"
         )
 
         for ((i, entry) in output.withIndex()) {
@@ -107,73 +124,69 @@ fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
             personPStmt.executeUpdate()
 
             for (day in entry.mobilityDemand) {
+                // Fill day table
                 if (!knownDayIds.contains(day.day)) {
                     knownDayIds.add(day.day)
 
-                    // Fill day table
                     dayPStmt.setInt(1, day.day)
                     dayPStmt.setString(2, day.dayType.toString())
                     dayPStmt.executeUpdate()
                 }
 
                 for (leg in day.plan) {
-                    // Fill plan table
-                    legPStmt.setInt(1, entry.id)
-                    legPStmt.setInt(2, day.day)
-                    legPStmt.setInt(4, leg.legID)
                     if (leg is OutputActivity) {
-                        legPStmt.setString(3, "Activity")
-                        legPStmt.setString(5, leg.activityType.toString())
-                        legPStmt.setString(6, leg.startTime)
+                        // Fill activity table
+                        actPStmt.setInt(1, entry.id)
+                        actPStmt.setInt(2, day.day)
+                        actPStmt.setInt(3, leg.legID)
+                        actPStmt.setString(4, leg.activityType.toString())
+                        actPStmt.setString(5, leg.startTime)
                         if (leg.stayTimeMinute != null) {
-                            legPStmt.setDouble(7, leg.stayTimeMinute)
+                            actPStmt.setDouble(6, leg.stayTimeMinute)
                         } else {
-                            legPStmt.setNull(7,  java.sql.Types.DOUBLE)
+                            actPStmt.setNull(6,  java.sql.Types.DOUBLE)
                         }
-                        legPStmt.setDouble(8, leg.lat)
-                        legPStmt.setDouble(9, leg.lon)
-                        legPStmt.setBoolean(10, leg.dummyLoc)
-                        legPStmt.setBoolean(11, leg.inFocusArea)
-                        legPStmt.setNull(12, java.sql.Types.VARCHAR)
-                        legPStmt.setNull(13, java.sql.Types.DOUBLE)
-                        legPStmt.setNull(14, java.sql.Types.DOUBLE)
-                        legPStmt.setNull(15, java.sql.Types.VARCHAR)
+                        actPStmt.setDouble(7, leg.lat)
+                        actPStmt.setDouble(8, leg.lon)
+                        actPStmt.setBoolean(9, leg.dummyLoc)
+                        actPStmt.setBoolean(10, leg.inFocusArea)
+                        actPStmt.executeUpdate()
                     } else if (leg is OutputTrip) {
-                        legPStmt.setString(3, "Trip")
-                        legPStmt.setNull(5, java.sql.Types.VARCHAR)
-                        legPStmt.setString(6, leg.startTime)
-                        legPStmt.setNull(7,  java.sql.Types.DOUBLE)
-                        legPStmt.setNull(8, java.sql.Types.DOUBLE)
-                        legPStmt.setNull(9, java.sql.Types.DOUBLE)
-                        legPStmt.setNull(10, java.sql.Types.BOOLEAN)
-                        legPStmt.setNull(11,java.sql.Types.BOOLEAN)
-                        legPStmt.setString(12, leg.mode.toString())
+                        // Fill trip table
+                        tripPStmt.setInt(1, entry.id)
+                        tripPStmt.setInt(2, day.day)
+                        tripPStmt.setInt(3, leg.legID)
+                        tripPStmt.setString(4, leg.startTime)
+                        tripPStmt.setString(5, leg.mode.toString())
                         if (leg.distanceKilometer != null) {
-                            legPStmt.setDouble(13, leg.distanceKilometer)
+                            tripPStmt.setDouble(6, leg.distanceKilometer)
                         } else {
-                            legPStmt.setNull(13, java.sql.Types.DOUBLE)
+                            tripPStmt.setNull(6, java.sql.Types.DOUBLE)
                         }
                         if (leg.timeMinute != null) {
-                            legPStmt.setDouble(14, leg.timeMinute)
+                            tripPStmt.setDouble(7, leg.timeMinute)
                         } else {
-                            legPStmt.setNull(14, java.sql.Types.DOUBLE)
+                            tripPStmt.setNull(7, java.sql.Types.DOUBLE)
                         }
 
                         if ((leg.lats != null) && (leg.lons != null)) {
                             val coords = leg.lats.zip(leg.lons)
                                 .map { (lat, lon) -> Coordinate(lat, lon) }
                                 .toTypedArray()
-                            val line = geometryFactory.createLineString(coords)
-                            val wkt = wktWriter.write(line)
-                            legPStmt.setString(15, wkt)
+                            if (coords.size > 1) {
+                                val line = geometryFactory.createLineString(coords)
+                                val wkt = wktWriter.write(line)
+                                tripPStmt.setString(8, wkt)
+                            } else {
+                                tripPStmt.setNull(8, java.sql.Types.VARCHAR)
+                            }
                         } else {
-                            legPStmt.setNull(15, java.sql.Types.VARCHAR)
+                            tripPStmt.setNull(8, java.sql.Types.VARCHAR)
                         }
+                        tripPStmt.executeUpdate()
                     }
-                    legPStmt.executeUpdate()
                 }
             }
-
             // Write batch
             if (i % 1000 == 0) {
                 conn.commit()
