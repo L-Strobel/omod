@@ -1,7 +1,5 @@
 package de.uniwuerzburg.omod.core.models
 
-import de.uniwuerzburg.omod.core.models.Sex.*
-
 /**
  * Possible homogeneous groups
  */
