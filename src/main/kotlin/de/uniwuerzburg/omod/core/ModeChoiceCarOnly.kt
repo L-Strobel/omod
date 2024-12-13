@@ -37,7 +37,7 @@ class ModeChoiceCarOnly(
         val jobsDone = AtomicInteger()
         val totalJobs = (agents.size).toDouble()
 
-        for (chunk in agents.chunked(10000)) { // Don't launch to many coroutines at once
+        for (chunk in agents.chunked(AppConstants.nAllowedCoroutines)) { // Don't launch to many coroutines at once
             runBlocking(dispatcher) {
                 for (agent in chunk) {
                     val coroutineRng = Random(mainRng.nextLong())

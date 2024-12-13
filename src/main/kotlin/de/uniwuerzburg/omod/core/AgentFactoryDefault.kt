@@ -147,7 +147,7 @@ class AgentFactoryDefault (
         homes: List<LocationOption>, zones: List<AggLocation>, rng: Random
     ) : List<MobiAgent> {
         val agents = ArrayList<MobiAgent>(homes.size)
-        for (chunk in homes.withIndex().chunked(10_000)) {
+        for (chunk in homes.withIndex().chunked(AppConstants.nAllowedCoroutines)) {
             runBlocking(dispatcher) {
                 val agentsFutures = mutableListOf<Deferred<MobiAgent>>()
                 for ((id, home) in chunk) {

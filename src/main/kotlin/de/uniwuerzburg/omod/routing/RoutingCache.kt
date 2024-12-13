@@ -174,7 +174,6 @@ class RoutingCache(
                     val done = locsDone.incrementAndGet()
                     print("Calculating distance matrix: ${ProgressBar.show(done / nLocations.toDouble())}\r")
                 }
-
             }
         }
         println("Calculating distance matrix: " + ProgressBar.done())
