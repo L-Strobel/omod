@@ -10,9 +10,9 @@ enum class Mode {
         return when(this) {
             CAR_DRIVER -> "car"
             CAR_PASSENGER -> "car"
-            PUBLIC_TRANSIT -> "bus"
+            PUBLIC_TRANSIT -> "pt"
             BICYCLE -> "bike"
-            FOOT -> "foot"
+            FOOT -> "walk"
             UNDEFINED -> "car"
         }
     }
