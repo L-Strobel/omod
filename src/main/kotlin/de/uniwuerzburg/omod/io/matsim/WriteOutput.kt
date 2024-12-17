@@ -28,20 +28,42 @@ fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int) : Boolean {
         for (entry in output) {
             val person = doc.createElement("person")
             person.setAttribute("id", entry.id.toString())
+
+            // Attributes
+            val attributes = doc.createElement("attributes")
+            // Sex
             val matSimSex = entry.sex.matSimName()
             if (matSimSex != null) {
-                person.setAttribute("sex", matSimSex)
+                val sexAttrib = doc.createElement("attribute")
+                sexAttrib.setAttribute("name", "sex")
+                sexAttrib.setAttribute("class", matSimSex)
+                attributes.appendChild(sexAttrib)
             }
+            // Age
             if (entry.age != null) {
-                person.setAttribute("age", entry.age.toString())
+                val ageAttrib = doc.createElement("attribute")
+                ageAttrib.setAttribute("name", "age")
+                ageAttrib.setAttribute("class", entry.age.toString())
+                attributes.appendChild(ageAttrib)
             }
+            // Car availability
             val carAvailability = if (entry.carAccess) { "always" } else { "never" }
-            person.setAttribute("car_avail", carAvailability)
+            val carAttrib = doc.createElement("attribute")
+            carAttrib.setAttribute("name", "car_avail")
+            carAttrib.setAttribute("class", carAvailability)
+            attributes.appendChild(carAttrib)
+            // Employment
             val employed = entry.homogenousGroup.matSimName()
             if (employed != null) {
-                person.setAttribute("employed", employed)
+                val employAttrib = doc.createElement("attribute")
+                employAttrib.setAttribute("name", "employed")
+                employAttrib.setAttribute("class", employed)
+                attributes.appendChild(employAttrib)
             }
 
+            person.appendChild(attributes)
+
+            // Plan
             val plan = doc.createElement("plan")
             plan.setAttribute("selected", "yes")
             for (leg in entry.mobilityDemand[day].plan) {
