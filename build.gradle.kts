@@ -1,9 +1,10 @@
 plugins {
     kotlin("jvm") version "2.+"
     kotlin("plugin.serialization") version "1.+"
-    id("com.github.johnrengelman.shadow") version "8.+"
+    id("com.gradleup.shadow") version "8.+"
     id("java")
-    id("org.jetbrains.dokka") version "1.9.+"
+    id("org.jetbrains.dokka") version "2.0.+"
+    id("maven-publish")
     application
 }
 
@@ -38,6 +39,7 @@ dependencies {
     implementation("us.dustinj.timezonemap:timezonemap:4.+")
     implementation("org.xerial:sqlite-jdbc:3.+")
     testImplementation("org.junit.jupiter:junit-jupiter:5.+")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test {
@@ -55,6 +57,14 @@ java {
 
 tasks.shadowJar {
     mergeServiceFiles()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("omod") {
+            from(components["java"])
+        }
+    }
 }
 
 application {
