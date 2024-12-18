@@ -4,7 +4,7 @@
 
 Implementations of the stochastic models.
 
-Central class: [OMOD](../src/main/kotlin/de/uniwuerzburg/omod/core/OMOD.kt)
+Central class: [OMOD](../src/main/kotlin/de/uniwuerzburg/omod/core/Omod.kt)
 
 Important Interfaces:
 - [AgentFactory](../src/main/kotlin/de/uniwuerzburg/omod/core/AgentFactory.kt): Creates the population of agents by assigning socio-demographic features, as well as home, work, and school locations.
