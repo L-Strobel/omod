@@ -67,7 +67,7 @@ class Run : CliktCommand() {
         help="First weekday to simulate. If the value is set to UNDEFINED, all simulated days will be UNDEFINED."
     ).enum<Weekday>().default(Weekday.UNDEFINED)
     private val out by option (
-        help="Output file. Should end with '.json' or '.db'"
+        help="Output file. The output format is inferred from the ending: '.json' -> Json, '.xml'-> MATSim, '.db'-> SQLite"
     ).file().default(File("output.json"))
     private val routing_mode by option(
         help = "Distance calculation method for destination choice." +
