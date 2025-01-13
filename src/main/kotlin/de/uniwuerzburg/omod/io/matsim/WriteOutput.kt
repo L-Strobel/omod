@@ -3,6 +3,11 @@ package de.uniwuerzburg.omod.io.matsim
 import de.uniwuerzburg.omod.io.json.OutputActivity
 import de.uniwuerzburg.omod.io.json.OutputEntry
 import de.uniwuerzburg.omod.io.json.OutputTrip
+import org.geotools.geometry.jts.JTS
+import org.geotools.referencing.CRS
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.Point
 import java.io.File
 import java.io.IOException
 import javax.xml.parsers.DocumentBuilderFactory
@@ -13,7 +18,13 @@ import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 
-fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int) : Boolean {
+fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int, outputCRS: String = "EPSG:4326") : Boolean {
+    // CRS transformer
+    val latlonCRS = CRS.decode("EPSG:4326")
+    val targetCRS = CRS.decode(outputCRS)
+    val crsTransformer = CRS.findMathTransform(latlonCRS, targetCRS)
+    val geometryFactory = GeometryFactory()
+
     val factory = DocumentBuilderFactory.newInstance()
     factory.isValidating = true
 
@@ -24,6 +35,15 @@ fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int) : Boolean {
 
         val root = doc.createElement("population")
         root.setAttribute("desc", "Generated with OMOD: https://github.com/L-Strobel/omod")
+
+        // Population attributes
+        val populationAttributes = doc.createElement("attributes")
+        val crsAttrib = doc.createElement("attribute")
+        crsAttrib.setAttribute("name", "coordinateReferenceSystem")
+        crsAttrib.setAttribute("class", "java.lang.String")
+        crsAttrib.textContent = targetCRS.identifiers.first().toString()
+        populationAttributes.appendChild(crsAttrib)
+        root.appendChild(populationAttributes)
 
         for (entry in output) {
             val person = doc.createElement("person")
@@ -68,10 +88,13 @@ fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int) : Boolean {
             plan.setAttribute("selected", "yes")
             for (leg in entry.mobilityDemand[day].plan) {
                 if (leg is OutputActivity) {
+                    val point = geometryFactory.createPoint( Coordinate(leg.lat, leg.lon) )
+                    val outCoord = JTS.transform(point, crsTransformer) as Point
+
                     val activity = doc.createElement("activity")
                     activity.setAttribute("type", leg.activityType.matSimName())
-                    activity.setAttribute("x", leg.lat.toString())
-                    activity.setAttribute("y", leg.lon.toString())
+                    activity.setAttribute("x", outCoord.x.toString())
+                    activity.setAttribute("y", outCoord.y.toString())
 
                     val time = if (leg.stayTimeMinute == null) {
                         null
