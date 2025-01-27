@@ -1,13 +1,13 @@
 # Code Structure
 
-## Core
+## de.uniwuerzburg.omod.core
 
 Implementations of the stochastic models.
 
 Central class: [OMOD](../src/main/kotlin/de/uniwuerzburg/omod/core/Omod.kt)
 
 Important Interfaces:
-- [AgentFactory](../src/main/kotlin/de/uniwuerzburg/omod/core/AgentFactory.kt): Creates the population of agents by assigning socio-demographic features, as well as home, work, and school locations.
+- [AgentFactory](../src/main/kotlin/de/uniwuerzburg/omod/core/AgentFactory.kt): Creates the agent population by assigning socio-demographic features, as well as home, work, and school locations.
 - [DestinationFinder](../src/main/kotlin/de/uniwuerzburg/omod/core/DestinationFinder.kt): Handles destination choice
 - [ActivityGenerator](../src/main/kotlin/de/uniwuerzburg/omod/core/ActivityGenerator.kt): Determines the type of activities an agent undertakes and their durations  
 - [CarOwnership](../src/main/kotlin/de/uniwuerzburg/omod/core/CarOwnership.kt): Determines if an agent owns a car or not
@@ -15,22 +15,22 @@ Important Interfaces:
 
 Implementations of each of these interfaces can be swapped inside the OMOD class.
 For example, the OMOD class holds a DestinationFinder;
-if you provide a new implementation of the DestinationFinder Interface and replace OMODs finder
-with it, then destination choice will be made according to your new method across the simulation.
+if you provide a new implementation of the DestinationFinder Interface and replace OMODs DestinationFinder
+with it, then destination choice will be made according to your new method throughout the simulation.
 
-### Models
+### de.uniwuerzburg.omod.core.models
 
-Includes most basic data structures that have no or only basic internal logic,
+Includes basic data structures with no or only basic internal logic,
 like enumerations and locations.
 
-## IO
+## de.uniwuerzburg.omod.io
 
 Handles IO.
 
-## Routing
+## de.uniwuerzburg.omod.routing
 
 Includes a wrapper around GraphHopper and caching logic.
 
-## Utils
+## de.uniwuerzburg.omod.utils
 
 Miscellaneous utilities.

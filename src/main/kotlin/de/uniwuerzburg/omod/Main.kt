@@ -126,7 +126,7 @@ class Run : CliktCommand() {
    private val gtfs_file by option(
         help = "Path to an General Transit Feed Specification (GTFS) for the area. " +
                "Required for public transit routing," +
-               "for example if public transit is an option in mode choice." +
+               "for example if public transit is an option in mode choice. " +
                "Must be a .zip file or a directory (see https://gtfs.org/)." +
                "Recommended download platform for Germany: https://gtfs.de/"
     ).file(mustExist = true, mustBeReadable = true)
