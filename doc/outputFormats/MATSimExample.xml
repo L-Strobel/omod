@@ -1,26 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE population SYSTEM "http://www.matsim.org/files/dtd/population_v6.dtd">
 <population desc="Generated with OMOD: https://github.com/L-Strobel/omod">
-    <person id="0">
-        <attributes>
-            <attribute class="never" name="car_avail"/>
-        </attributes>
-        <plan selected="yes">
-            <activity end_time="23:59:59" type="h" x="49.80570173867099" y="9.985221429456775"/>
-        </plan>
-    </person>
+    <attributes>
+        <attribute class="java.lang.String" name="coordinateReferenceSystem">EPSG:4326</attribute>
+    </attributes>
     <person id="1">
         <attributes>
             <attribute class="always" name="car_avail"/>
         </attributes>
         <plan selected="yes">
-            <activity end_time="05:51:33" type="h" x="49.770115250015195" y="9.890111350005544"/>
+            <activity end_time="15:12:10" type="h" x="49.79469994997494" y="9.900827360205426"/>
             <leg mode="car"/>
-            <activity max_dur="10:22:07" type="w" x="49.797432765873964" y="9.989940148263408"/>
+            <activity max_dur="00:51:38" type="l" x="49.78232489583094" y="9.879071946805167"/>
             <leg mode="car"/>
-            <activity max_dur="00:25:01" type="s" x="49.79792389591336" y="9.933746819429974"/>
+            <activity max_dur="06:25:46" type="l" x="49.78232489583094" y="9.879071946805167"/>
             <leg mode="car"/>
-            <activity type="h" x="49.770115250015195" y="9.890111350005544"/>
+            <activity type="h" x="49.79469994997494" y="9.900827360205426"/>
+        </plan>
+    </person>
+    <person id="0">
+        <attributes>
+            <attribute class="always" name="car_avail"/>
+        </attributes>
+        <plan selected="yes">
+            <activity end_time="12:38:11" type="h" x="49.78349418760464" y="9.947244006171891"/>
+            <activity type="l" x="49.7877928315622" y="9.931575200509599"/>
         </plan>
     </person>
 </population>
