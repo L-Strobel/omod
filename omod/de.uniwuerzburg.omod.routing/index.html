@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>de.uniwuerzburg.omod.routing</title>
     <link href="../../images/logo-icon.svg" rel="icon" type="image/svg">
     <script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
     if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -18,42 +19,91 @@
         }
     }
     </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
 <script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async="async"></script>
 <link href="../../styles/style.css" rel="Stylesheet">
-<link href="../../styles/jetbrains-mono.css" rel="Stylesheet">
 <link href="../../styles/main.css" rel="Stylesheet">
 <link href="../../styles/prism.css" rel="Stylesheet">
 <link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
 <script type="text/javascript" src="../../scripts/clipboard.js" async="async"></script>
 <script type="text/javascript" src="../../scripts/navigation-loader.js" async="async"></script>
 <script type="text/javascript" src="../../scripts/platform-content-handler.js" async="async"></script>
 <script type="text/javascript" src="../../scripts/main.js" defer="defer"></script>
 <script type="text/javascript" src="../../scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer="defer"></script>
 <script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
 </head>
 <body>
-<div class="navigation-wrapper" id="navigation-wrapper">
-    <div id="leftToggler"><span class="icon-toggler"></span></div>
-    <div class="library-name">
-            <a href="../../index.html">
-                    <span>omod</span>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+            <a class="library-name--link" href="../../index.html">
+                    omod
             </a>
-    </div>
-    <div>
-1.8.2    </div>
-    <div class="pull-right d-flex">
-        <div class="filter-section" id="filter-section">
-                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":dokkaHtml/main">jvm</button>
+        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle"
+                type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+2.0.18        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active=""
+                        data-filter=":dokkaHtml/main">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
+                        data-role="dropdown-toggle"
+                        aria-controls="platform-tags-listbox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-label="Toggle source sets"
+                ></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":dokkaHtml/main"
+                                       data-filter=":dokkaHtml/main"/>
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
         </div>
-        <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
-        <div id="searchBar"></div>
-    </div>
-</div>
-<div id="container">
-    <div id="leftColumn">
-        <div id="sideMenu"></div>
-    </div>
-    <div id="main">
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button"
+                    type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
+                        data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    omod
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
 <div class="main-content" data-page-type="package" id="content" pageIds="omod::de.uniwuerzburg.omod.routing////PointingToDeclaration//769193423">
   <div class="breadcrumbs"><a href="../../index.html">omod</a><span class="delimiter">/</span><span class="current">de.uniwuerzburg.omod.routing</span></div>
   <div class="cover ">
@@ -64,22 +114,7 @@
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
         <h2 class="">Types</h2>
-        <div class="table"><a data-name="-1089889218%2FClasslikes%2F769193423" anchor-label="MaxSizeHashMap" id="-1089889218%2FClasslikes%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-max-size-hash-map/index.html"><span>Max</span><wbr></wbr><span>Size</span><wbr></wbr><span>Hash</span><wbr></wbr><span><span>Map</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1089889218%2FClasslikes%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="-max-size-hash-map/index.html">MaxSizeHashMap</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-max-size-hash-map/index.html">K</a><span class="token punctuation">, </span><span class="token keyword"></span><a href="-max-size-hash-map/index.html">V</a><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">maxSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span> : <a href="https://docs.oracle.com/javase/8/docs/api/java/util/LinkedHashMap.html">LinkedHashMap</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-max-size-hash-map/index.html">K</a><span class="token punctuation">, </span><span class="token keyword"></span><a href="-max-size-hash-map/index.html">V</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">HashMap with fixed size. If the collection is full and an entry is added the oldest entry is removed. See: https://stackoverflow.com/questions/5601333/limiting-the-max-size-of-a-hashmap-in-java</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1508857229%2FClasslikes%2F769193423" anchor-label="PreparedQGraph" id="1508857229%2FClasslikes%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+        <div class="table"><a data-name="1508857229%2FClasslikes%2F769193423" anchor-label="PreparedQGraph" id="1508857229%2FClasslikes%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
           <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -89,7 +124,22 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-prepared-q-graph/index.html">PreparedQGraph</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>queryGraph<span class="token operator">: </span><span data-unresolved-link="com.graphhopper.routing.querygraph/QueryGraph///PointingToDeclaration/">QueryGraph</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>weighting<span class="token operator">: </span><span data-unresolved-link="com.graphhopper.routing.weighting/Weighting///PointingToDeclaration/">Weighting</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>locNodes<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../de.uniwuerzburg.omod.core/-location-option/index.html">LocationOption</a><span class="token punctuation">, </span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>snapNodes<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Prepared query graph used in ShortestPathTree calculation.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-prepared-q-graph/index.html">PreparedQGraph</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>queryGraph<span class="token operator">: </span><span data-unresolved-link="com.graphhopper.routing.querygraph/QueryGraph///PointingToDeclaration/">QueryGraph</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>weighting<span class="token operator">: </span><span data-unresolved-link="com.graphhopper.routing.weighting/Weighting///PointingToDeclaration/">Weighting</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>locNodes<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="../de.uniwuerzburg.omod.core.models/-location-option/index.html">LocationOption</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>snapNodes<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Prepared query graph used in ShortestPathTree calculation.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1371916082%2FClasslikes%2F769193423" anchor-label="Route" id="1371916082%2FClasslikes%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-route/index.html"><span><span>Route</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1371916082%2FClasslikes%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="-route/index.html">Route</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>distance<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>time<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>lats<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>lons<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>onlyWalk<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator"> = </span><span class="token boolean">false</span></span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -104,7 +154,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="-routing-cache/index.html">RoutingCache</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">mode<span class="token operator">: </span><a href="-routing-mode/index.html">RoutingMode</a><span class="token punctuation">, </span></span><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">cacheSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Stores distance information between locations</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="-routing-cache/index.html">RoutingCache</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">mode<span class="token operator">: </span><a href="-routing-mode/index.html">RoutingMode</a><span class="token punctuation">, </span></span><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">cacheSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span>400e6.toLong()<span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineDispatcher///PointingToDeclaration/">CoroutineDispatcher</span><span class="token operator"> = </span>Dispatchers.Default</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Stores distance information between locations</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -119,7 +169,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-routing-mode/index.html">RoutingMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-routing-mode/index.html">RoutingMode</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">Distance calculation methods</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-routing-mode/index.html">RoutingMode</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-routing-mode/index.html">RoutingMode</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">Distance calculation methods</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -134,86 +184,22 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-s-p-t-result/index.html">SPTResult</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>distance<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>time<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Result of ShortestPathTree search.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-s-p-t-result/index.html">SPTResult</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>distance<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>time<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Result of ShortestPathTree search.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div data-togglable="FUNCTION">
-        <h2 class="">Functions</h2>
-        <div class="table"><a data-name="-34342071%2FFunctions%2F769193423" anchor-label="calcDistanceBeeline" id="-34342071%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+<a data-name="540024632%2FClasslikes%2F769193423" anchor-label="UnorderedODPair" id="540024632%2FClasslikes%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
           <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="calc-distance-beeline.html"><span>calc</span><wbr></wbr><span>Distance</span><wbr></wbr><span><span>Beeline</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-34342071%2FFunctions%2F769193423"></span>
+                  <div><a href="-unordered-o-d-pair/index.html"><span>Unordered</span><wbr></wbr><span><span>ODPair</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="540024632%2FClasslikes%2F769193423"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="calc-distance-beeline.html"><span class="token function">calcDistanceBeeline</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core/-location-option/index.html">LocationOption</a><span class="token punctuation">, </span></span><span class="parameter ">destination<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core/-location-option/index.html">LocationOption</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-double/index.html">Double</a></div><div class="brief "><p class="paragraph">Calculate the euclidean distance between two locations</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1156523827%2FFunctions%2F769193423" anchor-label="createGraphHopper" id="-1156523827%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="create-graph-hopper.html"><span>create</span><wbr></wbr><span>Graph</span><wbr></wbr><span><span>Hopper</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1156523827%2FFunctions%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="create-graph-hopper.html"><span class="token function">createGraphHopper</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">osmLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cacheLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span></div><div class="brief "><p class="paragraph">Create GraphHopper object.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1453107481%2FFunctions%2F769193423" anchor-label="prepareQGraph" id="1453107481%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="prepare-q-graph.html"><span>prepare</span><wbr></wbr><span><span>QGraph</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1453107481%2FFunctions%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="prepare-q-graph.html"><span class="token function">prepareQGraph</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span><span class="token punctuation">, </span></span><span class="parameter ">locsToSnap<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../de.uniwuerzburg.omod.core/-real-location/index.html">RealLocation</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-prepared-q-graph/index.html">PreparedQGraph</a></div><div class="brief "><p class="paragraph">Prepare for ShortestPathTree calculation.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-314731043%2FFunctions%2F769193423" anchor-label="querySPT" id="-314731043%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="query-s-p-t.html"><span>query</span><wbr></wbr><span><span>SPT</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-314731043%2FFunctions%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="query-s-p-t.html"><span class="token function">querySPT</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">preparedQGraph<span class="token operator">: </span><a href="-prepared-q-graph/index.html">PreparedQGraph</a><span class="token punctuation">, </span></span><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">destinations<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../de.uniwuerzburg.omod.core/-location-option/index.html">LocationOption</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-s-p-t-result/index.html">SPTResult</a><span class="token operator">?</span><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Get the shortest distance and travel time from an origin to many destinations. Utilizes an ShortestPathTree.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-258753946%2FFunctions%2F769193423" anchor-label="routeWithCar" id="-258753946%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
-          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="route-with-car.html"><span>route</span><wbr></wbr><span>With</span><wbr></wbr><span><span>Car</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-258753946%2FFunctions%2F769193423"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="route-with-car.html"><span class="token function">routeWithCar</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">destination<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GHResponse///PointingToDeclaration/">GHResponse</span></div><div class="brief "><p class="paragraph">Determine the shortest path between two locations using a car.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="-unordered-o-d-pair/index.html">UnorderedODPair</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">a<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-location-option/index.html">LocationOption</a><span class="token punctuation">, </span></span><span class="parameter ">b<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-location-option/index.html">LocationOption</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Combination of two locations with no ordering. Used as key for the routing cache. The assumption is that the Distance A->B equals the distance B->A</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -232,7 +218,116 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="logger.html">logger</a><span class="token operator">: </span><span data-unresolved-link="org.slf4j/Logger///PointingToDeclaration/">Logger</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="logger.html">logger</a><span class="token operator">: </span><span data-unresolved-link="org.slf4j/Logger///PointingToDeclaration/">Logger</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1659289105%2FFunctions%2F769193423" anchor-label="calcDistanceBeeline" id="-1659289105%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="calc-distance-beeline.html"><span>calc</span><wbr></wbr><span>Distance</span><wbr></wbr><span><span>Beeline</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1659289105%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="calc-distance-beeline.html"><span class="token function">calcDistanceBeeline</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-location-option/index.html">LocationOption</a><span class="token punctuation">, </span></span><span class="parameter ">destination<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-location-option/index.html">LocationOption</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-double/index.html">Double</a></div><div class="brief "><p class="paragraph">Calculate the Euclidean distance between two locations</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1156523827%2FFunctions%2F769193423" anchor-label="createGraphHopper" id="-1156523827%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="create-graph-hopper.html"><span>create</span><wbr></wbr><span>Graph</span><wbr></wbr><span><span>Hopper</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1156523827%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="create-graph-hopper.html"><span class="token function">createGraphHopper</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">osmLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cacheLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span></div><div class="brief "><p class="paragraph">Create GraphHopper object.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1856673172%2FFunctions%2F769193423" anchor-label="createGraphHopperGTFS" id="-1856673172%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="create-graph-hopper-g-t-f-s.html"><span>create</span><wbr></wbr><span>Graph</span><wbr></wbr><span>Hopper</span><wbr></wbr><span><span>GTFS</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1856673172%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="create-graph-hopper-g-t-f-s.html"><span class="token function">createGraphHopperGTFS</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">osmLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">gtfsLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cacheLoc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-pair/index.html">Pair</a><span class="token operator">&lt;</span><span data-unresolved-link="com.graphhopper.gtfs/PtRouter///PointingToDeclaration/">PtRouter</span><span class="token punctuation">, </span><span data-unresolved-link="com.graphhopper.gtfs/GraphHopperGtfs///PointingToDeclaration/">GraphHopperGtfs</span><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Create GraphHopperGTFS object and the corresponding router.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2114369273%2FFunctions%2F769193423" anchor-label="prepareQGraph" id="2114369273%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="prepare-q-graph.html"><span>prepare</span><wbr></wbr><span><span>QGraph</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2114369273%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="prepare-q-graph.html"><span class="token function">prepareQGraph</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span><span class="token punctuation">, </span></span><span class="parameter ">locsToSnap<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../de.uniwuerzburg.omod.core.models/-real-location/index.html">RealLocation</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-prepared-q-graph/index.html">PreparedQGraph</a></div><div class="brief "><p class="paragraph">Prepare for ShortestPathTree calculation.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-696359077%2FFunctions%2F769193423" anchor-label="querySPT" id="-696359077%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="query-s-p-t.html"><span>query</span><wbr></wbr><span><span>SPT</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-696359077%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="query-s-p-t.html"><span class="token function">querySPT</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">preparedQGraph<span class="token operator">: </span><a href="-prepared-q-graph/index.html">PreparedQGraph</a><span class="token punctuation">, </span></span><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">destinations<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../de.uniwuerzburg.omod.core.models/-location-option/index.html">LocationOption</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="-s-p-t-result/index.html">SPTResult</a><span class="token operator">?</span><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Get the shortest distance and travel time from an origin to many destinations. Utilizes an ShortestPathTree.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1903800960%2FFunctions%2F769193423" anchor-label="routeGTFS" id="-1903800960%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="route-g-t-f-s.html"><span>route</span><wbr></wbr><span><span>GTFS</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1903800960%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="route-g-t-f-s.html"><span class="token function">routeGTFS</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">destination<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">departureTime<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/time/Instant.html">Instant</a><span class="token punctuation">, </span></span><span class="parameter ">ptRouter<span class="token operator">: </span><span data-unresolved-link="com.graphhopper.gtfs/PtRouter///PointingToDeclaration/">PtRouter</span><span class="token punctuation">, </span></span><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GHResponse///PointingToDeclaration/">GHResponse</span></div><div class="brief "><p class="paragraph">Determine the best path between two locations using public transit.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1350840351%2FFunctions%2F769193423" anchor-label="routeWith" id="1350840351%2FFunctions%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+          <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="route-with.html"><span>route</span><wbr></wbr><span><span>With</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1350840351%2FFunctions%2F769193423"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="route-with.html"><span class="token function">routeWith</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">profile<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">origin<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">destination<span class="token operator">: </span><a href="../de.uniwuerzburg.omod.core.models/-real-location/index.html">RealLocation</a><span class="token punctuation">, </span></span><span class="parameter ">hopper<span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GraphHopper///PointingToDeclaration/">GraphHopper</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.graphhopper/GHResponse///PointingToDeclaration/">GHResponse</span></div><div class="brief "><p class="paragraph">Determine the best path between two locations using the given profile.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -242,12 +337,18 @@
     </div>
   </div>
 </div>
-      <div class="footer">
-        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2024 Copyright</span><span
-                class="pull-right"><span>Generated by </span><a
-                href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
-      </div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
     </div>
-</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
