@@ -9,7 +9,7 @@ enum class Mode {
     fun matSimName() : String {
         return when(this) {
             CAR_DRIVER -> "car"
-            CAR_PASSENGER -> "car"
+            CAR_PASSENGER -> "car_passenger"
             PUBLIC_TRANSIT -> "pt"
             BICYCLE -> "bike"
             FOOT -> "walk"
