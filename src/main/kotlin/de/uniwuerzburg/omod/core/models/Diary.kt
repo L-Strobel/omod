@@ -58,7 +58,7 @@ data class Diary (
             val currentTime = LocalTime.of(currentMinute.toInt() / 60, currentMinute.toInt() % 60)
 
             // Update trip
-            visitor(trip, currentActivity, nextActivity, currentTime, wd, i>=trips.size)
+            visitor(trip, currentActivity, nextActivity, currentTime, wd, i >= (trips.size - 1))
 
             // Add estimated travel time
             currentMinute += trip.time ?: 0.0
