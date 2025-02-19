@@ -152,14 +152,14 @@ fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int, outputCRS: S
     return true
 }
 
-fun writeMatSim(output: List<OutputEntry>, file: File, nDays: Int) : Boolean {
+fun writeMatSim(output: List<OutputEntry>, file: File, nDays: Int, outputCRS: String) : Boolean {
     var success = true
     if (nDays == 1) {
         success = writeSingleDay(output, file, 0)
     } else {
         for (day in 0 until nDays) {
             val dayFile = File(file.parent, file.nameWithoutExtension + "_day$day.xml" )
-            success = success && writeSingleDay(output, dayFile, day)
+            success = success && writeSingleDay(output, dayFile, day, outputCRS)
         }
     }
     return  success

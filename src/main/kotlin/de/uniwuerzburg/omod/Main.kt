@@ -130,6 +130,9 @@ class Run : CliktCommand() {
                "Must be a .zip file or a directory (see https://gtfs.org/)." +
                "Recommended download platform for Germany: https://gtfs.de/"
     ).file(mustExist = true, mustBeReadable = true)
+    private val matsim_output_crs by option(
+        help = "CRS of MatSIM output. Must be a code understood by org.geotools.referencing.CRS.decode()."
+    ).default("EPSG:4326")
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
@@ -181,7 +184,7 @@ class Run : CliktCommand() {
                 success = writeSQLite(agents.map { formatOutput(it) }, out)
             }
             "xml" -> {
-                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days)
+                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days, matsim_output_crs)
             }
             else -> {
                 logger.info(
