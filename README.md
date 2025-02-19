@@ -8,60 +8,65 @@ in the form of daily activity diaries.
 Default output format (see [JsonExample.json](doc/outputFormats/JsonExample.json)):
 
 ```
-[
-    {
-        "id": 0,                          // ID of the agent/person
-        "homogenousGroup": "UNDEFINED",   // Options: WORKING, NON_WORKING, PUPIL_STUDENT, UNDEFINED
-        "mobilityGroup": "UNDEFINED",     // Options: CAR_USER, CAR_MIXED, NOT_CAR, UNDEFINED
-        "age": null,                      // Int?
-        "sex": "UNDEFINED",               // Options:  MALE, FEMALE, UNDEFINED
-        "carAccess": false,               // Boolean
-        "mobilityDemand": [               // Generated mobility demand
-            {
-                "day": 0,                 // Zero indexed day number
-                "dayType": "UNDEFINED",   // Options: MO, TU, WE, TH, FR, SA, SU, HO, UNDEFINED; HO = Holiday
-                "plan": [                 // Mobility plan for a given day. Activities - Trip - Activity - ... - Activity
-                    {
-                        "type": "Activity",                    // Either "Activity" or "Trip"
-                        "legID": 0,                            // Index in the daily plan (count continues for both activities and trips)
-                        "activityType": "HOME",                // Options: HOME, WORK, SCHOOL, SHOPPING, OTHER
-                        "startTime": "00:00",                  
-                        "stayTimeMinute": 346.3270257434699,   // Time spent at location. Unit: Minutes. Always Null for the last activity: means "until end of day"
-                        "lat": 49.770390415910654,             // Latitude
-                        "lon": 9.926447964597246,              // Longitude
-                        "dummyLoc": false,                     // Placeholder for calibration: currently always false
-                        "inFocusArea": true                    // Is that location inside the area defined by the GeoJson?
-                    },
-                    {
-                        "type": "Trip",
-                        "legID": 1,
-                        "mode": "BICYCLE",                        // Transport mode of trip. Options: CAR_DRIVER, CAR_PASSENGER, PUBLIC_TRANSIT, BICYCLE, FOOT, UNDEFINED
-                        "startTime": "05:46",                  
-                        "distanceKilometer": 5.9415048636329315,  // Trip distance. Unit: Kilometer
-                        "timeMinute": 21.0,                       // Trip duration. Unit: Minute
-                        "lats": [ 49.7704712, 49.7714712, 49.77499469890436 ],  // Trip path coordinates. Only returned when --return_path_coords y 
-                        "lons": [ 9.9266363, 9.9264601, 9.874013608000029]
-                        ]
-                    },
-                    {
-                        "type": "Activity",
-                        "legID": 2,
-                        "activityType": "WORK",
-                        "startTime": "06:07",
-                        "stayTimeMinute": 553.6428611125708,
-                        "lat": 49.77492197538944,
-                        "lon": 9.873904883397765,
-                        "dummyLoc": false,
-                        "inFocusArea": false
-                    },
-                    ...
-                ]
-            },
-            ...
-        ]
+{
+    "runParameters": {
+        ...
     },
-    ...
-]
+    "agents": [
+       {
+           "id": 0,                          // ID of the agent/person
+           "homogenousGroup": "UNDEFINED",   // Options: WORKING, NON_WORKING, PUPIL_STUDENT, UNDEFINED
+           "mobilityGroup": "UNDEFINED",     // Options: CAR_USER, CAR_MIXED, NOT_CAR, UNDEFINED
+           "age": null,                      // Int?
+           "sex": "UNDEFINED",               // Options:  MALE, FEMALE, UNDEFINED
+           "carAccess": false,               // Boolean
+           "mobilityDemand": [               // Generated mobility demand
+               {
+                   "day": 0,                 // Zero indexed day number
+                   "dayType": "UNDEFINED",   // Options: MO, TU, WE, TH, FR, SA, SU, HO, UNDEFINED; HO = Holiday
+                   "plan": [                 // Mobility plan for a given day. Activities - Trip - Activity - ... - Activity
+                       {
+                           "type": "Activity",                    // Either "Activity" or "Trip"
+                           "legID": 0,                            // Index in the daily plan (count continues for both activities and trips)
+                           "activityType": "HOME",                // Options: HOME, WORK, SCHOOL, SHOPPING, OTHER
+                           "startTime": "00:00",                  
+                           "stayTimeMinute": 346.3270257434699,   // Time spent at location. Unit: Minutes. Always Null for the last activity: means "until end of day"
+                           "lat": 49.770390415910654,             // Latitude
+                           "lon": 9.926447964597246,              // Longitude
+                           "dummyLoc": false,                     // Placeholder for calibration: currently always false
+                           "inFocusArea": true                    // Is that location inside the area defined by the GeoJson?
+                       },
+                       {
+                           "type": "Trip",
+                           "legID": 1,
+                           "mode": "BICYCLE",                        // Transport mode of trip. Options: CAR_DRIVER, CAR_PASSENGER, PUBLIC_TRANSIT, BICYCLE, FOOT, UNDEFINED
+                           "startTime": "05:46",                  
+                           "distanceKilometer": 5.9415048636329315,  // Trip distance. Unit: Kilometer
+                           "timeMinute": 21.0,                       // Trip duration. Unit: Minute
+                           "lats": [ 49.7704712, 49.7714712, 49.77499469890436 ],  // Trip path coordinates. Only returned when --return_path_coords y 
+                           "lons": [ 9.9266363, 9.9264601, 9.874013608000029]
+                           ]
+                       },
+                       {
+                           "type": "Activity",
+                           "legID": 2,
+                           "activityType": "WORK",
+                           "startTime": "06:07",
+                           "stayTimeMinute": 553.6428611125708,
+                           "lat": 49.77492197538944,
+                           "lon": 9.873904883397765,
+                           "dummyLoc": false,
+                           "inFocusArea": false
+                       },
+                       ...
+                   ]
+               },
+               ...
+           ]
+       },
+       ...
+    ]
+}
 ```
 
 Other possible output formats are [MATSim population .xml files](doc/outputFormats/MATSimExample.xml) and

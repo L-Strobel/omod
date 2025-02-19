@@ -45,3 +45,11 @@
 | 6   | distanceKilometer | REAL    | 0       |            | 0  |
 | 7   | timeMinute        | REAL    | 0       |            | 0  |
 | 8   | route             | BLOB    | 0       |            | 0  |
+
+## runParameters
+
+| cid | name  | type    | notnull | dflt_value | pk |
+|-----|-------|---------|---------|------------|----|
+| 0   | id    | INTEGER | 0       |            | 1  |
+| 1   | name  | TEXT    | 1       |            | 0  |
+| 1   | value | TEXT    | 0       |            | 0  |

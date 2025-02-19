@@ -18,7 +18,10 @@ import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 
-fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int, outputCRS: String = "EPSG:4326") : Boolean {
+fun writeSingleDay(
+    output: List<OutputEntry>, file: File, day: Int, outputCRS: String = "EPSG:4326",
+    runParams: Map<String, String>
+) : Boolean {
     // CRS transformer
     val latlonCRS = CRS.decode("EPSG:4326")
     val targetCRS = CRS.decode(outputCRS)
@@ -34,7 +37,11 @@ fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int, outputCRS: S
         doc.xmlStandalone = true
 
         val root = doc.createElement("population")
-        root.setAttribute("desc", "Generated with OMOD: https://github.com/L-Strobel/omod")
+        root.setAttribute(
+            "desc",
+            "Generated with OMOD: https://github.com/L-Strobel/omod. " +
+            "RunParameters: ${runParams.map { (k, v) -> "$k=$v" }.joinToString(",")}"
+        )
 
         // Population attributes
         val populationAttributes = doc.createElement("attributes")
@@ -152,14 +159,16 @@ fun writeSingleDay(output: List<OutputEntry>, file: File, day: Int, outputCRS: S
     return true
 }
 
-fun writeMatSim(output: List<OutputEntry>, file: File, nDays: Int, outputCRS: String) : Boolean {
+fun writeMatSim(
+    output: List<OutputEntry>, file: File, nDays: Int, outputCRS: String, runParams: Map<String, String>
+) : Boolean {
     var success = true
     if (nDays == 1) {
-        success = writeSingleDay(output, file, 0)
+        success = writeSingleDay(output, file, 0, outputCRS, runParams)
     } else {
         for (day in 0 until nDays) {
             val dayFile = File(file.parent, file.nameWithoutExtension + "_day$day.xml" )
-            success = success && writeSingleDay(output, dayFile, day, outputCRS)
+            success = success && writeSingleDay(output, dayFile, day, outputCRS, runParams)
         }
     }
     return  success

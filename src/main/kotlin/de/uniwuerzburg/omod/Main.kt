@@ -14,24 +14,29 @@ import de.uniwuerzburg.omod.core.logger
 import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
+import de.uniwuerzburg.omod.io.json.writeJSONOutput
 import de.uniwuerzburg.omod.io.matsim.writeMatSim
 import de.uniwuerzburg.omod.io.sqlite.writeSQLite
 import de.uniwuerzburg.omod.routing.RoutingMode
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.encodeToStream
 import java.io.File
-import java.io.FileOutputStream
 import java.nio.file.Paths
 
 sealed interface AgentNumberDefinition
 
 class FixedAgentNumber(
     val value: Int
-) : AgentNumberDefinition
+) : AgentNumberDefinition {
+    override fun toString(): String {
+        return this.value.toString()
+    }
+}
 class ShareOfPop (
     val value: Double
-) : AgentNumberDefinition
+) : AgentNumberDefinition {
+    override fun toString(): String {
+        return this.value.toString()
+    }
+}
 
 /**
  * CLI interface
@@ -134,7 +139,6 @@ class Run : CliktCommand() {
         help = "CRS of MatSIM output. Must be a code understood by org.geotools.referencing.CRS.decode()."
     ).default("EPSG:4326")
 
-    @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
         if ((census == null) && (agentNumberDefinition is ShareOfPop)) {
             throw Exception(
@@ -170,21 +174,31 @@ class Run : CliktCommand() {
         // Mode Choice
         omod.doModeChoice(agents, mode_choice, return_path_coords)
 
+        // Format run parameters:
+        val runParameters = mutableMapOf<String, String>()
+        for (arg in this.registeredArguments()) {
+            val sArg = arg.toString().split("=")
+            runParameters[sArg.first()] = sArg.drop(1).joinToString("")
+        }
+        for (opt in this.registeredOptions()) {
+            if (opt.toString().contains("=")) {
+                val sOpt = opt.toString().split("=")
+                runParameters[sOpt.first()] = sOpt.drop(1).joinToString("")
+            }
+        }
+
         // Store output
         logger.info("Saving results...")
         val success: Boolean
         when (out.extension) {
             "json" -> {
-                FileOutputStream(out).use { f ->
-                    Json.encodeToStream( agents.map { formatOutput(it) }, f)
-                }
-                success = true
+                success = writeJSONOutput(agents.map { formatOutput(it) }, out, runParameters)
             }
             "db" -> {
-                success = writeSQLite(agents.map { formatOutput(it) }, out)
+                success = writeSQLite(agents.map { formatOutput(it) }, out, runParameters)
             }
             "xml" -> {
-                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days, matsim_output_crs)
+                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days, matsim_output_crs, runParameters)
             }
             else -> {
                 logger.info(
@@ -193,10 +207,7 @@ class Run : CliktCommand() {
                     "Falling back to JSON"
                 )
                 val newOut = File(out.parent, out.nameWithoutExtension + ".json")
-                FileOutputStream(newOut).use { f ->
-                    Json.encodeToStream( agents.map { formatOutput(it) }, f)
-                }
-                success = true
+                success = writeJSONOutput(agents.map { formatOutput(it) }, newOut, runParameters)
             }
         }
         if (success) {
