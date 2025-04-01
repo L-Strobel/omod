@@ -124,6 +124,10 @@ class Run : CliktCommand() {
         help="Path to file that describes the socio-demographic makeup of the population. " +
              "Must be formatted like omod/src/main/resources/Population.json."
     ).file(mustExist = true, mustBeReadable = true)
+    private val activity_group_file by option(
+        help="Path to file that describes the activity chains for each population group and the dwell-time distribution for the each chain. " +
+        "Must be formatted like omod/src/main/resources/ActivityGroup.json"
+    ).file(mustExist = true, mustBeReadable = true)
     private val n_worker by option(
         help="Number of parallel coroutines that can be executed at the same time. " +
              "Default: Number of CPU-Cores available."
@@ -161,6 +165,7 @@ class Run : CliktCommand() {
             populateBufferArea = populate_buffer_area,
             distanceCacheSize = distance_matrix_cache_size,
             populationFile = population_file,
+            activityGroupFile = activity_group_file,
             nWorker = n_worker,
             gtfsFile = gtfs_file
         )

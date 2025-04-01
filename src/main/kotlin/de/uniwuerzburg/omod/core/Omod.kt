@@ -51,6 +51,7 @@ import kotlin.time.TimeSource
  * @param populateBufferArea Option to populate the buffer area with agents
  * @param distanceCacheSize Maximum size of the routing matrix cache
  * @param populationFile File that defines the distribution of socio-demographic features for the agent population
+ * @param activityGroupFile File that defines the activity chains and their dwell times for the chosen location
  * @param nWorker Number of parallel coroutines that can be executed at the same time.
  * NULL = Number of CPU-Cores available.
  * @param gtfsFile GTFS location (Directory or .zip file)
@@ -69,6 +70,7 @@ class Omod(
     private val populateBufferArea: Boolean = true,
     val distanceCacheSize: Long = 400e6.toLong(),
     populationFile: File? = null,
+    activityGroupFile: File? = null,
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
     carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
@@ -103,7 +105,11 @@ class Omod(
         }
 
         // Load activity chain data
-        val activityGroups: List<ActivityGroup> = readJsonFromResource("ActivityGroups.json")
+        val activityGroups: List<ActivityGroup> = if (activityGroupFile !=null){
+            readJson(activityGroupFile)
+        } else {
+            readJsonFromResource("ActivityGroups.json")
+        }
 
         // Load distance distributions
         val mutLocChoiceFuns: MutableMap<ActivityType, LocationChoiceDCWeightFun> =
