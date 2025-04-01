@@ -108,7 +108,7 @@ class Omod(
         val activityGroups: List<ActivityGroup> = if (activityGroupFile !=null){
             readJson(activityGroupFile)
         } else {
-            readJsonFromResource("ActivityGroupsKorea.json")
+            readJsonFromResource("ActivityGroups.json")
         }
 
         // Load distance distributions
