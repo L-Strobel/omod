@@ -120,7 +120,7 @@ class Run : CliktCommand() {
              "Must be formatted like omod/src/main/resources/Population.json."
     ).file(mustExist = true, mustBeReadable = true)
     private val activity_group_file by option(
-        help="Path to json file that describes the activity chains and their dwell-time distribution for the chosen location. " +
+        help="Path to file that describes the activity chains for each population group and the dwell-time distribution for the each chain. " +
         "Must be formatted like omod/src/main/resources/ActivityGroup.json"
     ).file(mustExist = true, mustBeReadable = true)
     private val n_worker by option(
