@@ -13,7 +13,7 @@ import kotlin.math.ln
 
 class Route (
     val distance: Double,           // Unit: kilometer
-    val time: Double,               // Unit: minutes
+    var time: Double,               // Unit: minutes
     val lats: List<Double>?,
     val lons: List<Double>?,
     val onlyWalk: Boolean = false

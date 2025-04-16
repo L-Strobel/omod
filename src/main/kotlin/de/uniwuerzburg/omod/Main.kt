@@ -5,12 +5,11 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.groups.default
 import com.github.ajalt.clikt.parameters.groups.mutuallyExclusiveOptions
 import com.github.ajalt.clikt.parameters.groups.single
-import com.github.ajalt.clikt.parameters.options.convert
-import com.github.ajalt.clikt.parameters.options.default
-import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.*
 import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.core.logger
+import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
@@ -132,7 +131,7 @@ class Run : CliktCommand() {
         help="Number of parallel coroutines that can be executed at the same time. " +
              "Default: Number of CPU-Cores available."
     ).int()
-   private val gtfs_file by option(
+    private val gtfs_file by option(
         help = "Path to an General Transit Feed Specification (GTFS) for the area. " +
                "Required for public transit routing," +
                "for example if public transit is an option in mode choice. " +
@@ -142,6 +141,11 @@ class Run : CliktCommand() {
     private val matsim_output_crs by option(
         help = "CRS of MatSIM output. Must be a code understood by org.geotools.referencing.CRS.decode()."
     ).default("EPSG:4326")
+    private val mode_speed_up by option()
+        .splitPair()
+        .convert { (first, second) -> Mode.valueOf(first.uppercase()) to second.toDouble() }
+        .multiple()
+        .toMap()
 
     override fun run() {
         if ((census == null) && (agentNumberDefinition is ShareOfPop)) {
@@ -167,7 +171,8 @@ class Run : CliktCommand() {
             populationFile = population_file,
             activityGroupFile = activity_group_file,
             nWorker = n_worker,
-            gtfsFile = gtfs_file
+            gtfsFile = gtfs_file,
+            modeSpeedUp = mode_speed_up
         )
 
         // Mobility demand

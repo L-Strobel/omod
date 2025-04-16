@@ -73,7 +73,8 @@ class Omod(
     activityGroupFile: File? = null,
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
-    carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
+    carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX,
+    private val modeSpeedUp: Map<Mode, Double> = mapOf()
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
@@ -553,7 +554,7 @@ class Omod(
             ModeChoiceOption.CAR_ONLY -> {
                 setupHopper()
                 val modeChoice = ModeChoiceCarOnly(hopper!!, withPath)
-                modeChoice.doModeChoice(agents, mainRng, dispatcher)
+                modeChoice.doModeChoice(agents, mainRng, dispatcher, modeSpeedUp)
                 return agents
             }
             ModeChoiceOption.GTFS -> {
@@ -565,7 +566,7 @@ class Omod(
                         gtfsComponents!!.ptSimDays, gtfsComponents!!.timeZone,
                         withPath
                     )
-                    modeChoice.doModeChoice(agents, mainRng, dispatcher)
+                    modeChoice.doModeChoice(agents, mainRng, dispatcher, modeSpeedUp)
                     return agents
                 } finally {
                     gtfsComponents!!.gtfsHopper.close()

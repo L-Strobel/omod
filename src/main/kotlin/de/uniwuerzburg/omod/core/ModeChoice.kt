@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.MobiAgent
+import de.uniwuerzburg.omod.core.models.Mode
 import kotlinx.coroutines.CoroutineDispatcher
 import java.util.*
 
@@ -16,5 +17,7 @@ interface ModeChoice {
      * @param dispatcher Coroutine dispatcher used for concurrency
      * @return agents. Now their trips have specified modes.
      */
-    fun doModeChoice(agents: List<MobiAgent>, mainRng: Random, dispatcher: CoroutineDispatcher) : List<MobiAgent>
+    fun doModeChoice(
+        agents: List<MobiAgent>, mainRng: Random, dispatcher: CoroutineDispatcher, modeSpeedUp: Map<Mode, Double>
+    ) : List<MobiAgent>
 }
