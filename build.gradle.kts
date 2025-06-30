@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.+"
-    kotlin("plugin.serialization") version "1.+"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0"
     id("com.gradleup.shadow") version "8.+"
     id("java")
     id("org.jetbrains.dokka") version "2.0.+"
@@ -25,8 +25,8 @@ repositories {
 dependencies {
     implementation("org.geotools:gt-epsg-hsql:31.+")
     implementation("org.geotools:gt-main:31.+")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.+")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.+")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.locationtech.jts:jts-core:1.+")
     implementation("org.apache.commons:commons-math3:3.+")
     implementation("com.github.ajalt.clikt:clikt:4.+")
