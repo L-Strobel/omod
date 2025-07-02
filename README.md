@@ -102,6 +102,14 @@ You need Java 17 or a later version.
 There are multiple optional cli arguments, such as the number of agents, the number of days, or the population definition.
 See all [cli options here](#CLI-Options) or run --help.
 
+## Visualization
+
+A visualization tool for OMOD is available at: https://github.com/L-Strobel/omod-visualizer
+
+<p align="center">
+   <img src="doc/images/omod_vis_far.png" width="1000" alt="Omod Visualization Würzburg Far"/>
+</p>
+
 ## Routing Mode
 
 OMOD determines the destination choice of agents based on a gravity model.
