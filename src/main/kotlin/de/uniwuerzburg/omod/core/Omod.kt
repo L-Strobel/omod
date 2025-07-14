@@ -9,7 +9,9 @@ import de.uniwuerzburg.omod.io.geojson.*
 import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
 import de.uniwuerzburg.omod.io.gtfs.getPublicTransitSimDays
 import de.uniwuerzburg.omod.io.json.*
+import de.uniwuerzburg.omod.io.osm.BuildingData
 import de.uniwuerzburg.omod.io.osm.readOSM
+import de.uniwuerzburg.omod.io.overture.readOverture
 import de.uniwuerzburg.omod.io.readCensus
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
@@ -33,7 +35,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.exists
 import kotlin.time.TimeSource
-
+@kotlin.io.path.ExperimentalPathApi
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
  * Creates daily activity schedules in the form of activity chains and dwell times.
@@ -73,6 +75,7 @@ class Omod(
     activityGroupFile: File? = null,
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
+    private val overtureMaps: Boolean =false,
     carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
@@ -139,7 +142,7 @@ class Omod(
         // Get spatial data
         buildings = getBuildings(
             focusArea, fullArea, osmFile, bufferRadius,  transformer,
-            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns
+            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns,overtureMaps
         )
 
         // Create KD-Tree for faster access
@@ -244,7 +247,7 @@ class Omod(
                              osmFile: File, bufferRadius: Double = 0.0,
                              transformer: CRSTransformer, geometryFactory: GeometryFactory,
                              censusFile: File?, cacheDir: Path, cache: Boolean,
-                             locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
+                             locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>,overtureMaps: Boolean =false
     ) : List<Building> {
         // Is cached?
         val bound = focusArea.envelopeInternal
@@ -259,9 +262,14 @@ class Omod(
         // Check cache
         val collection: GeoJsonFeatureCollection =  if (cache and cachePath.toFile().exists()) {
             readJsonStream(cachePath)
+
         } else {
             // Load data
-            var osmBuildings = readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
+            var osmBuildings: List<BuildingData> = if (overtureMaps) {
+                readOverture(focusArea, fullArea, geometryFactory, transformer)
+            } else {
+                readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
+            }
 
             // Add census data if available
             if (censusFile != null) {
@@ -600,6 +608,7 @@ class Omod(
     /**
      * Bundle of everything required for GTFS routing.
      */
+    @kotlin.io.path.ExperimentalPathApi
     private inner class GTFSComponents(
         focusArea: Geometry, fullArea: Geometry, cacheDir: Path, dispatcher: CoroutineDispatcher,
         osmFile: File

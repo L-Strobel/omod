@@ -36,6 +36,7 @@ dependencies {
     implementation("org.openstreetmap.osmosis:osmosis-pbf:0.48.+")
     implementation("org.openstreetmap.osmosis:osmosis-areafilter:0.48.+")
     implementation("com.google.guava:guava:33.2.1-jre")
+    implementation("org.duckdb:duckdb_jdbc:1.1.1")
     implementation("us.dustinj.timezonemap:timezonemap:4.+")
     implementation("org.xerial:sqlite-jdbc:3.+")
     testImplementation("org.junit.jupiter:junit-jupiter:5.+")
@@ -48,6 +49,9 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
+    compilerOptions {
+        freeCompilerArgs.add("-Xopt-in=kotlin.io.path.ExperimentalPathApi")
+    }
 }
 
 java {

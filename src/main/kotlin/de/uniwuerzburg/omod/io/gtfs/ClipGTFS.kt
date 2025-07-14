@@ -11,6 +11,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.zip.ZipFile
+import java.text.Normalizer
 import kotlin.io.path.*
 
 /**
@@ -29,6 +30,7 @@ import kotlin.io.path.*
  * @param gtfsPath Location of gtfs data can be a directory or a zip file
  * @param cacheDir Cache directory
  */
+@OptIn(kotlin.io.path.ExperimentalPathApi::class)
 fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: CoroutineDispatcher) {
     logger.info("Clipping GTFS to bounding box...")
     val inputStreams: MutableMap<String, InputStream> = mutableMapOf()
@@ -103,15 +105,18 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
         ForeignKeyFilter(services, "service_id"),
         dispatcher
     )
-
-    // Filter calendar dates
-    filterGTFSFile(
-        inputStreams["calendar_dates.txt"]!!,
-        Paths.get(cacheDir.toString(), "clippedGTFS/calendar_dates.txt"),
-        listOf(),
-        ForeignKeyFilter(services, "service_id"),
-        dispatcher
-    )
+    try {
+        // Filter calendar dates
+        filterGTFSFile(
+            inputStreams["calendar_dates.txt"]!!,
+            Paths.get(cacheDir.toString(), "clippedGTFS/calendar_dates.txt"),
+            listOf(),
+            ForeignKeyFilter(services, "service_id"),
+            dispatcher
+        )
+    }catch(e:NullPointerException){
+        logger.info("File not existend")
+    }
     logger.info("Clipping GTFS to bounding box... Done!")
 }
 
@@ -126,22 +131,31 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
  * @param filter Filter to apply to the data table
  * @return Unique values in specified columns after filtering is done
  */
+
+private fun base36ToInt(s: String): Int {
+    return s.lowercase().toInt(radix = 36)
+}
+
+
+
+@OptIn(kotlin.io.path.ExperimentalPathApi::class)
 private fun filterGTFSFile(
     inputStream: InputStream,
     outputPath: Path,
     colsToExtract: List<String>,
     filter: GTFSFilter,
     dispatcher: CoroutineDispatcher
-) : List<Set<Int>> {
+) : List<Set<String>> {
     val outputStream = outputPath.outputStream()
-    val reader = inputStream.bufferedReader()
+    val reader = inputStream.bufferedReader(Charsets.UTF_8)
     val writer = outputStream.bufferedWriter()
 
     // Regex for csv separator. ',' but not in quotations.
     val delimiter = Regex(""",(?=(?:[^"]*"[^"]*")*[^"]*${'$'})""")
 
     // Parse header
-    val header = reader.readLine()
+    var header = reader.readLine()
+    header=header.removePrefix("\uFEFF")
     val idxMap = header.split(delimiter).withIndex().map { (i, v) -> v to i}.toMap()
     writer.appendLine(header)
 
@@ -156,7 +170,8 @@ private fun filterGTFSFile(
                     for (record in recordChunk) {
                         val values = record.split(delimiter)
                         if (filter.filter(values, idxMap)) {
-                            val extractedValues = extractIdxs.map { values[it].toInt() }
+                            //Removed .toInt()
+                            val extractedValues = extractIdxs.map { values[it] }
                             send(Pair(extractedValues, record))
                         }
                     }
@@ -171,7 +186,7 @@ private fun filterGTFSFile(
         writer.newLine()
     }
 
-    val extractedSets: List<MutableSet<Int>> = List(colsToExtract.size) { mutableSetOf() }
+    val extractedSets: List<MutableSet<String>> = List(colsToExtract.size) { mutableSetOf() }
     for (data in extractedData) {
         for ((i, v) in data.withIndex()) {
             extractedSets[i].add(v)

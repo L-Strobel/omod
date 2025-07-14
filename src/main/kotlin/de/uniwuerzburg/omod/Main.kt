@@ -25,7 +25,7 @@ import java.io.FileOutputStream
 import java.nio.file.Paths
 
 sealed interface AgentNumberDefinition
-
+@OptIn(kotlin.io.path.ExperimentalPathApi::class)
 class FixedAgentNumber(
     val value: Int
 ) : AgentNumberDefinition
@@ -134,6 +134,10 @@ class Run : CliktCommand() {
                "Must be a .zip file or a directory (see https://gtfs.org/)." +
                "Recommended download platform for Germany: https://gtfs.de/"
     ).file(mustExist = true, mustBeReadable = true)
+    private val overture_maps by option(
+        help= "Indicates whether OpenStreetMap or Overture Maps Data should be used." +
+                "For an introduction to Overture Maps see https://overturemaps.org/"
+    ).boolean().default(false)
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
@@ -147,7 +151,7 @@ class Run : CliktCommand() {
                 "Mode choice includes public transit as option but no GTFS file is provided." +
                 "Add a gtfs file with --gtfs_file")
         }
-
+        @OptIn(kotlin.io.path.ExperimentalPathApi::class)
         // Init OMOD
         val omod = Omod(
             area_geojson, osm_file,
@@ -160,15 +164,16 @@ class Run : CliktCommand() {
             populationFile = population_file,
             activityGroupFile = activity_group_file,
             nWorker = n_worker,
-            gtfsFile = gtfs_file
+            gtfsFile = gtfs_file,
+            overtureMaps =overture_maps,
         )
-
+        @OptIn(kotlin.io.path.ExperimentalPathApi::class)
         // Mobility demand
         val agents = when (val aND = agentNumberDefinition ) {
             is FixedAgentNumber -> omod.run(aND.value, start_wd, n_days)
             is ShareOfPop -> omod.run(aND.value, start_wd, n_days)
         }
-
+        @OptIn(kotlin.io.path.ExperimentalPathApi::class)
         // Mode Choice
         omod.doModeChoice(agents, mode_choice, return_path_coords)
 
