@@ -201,8 +201,6 @@ fun readOverture(focusArea: Geometry,fullArea: Geometry,geometryFactory:Geometry
 
     }
 
-    val geometryFactory = GeometryFactory()
-
     val geoBuildings:GeoJsonFeatureCollectionNoProperties = readJson(File("omod_cache//overture//building${xmin}_${xmax}_${ymin}_${ymax}.geojson"))
     val geoPlaces: GeoJsonPlaces = readJson(File("omod_cache//overture//place${xmin}_${xmax}_${ymin}_${ymax}.geojson"))
     val geoLandUse: GeoJsonLandUse= readJson(File("omod_cache//overture//land_use${xmin}_${xmax}_${ymin}_${ymax}.geojson"))
