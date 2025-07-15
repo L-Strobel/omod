@@ -15,7 +15,7 @@ inline fun <reified T>readJson(path: Path): T {
 inline fun <reified T> readJson(file: File): T {
     return readJson(file.readText(Charsets.UTF_8))
 }
-@OptIn(kotlin.io.path.ExperimentalPathApi::class)
+
 inline fun <reified T> readJsonFromResource(res: String): T {
     val txt = Omod::class.java.classLoader.getResource(res)!!.readText(Charsets.UTF_8)
     return jsonHandler.decodeFromString(txt)

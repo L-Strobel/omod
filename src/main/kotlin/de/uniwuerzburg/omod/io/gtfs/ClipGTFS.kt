@@ -11,8 +11,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.zip.ZipFile
-import java.text.Normalizer
 import kotlin.io.path.*
+import kotlin.io.path.inputStream
+
 
 /**
  * Clip GTFS file to bounding box and write the result to the cache directory.
@@ -30,7 +31,6 @@ import kotlin.io.path.*
  * @param gtfsPath Location of gtfs data can be a directory or a zip file
  * @param cacheDir Cache directory
  */
-@OptIn(kotlin.io.path.ExperimentalPathApi::class)
 fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: CoroutineDispatcher) {
     logger.info("Clipping GTFS to bounding box...")
     val inputStreams: MutableMap<String, InputStream> = mutableMapOf()
@@ -131,14 +131,6 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
  * @param filter Filter to apply to the data table
  * @return Unique values in specified columns after filtering is done
  */
-
-private fun base36ToInt(s: String): Int {
-    return s.lowercase().toInt(radix = 36)
-}
-
-
-
-@OptIn(kotlin.io.path.ExperimentalPathApi::class)
 private fun filterGTFSFile(
     inputStream: InputStream,
     outputPath: Path,

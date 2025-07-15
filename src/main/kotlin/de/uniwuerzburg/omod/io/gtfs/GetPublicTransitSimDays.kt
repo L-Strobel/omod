@@ -10,7 +10,6 @@ import kotlin.io.path.inputStream
  * Determine the dates in the GTFS file where the most services are active. For every weekday.
  * These dates will represent the weekdays in the simulation.
  */
-@OptIn(kotlin.io.path.ExperimentalPathApi::class)
 fun getPublicTransitSimDays( calendarTXTPath: Path ) : Map<Weekday, LocalDate> {
     val inputStream = calendarTXTPath.inputStream()
     val reader = inputStream.bufferedReader()
