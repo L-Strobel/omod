@@ -180,7 +180,6 @@ class Run : CliktCommand() {
             nWorker = n_worker,
             gtfsFile = gtfs_file,
             overtureMaps =overture_maps,
-            gtfsFile = gtfs_file,
             modeSpeedUp = mode_speed_up
         )
 
