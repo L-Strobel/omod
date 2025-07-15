@@ -5,32 +5,37 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.groups.default
 import com.github.ajalt.clikt.parameters.groups.mutuallyExclusiveOptions
 import com.github.ajalt.clikt.parameters.groups.single
-import com.github.ajalt.clikt.parameters.options.convert
-import com.github.ajalt.clikt.parameters.options.default
-import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.*
 import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.core.logger
+import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.Weekday
 import de.uniwuerzburg.omod.io.formatOutput
+import de.uniwuerzburg.omod.io.json.writeJSONOutput
 import de.uniwuerzburg.omod.io.matsim.writeMatSim
 import de.uniwuerzburg.omod.io.sqlite.writeSQLite
 import de.uniwuerzburg.omod.routing.RoutingMode
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.encodeToStream
 import java.io.File
-import java.io.FileOutputStream
 import java.nio.file.Paths
 
 sealed interface AgentNumberDefinition
 
 class FixedAgentNumber(
     val value: Int
-) : AgentNumberDefinition
+) : AgentNumberDefinition {
+    override fun toString(): String {
+        return this.value.toString()
+    }
+}
 class ShareOfPop (
     val value: Double
-) : AgentNumberDefinition
+) : AgentNumberDefinition {
+    override fun toString(): String {
+        return this.value.toString()
+    }
+}
 
 /**
  * CLI interface
@@ -126,7 +131,7 @@ class Run : CliktCommand() {
         help="Number of parallel coroutines that can be executed at the same time. " +
              "Default: Number of CPU-Cores available."
     ).int()
-   private val gtfs_file by option(
+    private val gtfs_file by option(
         help = "Path to an General Transit Feed Specification (GTFS) for the area. " +
                "Required for public transit routing," +
                "for example if public transit is an option in mode choice. " +
@@ -137,7 +142,17 @@ class Run : CliktCommand() {
         help= "Indicates whether OpenStreetMap or Overture Maps Data should be used." +
                 "For an introduction to Overture Maps see https://overturemaps.org/"
     ).boolean().default(false)
-
+    private val matsim_output_crs by option(
+        help = "CRS of MatSIM output. Must be a code understood by org.geotools.referencing.CRS.decode()."
+    ).default("EPSG:4326")
+    private val mode_speed_up by option(
+        help = "Value: MODE=FACTOR. Multiply the travel time of each trip of the mode by the factor." +
+               "Example: CAR_DRIVER=0.3, will slow down car travel durations by 70%."
+    )
+        .splitPair()
+        .convert { (first, second) -> Mode.valueOf(first.uppercase()) to second.toDouble() }
+        .multiple()
+        .toMap()
 
     override fun run() {
         if ((census == null) && (agentNumberDefinition is ShareOfPop)) {
@@ -165,6 +180,8 @@ class Run : CliktCommand() {
             nWorker = n_worker,
             gtfsFile = gtfs_file,
             overtureMaps =overture_maps,
+            gtfsFile = gtfs_file,
+            modeSpeedUp = mode_speed_up
         )
 
         // Mobility demand
@@ -176,21 +193,31 @@ class Run : CliktCommand() {
         // Mode Choice
         omod.doModeChoice(agents, mode_choice, return_path_coords)
 
+        // Format run parameters:
+        val runParameters = mutableMapOf<String, String>()
+        for (arg in this.registeredArguments()) {
+            val sArg = arg.toString().split("=")
+            runParameters[sArg.first()] = sArg.drop(1).joinToString("")
+        }
+        for (opt in this.registeredOptions()) {
+            if (opt.toString().contains("=")) {
+                val sOpt = opt.toString().split("=")
+                runParameters[sOpt.first()] = sOpt.drop(1).joinToString("")
+            }
+        }
+
         // Store output
         logger.info("Saving results...")
         val success: Boolean
         when (out.extension) {
             "json" -> {
-                FileOutputStream(out).use { f ->
-                    Json.encodeToStream( agents.map { formatOutput(it) }, f)
-                }
-                success = true
+                success = writeJSONOutput(agents.map { formatOutput(it) }, out, runParameters)
             }
             "db" -> {
-                success = writeSQLite(agents.map { formatOutput(it) }, out)
+                success = writeSQLite(agents.map { formatOutput(it) }, out, runParameters)
             }
             "xml" -> {
-                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days)
+                success = writeMatSim(agents.map { formatOutput(it) }, out, n_days, matsim_output_crs, runParameters)
             }
             else -> {
                 logger.info(
@@ -199,10 +226,7 @@ class Run : CliktCommand() {
                     "Falling back to JSON"
                 )
                 val newOut = File(out.parent, out.nameWithoutExtension + ".json")
-                FileOutputStream(newOut).use { f ->
-                    Json.encodeToStream( agents.map { formatOutput(it) }, f)
-                }
-                success = true
+                success = writeJSONOutput(agents.map { formatOutput(it) }, newOut, runParameters)
             }
         }
         if (success) {

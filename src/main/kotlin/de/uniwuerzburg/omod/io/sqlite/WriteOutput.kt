@@ -12,7 +12,7 @@ import java.sql.SQLException
 import java.sql.Types.INTEGER
 
 
-fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
+fun writeSQLite(output: List<OutputEntry>, file: File, runParams: Map<String, String>) : Boolean {
     val url = "jdbc:sqlite:${file.absolutePath}"
     val geometryFactory = GeometryFactory()
     val wktWriter = WKTWriter()
@@ -85,6 +85,17 @@ fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
         )
         conn.createStatement().execute(tripTableSQL)
 
+        // Run parameters table
+        conn.createStatement().execute("DROP TABLE IF EXISTS runParameters;")
+        val paramsTableSQL = (
+        "CREATE TABLE runParameters (" +
+                "	id INTEGER PRIMARY KEY," +
+                "	name text NOT NULL," +
+                "	value text" +
+                ");"
+        )
+        conn.createStatement().execute(paramsTableSQL)
+
         // Prepare statements
         val personPStmt = conn.prepareStatement(
         "INSERT INTO person" +
@@ -108,7 +119,21 @@ fun writeSQLite(output: List<OutputEntry>, file: File) : Boolean {
             "(person, day, legID, startTime, mode, distanceKilometer, timeMinute, route)" +
             " VALUES(?,?,?,?,?,?,?,?)"
         )
+        val runParamPStmt = conn.prepareStatement(
+        "INSERT INTO runParameters" +
+                "(name, value)" +
+                " VALUES(?,?)"
+        )
 
+        // Run Parameters
+        for ((name, value) in runParams) {
+            runParamPStmt.setString(1, name)
+            runParamPStmt.setString(2, value)
+            runParamPStmt.executeUpdate()
+        }
+        conn.commit()
+
+        // Mobility demand
         for ((i, entry) in output.withIndex()) {
             // Fill person table
             personPStmt.setInt(1, entry.id)

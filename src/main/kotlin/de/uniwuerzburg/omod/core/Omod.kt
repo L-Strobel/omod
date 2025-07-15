@@ -35,7 +35,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.exists
 import kotlin.time.TimeSource
-@kotlin.io.path.ExperimentalPathApi
+
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
  * Creates daily activity schedules in the form of activity chains and dwell times.
@@ -76,7 +76,8 @@ class Omod(
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
     private val overtureMaps: Boolean =false,
-    carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX
+    carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX,
+    private val modeSpeedUp: Map<Mode, Double> = mapOf()
 ) {
     @Suppress("MemberVisibilityCanBePrivate")
     val kdTree: KdTree
@@ -262,7 +263,6 @@ class Omod(
         // Check cache
         val collection: GeoJsonFeatureCollection =  if (cache and cachePath.toFile().exists()) {
             readJsonStream(cachePath)
-
         } else {
             // Load data
             var osmBuildings: List<BuildingData> = if (overtureMaps) {
@@ -561,7 +561,7 @@ class Omod(
             ModeChoiceOption.CAR_ONLY -> {
                 setupHopper()
                 val modeChoice = ModeChoiceCarOnly(hopper!!, withPath)
-                modeChoice.doModeChoice(agents, mainRng, dispatcher)
+                modeChoice.doModeChoice(agents, mainRng, dispatcher, modeSpeedUp)
                 return agents
             }
             ModeChoiceOption.GTFS -> {
@@ -573,7 +573,7 @@ class Omod(
                         gtfsComponents!!.ptSimDays, gtfsComponents!!.timeZone,
                         withPath
                     )
-                    modeChoice.doModeChoice(agents, mainRng, dispatcher)
+                    modeChoice.doModeChoice(agents, mainRng, dispatcher, modeSpeedUp)
                     return agents
                 } finally {
                     gtfsComponents!!.gtfsHopper.close()
@@ -608,7 +608,6 @@ class Omod(
     /**
      * Bundle of everything required for GTFS routing.
      */
-    @kotlin.io.path.ExperimentalPathApi
     private inner class GTFSComponents(
         focusArea: Geometry, fullArea: Geometry, cacheDir: Path, dispatcher: CoroutineDispatcher,
         osmFile: File
