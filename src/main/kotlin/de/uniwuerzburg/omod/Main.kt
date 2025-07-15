@@ -17,7 +17,6 @@ import de.uniwuerzburg.omod.io.formatOutput
 import de.uniwuerzburg.omod.io.matsim.writeMatSim
 import de.uniwuerzburg.omod.io.sqlite.writeSQLite
 import de.uniwuerzburg.omod.routing.RoutingMode
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
 import java.io.File
@@ -25,7 +24,7 @@ import java.io.FileOutputStream
 import java.nio.file.Paths
 
 sealed interface AgentNumberDefinition
-@OptIn(kotlin.io.path.ExperimentalPathApi::class)
+
 class FixedAgentNumber(
     val value: Int
 ) : AgentNumberDefinition
@@ -139,7 +138,7 @@ class Run : CliktCommand() {
                 "For an introduction to Overture Maps see https://overturemaps.org/"
     ).boolean().default(false)
 
-    @OptIn(ExperimentalSerializationApi::class)
+
     override fun run() {
         if ((census == null) && (agentNumberDefinition is ShareOfPop)) {
             throw Exception(
@@ -151,7 +150,7 @@ class Run : CliktCommand() {
                 "Mode choice includes public transit as option but no GTFS file is provided." +
                 "Add a gtfs file with --gtfs_file")
         }
-        @OptIn(kotlin.io.path.ExperimentalPathApi::class)
+
         // Init OMOD
         val omod = Omod(
             area_geojson, osm_file,
@@ -167,13 +166,13 @@ class Run : CliktCommand() {
             gtfsFile = gtfs_file,
             overtureMaps =overture_maps,
         )
-        @OptIn(kotlin.io.path.ExperimentalPathApi::class)
+
         // Mobility demand
         val agents = when (val aND = agentNumberDefinition ) {
             is FixedAgentNumber -> omod.run(aND.value, start_wd, n_days)
             is ShareOfPop -> omod.run(aND.value, start_wd, n_days)
         }
-        @OptIn(kotlin.io.path.ExperimentalPathApi::class)
+
         // Mode Choice
         omod.doModeChoice(agents, mode_choice, return_path_coords)
 

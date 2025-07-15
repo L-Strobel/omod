@@ -50,6 +50,7 @@ fun readOSM (focusArea: Geometry, fullArea: Geometry, osmFile: File,
                 MapObjectType.OFFICE            -> building.nOffices += 1
                 MapObjectType.SCHOOL            -> building.nSchools += 1
                 MapObjectType.UNIVERSITY        -> building.nUnis += 1
+                MapObjectType.RESTAURANT        -> building.nRestaurant += 1
                 MapObjectType.PLACE_OF_WORSHIP  -> building.nPlaceOfWorship += 1
                 MapObjectType.CAFE              -> building.nCafe += 1
                 MapObjectType.FAST_FOOD         -> building.nFastFood += 1
