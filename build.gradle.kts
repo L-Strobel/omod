@@ -49,9 +49,6 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
-    compilerOptions {
-        freeCompilerArgs.add("-Xopt-in=kotlin.io.path.ExperimentalPathApi")
-    }
 }
 
 java {

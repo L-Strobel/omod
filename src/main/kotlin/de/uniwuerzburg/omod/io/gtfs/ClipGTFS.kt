@@ -115,7 +115,7 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
             dispatcher
         )
     }catch(e:NullPointerException){
-        logger.info("File not existend")
+        logger.warn("GTFS data does not contain calendar_dates file!")
     }
     logger.info("Clipping GTFS to bounding box... Done!")
 }
@@ -147,7 +147,7 @@ private fun filterGTFSFile(
 
     // Parse header
     var header = reader.readLine()
-    header=header.removePrefix("\uFEFF")
+    header = header.removePrefix("\uFEFF")
     val idxMap = header.split(delimiter).withIndex().map { (i, v) -> v to i}.toMap()
     writer.appendLine(header)
 
@@ -162,7 +162,6 @@ private fun filterGTFSFile(
                     for (record in recordChunk) {
                         val values = record.split(delimiter)
                         if (filter.filter(values, idxMap)) {
-                            //Removed .toInt()
                             val extractedValues = extractIdxs.map { values[it] }
                             send(Pair(extractedValues, record))
                         }

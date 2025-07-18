@@ -135,13 +135,14 @@ class Run : CliktCommand() {
         help = "Path to an General Transit Feed Specification (GTFS) for the area. " +
                "Required for public transit routing," +
                "for example if public transit is an option in mode choice. " +
-               "Must be a .zip file or a directory (see https://gtfs.org/)." +
+               "Must be a .zip file or a directory (see https://gtfs.org/). " +
                "Recommended download platform for Germany: https://gtfs.de/"
     ).file(mustExist = true, mustBeReadable = true)
-    private val overture_maps by option(
-        help= "Indicates whether OpenStreetMap or Overture Maps Data should be used." +
+    private val overture_release by option(
+        help= "Gives the current version of Overture Map Data. " +
+                "If the Version Parameter is not None, Overture Data will be used for POI and Building Data"+
                 "For an introduction to Overture Maps see https://overturemaps.org/"
-    ).boolean().default(false)
+    ).default("None")
     private val matsim_output_crs by option(
         help = "CRS of MatSIM output. Must be a code understood by org.geotools.referencing.CRS.decode()."
     ).default("EPSG:4326")
@@ -163,7 +164,8 @@ class Run : CliktCommand() {
         if ((gtfs_file == null) && (mode_choice == ModeChoiceOption.GTFS)) {
             throw Exception(
                 "Mode choice includes public transit as option but no GTFS file is provided." +
-                "Add a gtfs file with --gtfs_file")
+                        "Add a gtfs file with --gtfs_file"
+            )
         }
 
         // Init OMOD
@@ -179,7 +181,7 @@ class Run : CliktCommand() {
             activityGroupFile = activity_group_file,
             nWorker = n_worker,
             gtfsFile = gtfs_file,
-            overtureMaps =overture_maps,
+            overtureRelease = overture_release,
             modeSpeedUp = mode_speed_up
         )
 

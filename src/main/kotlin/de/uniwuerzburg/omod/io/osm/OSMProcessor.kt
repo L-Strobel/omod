@@ -38,7 +38,7 @@ class MapObject (
  * @param tag OSM tag
  * @return landuse category
  */
-private fun getShortLanduseDescription(tag: String): MapObjectType? {
+ fun getShortLanduseDescription(tag: String): MapObjectType? {
     return when(tag) {
         "residential"       -> MapObjectType.LU_RESIDENTIAL
         "commercial"        -> MapObjectType.LU_COMMERCIAL
@@ -289,7 +289,7 @@ class OSMProcessor(idTrackerType: IdTrackerType,
      * @param entity OSM object
      * @return All MapObjectTypes of the object
      */
-    private fun determineTypes(entity: Entity) : List<MapObjectType> {
+    fun determineTypes(entity: Entity) : List<MapObjectType> {
         val rslt = mutableListOf<MapObjectType>()
         for (tag in entity.tags) {
             val type = when (tag.key) {
