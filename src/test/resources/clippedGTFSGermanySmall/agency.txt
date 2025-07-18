@@ -1,0 +1,4 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang
+165,Würzburger Verkehrsverbund,https://www.bahn.de,Europe/Berlin,de
+195,Grasmann-Reisen GmbH,https://www.bahn.de,Europe/Berlin,de
+60,Verkehrsverbund Rhein-Neckar,https://www.bahn.de,Europe/Berlin,de

@@ -9,7 +9,9 @@ import de.uniwuerzburg.omod.io.geojson.*
 import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
 import de.uniwuerzburg.omod.io.gtfs.getPublicTransitSimDays
 import de.uniwuerzburg.omod.io.json.*
+import de.uniwuerzburg.omod.io.osm.BuildingData
 import de.uniwuerzburg.omod.io.osm.readOSM
+import de.uniwuerzburg.omod.io.overture.readOverture
 import de.uniwuerzburg.omod.io.readCensus
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
@@ -33,6 +35,11 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.exists
 import kotlin.time.TimeSource
+
+enum class MapDataSource{
+    OSM,
+    OVERTURE
+}
 
 /**
  * Open-Street-Maps MObility Demand generator (OMOD)
@@ -73,6 +80,7 @@ class Omod(
     activityGroupFile: File? = null,
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
+    private val overtureRelease: String = "None",
     carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX,
     private val modeSpeedUp: Map<Mode, Double> = mapOf()
 ) {
@@ -136,11 +144,11 @@ class Omod(
         val utmFocusArea = transformer.toModelCRS(focusArea)
         val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
         fullArea = transformer.toLatLon(utmArea)
-
+        val mapType = if (overtureRelease != "None") MapDataSource.OVERTURE else MapDataSource.OSM
         // Get spatial data
         buildings = getBuildings(
             focusArea, fullArea, osmFile, bufferRadius,  transformer,
-            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns
+            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns,mapType,nWorker
         )
 
         // Create KD-Tree for faster access
@@ -245,7 +253,7 @@ class Omod(
                              osmFile: File, bufferRadius: Double = 0.0,
                              transformer: CRSTransformer, geometryFactory: GeometryFactory,
                              censusFile: File?, cacheDir: Path, cache: Boolean,
-                             locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
+                             locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>,mapType: MapDataSource = MapDataSource.OSM,nWorker:Int?
     ) : List<Building> {
         // Is cached?
         val bound = focusArea.envelopeInternal
@@ -262,16 +270,20 @@ class Omod(
             readJsonStream(cachePath)
         } else {
             // Load data
-            var osmBuildings = readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
+            var Buildings: List<BuildingData> = if (mapType==MapDataSource.OVERTURE) {
+                readOverture(focusArea, fullArea, geometryFactory, transformer,nWorker)
+            } else {
+                readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
+            }
 
             // Add census data if available
             if (censusFile != null) {
-                osmBuildings = readCensus(osmBuildings, transformer, geometryFactory, censusFile, mainRng)
+                Buildings = readCensus(Buildings, transformer, geometryFactory, censusFile, mainRng)
             }
 
             // Convert to GeoJSON
             val collection = GeoJsonFeatureCollection(
-                features = osmBuildings.map {
+                features = Buildings.map {
                     val center = it.geometry.centroid
                     val coords = transformer.toLatLon(center).coordinate
                     val geometry = GeoJsonPoint(listOf(coords.y, coords.x))

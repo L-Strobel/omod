@@ -1,0 +1,7 @@
+stop_name,parent_station,stop_id,stop_lat,stop_lon,location_type
+Würzburg Leistenstraße,,458226,49.787655,9.924731,1
+Würzburg Leistenstraße,458226,567948,49.78766,9.923994,
+Würzburg Leistenstraße,458226,630687,49.78834,9.924911,
+Würzburg Leistenstraße,458226,646105,49.787758,9.923689,
+Würzburg Leistenstraße,458226,77591,49.78834,9.925,
+"Würzburg, Leistenstraße",458226,79001,49.78766,9.924192,
