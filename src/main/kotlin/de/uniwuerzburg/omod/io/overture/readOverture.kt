@@ -77,7 +77,7 @@ private fun determineTypes(entity: GeoJsonFeaturePlaces,tagsDict:Map<String, Map
 
 fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
 
-    var theme = typeThemeMap.getOrDefault(type, type)
+    val theme = typeThemeMap.getOrDefault(type, type)
     //Select String based on type
     val selectString = when (type) {
         "building" -> "geometry"
@@ -182,6 +182,7 @@ fun readOverture(focusArea: Geometry,fullArea: Geometry,geometryFactory:Geometry
     addBuildingInformation(buildings,extraInfoTree)
 
     inFocusArea(buildings,focusArea,geometryFactory,transformer)
-
+    val dir = File("omod_cache/overture")
+    dir.listFiles { _, name -> name.endsWith(".geojson") }?.forEach { it.delete() }
     return buildings.toList()
 }
