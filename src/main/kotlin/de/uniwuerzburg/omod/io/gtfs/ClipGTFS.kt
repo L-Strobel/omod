@@ -114,8 +114,8 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
             ForeignKeyFilter(services, "service_id"),
             dispatcher
         )
-    }catch(e:NullPointerException){
-        logger.warn("GTFS data does not contain calendar_dates file!")
+    }catch(_: NullPointerException){
+        logger.warn("GTFS data does not contain a calendar_dates file!")
     }
     logger.info("Clipping GTFS to bounding box... Done!")
 }
@@ -147,8 +147,8 @@ private fun filterGTFSFile(
 
     // Parse header
     var header = reader.readLine()
-    header = header.removePrefix("\uFEFF")
-    val idxMap = header.split(delimiter).withIndex().map { (i, v) -> v to i}.toMap()
+    header = header.removePrefix("\uFEFF") // Remove BOM
+    val idxMap = header.split(delimiter).withIndex().associate { (i, v) -> v to i }
     writer.appendLine(header)
 
     // Index of cols to extract

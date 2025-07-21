@@ -138,11 +138,11 @@ class Run : CliktCommand() {
                "Must be a .zip file or a directory (see https://gtfs.org/). " +
                "Recommended download platform for Germany: https://gtfs.de/"
     ).file(mustExist = true, mustBeReadable = true)
-    private val overture_release by option(
-        help= "Gives the current version of Overture Map Data. " +
-                "If the Version Parameter is not None, Overture Data will be used for POI and Building Data"+
-                "For an introduction to Overture Maps see https://overturemaps.org/"
-    ).default("None")
+    private val mapdata_overture by option(
+        help = "Use overture map data instead of OSM for buildings and POIs." +
+               "Usage: --md_overture=RELEASE. Where RELEASE is a valid overture release" +
+               "For an introduction to Overture Maps see https://overturemaps.org/"
+    )
     private val matsim_output_crs by option(
         help = "CRS of MatSIM output. Must be a code understood by org.geotools.referencing.CRS.decode()."
     ).default("EPSG:4326")
@@ -164,7 +164,7 @@ class Run : CliktCommand() {
         if ((gtfs_file == null) && (mode_choice == ModeChoiceOption.GTFS)) {
             throw Exception(
                 "Mode choice includes public transit as option but no GTFS file is provided." +
-                        "Add a gtfs file with --gtfs_file"
+                "Add a gtfs file with --gtfs_file"
             )
         }
 
@@ -181,7 +181,7 @@ class Run : CliktCommand() {
             activityGroupFile = activity_group_file,
             nWorker = n_worker,
             gtfsFile = gtfs_file,
-            overtureRelease = overture_release,
+            overtureRelease = mapdata_overture,
             modeSpeedUp = mode_speed_up
         )
 

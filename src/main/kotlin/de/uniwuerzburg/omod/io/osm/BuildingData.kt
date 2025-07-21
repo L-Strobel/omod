@@ -27,4 +27,28 @@ data class BuildingData (
     var nTourism: Double = 0.0
     var inFocusArea: Boolean = false
     var population: Double? = null
+
+    fun addInformation(infos: List<MapObject>) {
+        for (info in infos) {
+            when (info.type) {
+                MapObjectType.SHOP -> nShops += 1
+                MapObjectType.OFFICE -> nOffices += 1
+                MapObjectType.SCHOOL -> nSchools += 1
+                MapObjectType.UNIVERSITY -> nUnis += 1
+                MapObjectType.RESTAURANT -> nRestaurant += 1
+                MapObjectType.PLACE_OF_WORSHIP -> nPlaceOfWorship += 1
+                MapObjectType.CAFE -> nCafe += 1
+                MapObjectType.FAST_FOOD -> nFastFood += 1
+                MapObjectType.KINDER_GARTEN -> nKinderGarten += 1
+                MapObjectType.TOURISM -> nTourism += 1
+                MapObjectType.LU_RESIDENTIAL -> landuse = Landuse.RESIDENTIAL
+                MapObjectType.LU_COMMERCIAL -> landuse = Landuse.COMMERCIAL
+                MapObjectType.LU_RETAIL -> landuse = Landuse.RETAIL
+                MapObjectType.LU_INDUSTRIAL -> landuse = Landuse.INDUSTRIAL
+                else -> {
+                    continue
+                }
+            }
+        }
+    }
 }
