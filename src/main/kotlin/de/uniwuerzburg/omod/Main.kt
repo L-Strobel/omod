@@ -139,8 +139,8 @@ class Run : CliktCommand() {
                "Recommended download platform for Germany: https://gtfs.de/"
     ).file(mustExist = true, mustBeReadable = true)
     private val mapdata_overture by option(
-        help = "Use overture map data instead of OSM for buildings and POIs." +
-               "Usage: --mapdata_overture=RELEASE. Where RELEASE is a valid overture release" +
+        help = "Use overture map data instead of OSM for buildings and POIs. " +
+               "Usage: --mapdata_overture=RELEASE. Where RELEASE is a valid overture release. " +
                "For an introduction to Overture Maps see https://overturemaps.org/"
     )
     private val matsim_output_crs by option(
@@ -149,11 +149,10 @@ class Run : CliktCommand() {
     private val mode_speed_up by option(
         help = "Value: MODE=FACTOR. Multiply the travel time of each trip of the mode by the factor." +
                "Example: CAR_DRIVER=0.3, will slow down car travel durations by 70%."
-    )
-        .splitPair()
-        .convert { (first, second) -> Mode.valueOf(first.uppercase()) to second.toDouble() }
-        .multiple()
-        .toMap()
+    ).splitPair()
+     .convert { (first, second) -> Mode.valueOf(first.uppercase()) to second.toDouble() }
+     .multiple()
+     .toMap()
 
     override fun run() {
         if ((census == null) && (agentNumberDefinition is ShareOfPop)) {

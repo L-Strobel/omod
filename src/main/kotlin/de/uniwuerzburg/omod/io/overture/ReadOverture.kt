@@ -20,6 +20,7 @@ import java.io.File
 import java.sql.DriverManager
 import de.uniwuerzburg.omod.io.osm.getShortLanduseDescription
 import de.uniwuerzburg.omod.io.inFocusArea
+import de.uniwuerzburg.omod.io.json.readJsonFromResource
 import de.uniwuerzburg.omod.io.osm.determineType
 import java.io.FileNotFoundException
 
@@ -114,12 +115,6 @@ fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
     conn.close()
 }
 
-fun loadTagsDict(file: File): Map<String, Map<String, String>> {
-    val jsonString = file.readText()
-    val json = Json { ignoreUnknownKeys = true }
-    return json.decodeFromString(jsonString)
-}
-
 fun readOverture(
     focusArea: Geometry, fullArea: Geometry, geometryFactory:GeometryFactory, transformer: CRSTransformer, nWorker: Int?
 ): List<BuildingData> {
@@ -156,11 +151,7 @@ fun readOverture(
         .toMutableList()
 
     // POIs and Landuse
-    val file = File(
-        object {}.javaClass.classLoader.getResource("tags.json")?.toURI()
-            ?: throw FileNotFoundException("tags.json not found")
-    )
-    val tagsDict = loadTagsDict(file)
+    val tagsDict: Map<String, Map<String, String>> = readJsonFromResource("tags.json")
     var idCounter = 0L
     val extraInfoTree = HPRtree()
 
