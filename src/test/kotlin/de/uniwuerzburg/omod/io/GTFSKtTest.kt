@@ -5,6 +5,7 @@ import de.uniwuerzburg.omod.core.Omod
 import de.uniwuerzburg.omod.io.geojson.readGeoJsonGeom
 import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.Main
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Coordinate
@@ -39,13 +40,14 @@ class GTFSKtTest {
 
     fun clipGTFSTest(input: Path, expectedFolder: File, outputBaseDir: File, actualClippedFolder: File, bbBox: Envelope) {
         if (actualClippedFolder.exists()) actualClippedFolder.deleteRecursively()
-
+        val nWorker = 1
+        val dispatcher = if (nWorker != null) Dispatchers.Default.limitedParallelism(nWorker) else Dispatchers.Default
         try {
             clipGTFSFile(
                 bbBox,
                 input,
                 outputBaseDir.toPath(),
-                Dispatchers.Default
+                dispatcher
             )
 
             val files1 = actualClippedFolder.listFiles { _, name -> name.endsWith(".txt") }?.associateBy { it.name }
