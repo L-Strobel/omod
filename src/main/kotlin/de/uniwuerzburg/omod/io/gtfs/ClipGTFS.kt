@@ -173,7 +173,7 @@ private fun filterGTFSFile(
 
     // Sort records based on the first column to extract
     val sortedRecords = extractedData.zip(filteredRecords)
-        .sortedBy { (extractedValues, _) -> extractedValues.firstOrNull() }
+        .sortedBy { (extractedValues, _) -> extractedValues.joinToString() }
         .map { (_, record) -> record }
 
     // Write filtered body
