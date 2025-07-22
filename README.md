@@ -87,9 +87,9 @@ see python_tools/format_zensus2011.py for an example of how to correctly format 
 With Version 2.2 you can know also use [Overture Maps](https://overturemaps.org) instead of OSM for building data,
 which is more complete in certain parts of the world (e.g., South Korea).
 
-Publication:
+Publications:
 - The methodology behind the demand generation process is explained in the publication [OMOD: An open-source tool for creating disaggregated mobility demand based on OpenStreetMap](https://doi.org/10.1016/j.compenvurbsys.2023.102029)
-- The methodology behind the mode choice model is explained the publication [Transport Mode Choice for Disaggregated Mobility Demand Generation](https://ieeexplore.ieee.org/abstract/document/11003939)
+- The methodology behind the mode choice model is explained in the publication [Transport Mode Choice for Disaggregated Mobility Demand Generation](https://ieeexplore.ieee.org/abstract/document/11003939)
 
 ## Get Started
 
