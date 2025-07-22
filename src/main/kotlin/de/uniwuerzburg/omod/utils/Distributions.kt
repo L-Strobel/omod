@@ -11,7 +11,6 @@ import java.util.*
  * @param counts Number of observations
  * @return Cumulative distribution
  */
-@Suppress("unused")
 fun createCumDistWOR(counts: IntArray): IntArray {
     assert(counts.all { it >= 0 })
     val cumDist = IntArray(counts.size)

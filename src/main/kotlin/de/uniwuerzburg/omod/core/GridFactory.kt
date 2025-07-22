@@ -136,7 +136,6 @@ fun cluster(precision: Double, buildings: List<Building>, geometryFactory: Geome
  *
  * @return routing cells
  */
-@Suppress("unused")
 fun makeClusterGrid(focusAreaPrecision: Double, buildings: List<Building>,
                     geometryFactory: GeometryFactory, transformer: CRSTransformer
 ) : List<Cell> {

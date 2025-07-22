@@ -1,0 +1,15 @@
+stop_name,parent_station,stop_id,stop_lat,stop_lon,location_type
+Würzburg Leistenstraße,,458226,49.787655,9.924731,1
+Würzburg Leistenstraße,458226,567948,49.78766,9.923994,
+Würzburg Leistenstraße,458226,630687,49.78834,9.924911,
+Würzburg Leistenstraße,458226,646105,49.787758,9.923689,
+Würzburg Leistenstraße,458226,77591,49.78834,9.925,
+Würzburg Löwenbrücke,,473192,49.78622,9.925,1
+Würzburg Löwenbrücke,473192,19441,49.786064,9.925072,
+Würzburg Mainleitenweg,,605845,49.7868,9.920841,1
+Würzburg Mainleitenweg,605845,631925,49.78682,9.920536,
+Würzburg Mainleitenweg,605845,77621,49.786842,9.921093,
+Würzburg Nikolausstraße,,420927,49.786945,9.924228,1
+Würzburg Nikolausstraße,420927,181867,49.78692,9.924327,
+Würzburg Nikolausstraße,420927,645957,49.786964,9.924291,
+"Würzburg, Leistenstraße",458226,79001,49.78766,9.924192,

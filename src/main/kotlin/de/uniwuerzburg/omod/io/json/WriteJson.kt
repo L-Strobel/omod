@@ -3,7 +3,6 @@ package de.uniwuerzburg.omod.io.json
 
 import de.uniwuerzburg.omod.io.jsonHandler
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.FileOutputStream

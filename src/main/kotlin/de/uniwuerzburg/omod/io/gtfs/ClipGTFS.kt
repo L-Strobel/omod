@@ -12,6 +12,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.zip.ZipFile
 import kotlin.io.path.*
+import kotlin.io.path.inputStream
+
 
 /**
  * Clip GTFS file to bounding box and write the result to the cache directory.
@@ -103,15 +105,18 @@ fun clipGTFSFile(bbBox: Envelope, gtfsPath: Path, cacheDir: Path, dispatcher: Co
         ForeignKeyFilter(services, "service_id"),
         dispatcher
     )
-
-    // Filter calendar dates
-    filterGTFSFile(
-        inputStreams["calendar_dates.txt"]!!,
-        Paths.get(cacheDir.toString(), "clippedGTFS/calendar_dates.txt"),
-        listOf(),
-        ForeignKeyFilter(services, "service_id"),
-        dispatcher
-    )
+    try {
+        // Filter calendar dates
+        filterGTFSFile(
+            inputStreams["calendar_dates.txt"]!!,
+            Paths.get(cacheDir.toString(), "clippedGTFS/calendar_dates.txt"),
+            listOf(),
+            ForeignKeyFilter(services, "service_id"),
+            dispatcher
+        )
+    }catch(_: NullPointerException){
+        logger.warn("GTFS data does not contain a calendar_dates file!")
+    }
     logger.info("Clipping GTFS to bounding box... Done!")
 }
 
@@ -132,17 +137,18 @@ private fun filterGTFSFile(
     colsToExtract: List<String>,
     filter: GTFSFilter,
     dispatcher: CoroutineDispatcher
-) : List<Set<Int>> {
+) : List<Set<String>> {
     val outputStream = outputPath.outputStream()
-    val reader = inputStream.bufferedReader()
+    val reader = inputStream.bufferedReader(Charsets.UTF_8)
     val writer = outputStream.bufferedWriter()
 
     // Regex for csv separator. ',' but not in quotations.
     val delimiter = Regex(""",(?=(?:[^"]*"[^"]*")*[^"]*${'$'})""")
 
     // Parse header
-    val header = reader.readLine()
-    val idxMap = header.split(delimiter).withIndex().map { (i, v) -> v to i}.toMap()
+    var header = reader.readLine()
+    header = header.removePrefix("\uFEFF") // Remove BOM
+    val idxMap = header.split(delimiter).withIndex().associate { (i, v) -> v to i }
     writer.appendLine(header)
 
     // Index of cols to extract
@@ -156,7 +162,7 @@ private fun filterGTFSFile(
                     for (record in recordChunk) {
                         val values = record.split(delimiter)
                         if (filter.filter(values, idxMap)) {
-                            val extractedValues = extractIdxs.map { values[it].toInt() }
+                            val extractedValues = extractIdxs.map { values[it] }
                             send(Pair(extractedValues, record))
                         }
                     }
@@ -165,13 +171,18 @@ private fun filterGTFSFile(
         }.toList()
     }.unzip()
 
+    // Sort records based on the first column to extract
+    val sortedRecords = extractedData.zip(filteredRecords)
+        .sortedBy { (extractedValues, _) -> extractedValues.joinToString() }
+        .map { (_, record) -> record }
+
     // Write filtered body
-    for (record in filteredRecords) {
+    for (record in sortedRecords) {
         writer.append(record)
         writer.newLine()
     }
 
-    val extractedSets: List<MutableSet<Int>> = List(colsToExtract.size) { mutableSetOf() }
+    val extractedSets: List<MutableSet<String>> = List(colsToExtract.size) { mutableSetOf() }
     for (data in extractedData) {
         for ((i, v) in data.withIndex()) {
             extractedSets[i].add(v)

@@ -11,7 +11,6 @@ import org.locationtech.jts.geom.GeometryFactory
  */
 @Serializable
 @SerialName("GeometryCollection")
-@Suppress("unused")
 data class GeoJsonGeometryCollection(
     val geometries: List<GeoJsonGeom>
 ) : GeoJsonGeom() {

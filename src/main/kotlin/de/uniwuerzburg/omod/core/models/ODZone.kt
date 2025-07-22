@@ -2,7 +2,7 @@ package de.uniwuerzburg.omod.core.models
 
 import de.uniwuerzburg.omod.utils.CRSTransformer
 import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection
-import de.uniwuerzburg.omod.io.geojson.GeoJsonODProperties
+import de.uniwuerzburg.omod.io.geojson.property.ODProperties
 import kotlinx.serialization.json.Json
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -44,11 +44,11 @@ data class ODZone (
          */
         fun readODMatrix(odFile: File, factory: GeometryFactory, transformer: CRSTransformer) : List<ODZone> {
             // Read OD
-            val geoJson: GeoJsonFeatureCollection = json.decodeFromString(odFile.readText(Charsets.UTF_8))
+            val geoJson: GeoJsonFeatureCollection<ODProperties> = json.decodeFromString(odFile.readText(Charsets.UTF_8))
 
             // Get zones
             val odZones = geoJson.features.map {
-                val properties = it.properties as GeoJsonODProperties
+                val properties = it.properties
                 ODZone(
                     name = properties.origin,
                     originActivity = properties.origin_activity,
@@ -60,7 +60,7 @@ data class ODZone (
             // Add transitions
             val nameMapping = odZones.associateBy { it.name }
             for (entry in geoJson.features) {
-                val properties = entry.properties as GeoJsonODProperties
+                val properties = entry.properties
                 val originZone = nameMapping[properties.origin]!!
                 originZone.destinations = properties.destinations
                     .filter { it.value > 0 }.map {Pair(nameMapping[it.key]!!, it.value)}

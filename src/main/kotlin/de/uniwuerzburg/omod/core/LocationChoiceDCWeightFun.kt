@@ -2,7 +2,7 @@ package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.Landuse
 import de.uniwuerzburg.omod.core.models.RealLocation
-import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
+import de.uniwuerzburg.omod.io.geojson.property.BuildingProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -96,7 +96,7 @@ sealed class LocationChoiceDCWeightFun {
         return destination.attractions[id]!!
     }
 
-    open fun calcAttraction(properties: GeoJsonBuildingProperties) : Double {
+    open fun calcAttraction(properties: BuildingProperties) : Double {
         val area = properties.area
         val areaOffice = if (properties.number_offices > 0) area else 0.0
         val areaShop = if (properties.number_shops > 0) area else 0.0
@@ -143,7 +143,6 @@ sealed class LocationChoiceDCWeightFun {
 /**
  * Destination choice function implementation for the HOME location distribution when census data is given.
  */
-@Suppress("unused")
 object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffResidentialArea: Double get() { throw NotImplementedError() }
     override val coeffCommercialArea: Double get() { throw NotImplementedError() }
@@ -169,7 +168,7 @@ object ByPopulation: LocationChoiceDCWeightFun () {
     override val coeffRetailUnits: Double get() { throw NotImplementedError() }
     override val coeffIndustrialUnits: Double get() { throw NotImplementedError() }
 
-    override fun calcAttraction(properties: GeoJsonBuildingProperties): Double {
+    override fun calcAttraction(properties: BuildingProperties): Double {
         return properties.population ?: 0.0
     }
 

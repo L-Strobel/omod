@@ -20,6 +20,28 @@ enum class MapObjectType {
     FAST_FOOD, PLACE_OF_WORSHIP, RESTAURANT, CAFE, TOURISM,
     LU_RESIDENTIAL, LU_COMMERCIAL, LU_RETAIL, LU_INDUSTRIAL
 }
+fun determineType(key: String, value: String): MapObjectType? {
+    return when (key) {
+        "building"  -> MapObjectType.BUILDING
+        "office"    -> MapObjectType.OFFICE
+        "shop"      -> MapObjectType.SHOP
+        "tourism"   -> MapObjectType.TOURISM
+        "landuse"   -> getShortLanduseDescription(value)
+        "amenity"   -> {
+            when (value) {
+                "school" -> MapObjectType.SCHOOL
+                "university" -> MapObjectType.UNIVERSITY
+                "restaurant" -> MapObjectType.RESTAURANT
+                "place_of_worship" -> MapObjectType.PLACE_OF_WORSHIP
+                "cafe" -> MapObjectType.CAFE
+                "fast_food" -> MapObjectType.FAST_FOOD
+                "kindergarten" -> MapObjectType.KINDER_GARTEN
+                else -> null
+            }
+        }
+        else -> null
+    }
+}
 
 /**
  * OSM map object
@@ -38,7 +60,7 @@ class MapObject (
  * @param tag OSM tag
  * @return landuse category
  */
-private fun getShortLanduseDescription(tag: String): MapObjectType? {
+ fun getShortLanduseDescription(tag: String): MapObjectType? {
     return when(tag) {
         "residential"       -> MapObjectType.LU_RESIDENTIAL
         "commercial"        -> MapObjectType.LU_COMMERCIAL
@@ -289,30 +311,13 @@ class OSMProcessor(idTrackerType: IdTrackerType,
      * @param entity OSM object
      * @return All MapObjectTypes of the object
      */
-    private fun determineTypes(entity: Entity) : List<MapObjectType> {
+    fun determineTypes(entity: Entity) : List<MapObjectType> {
         val rslt = mutableListOf<MapObjectType>()
         for (tag in entity.tags) {
-            val type = when (tag.key) {
-                "building"  -> MapObjectType.BUILDING
-                "office"    -> MapObjectType.OFFICE
-                "shop"      -> MapObjectType.SHOP
-                "tourism"   -> MapObjectType.TOURISM
-                "landuse"   -> getShortLanduseDescription(tag.value) ?: continue
-                "amenity"   -> {
-                    when (tag.value) {
-                        "school" -> MapObjectType.SCHOOL
-                        "university" -> MapObjectType.UNIVERSITY
-                        "restaurant" -> MapObjectType.RESTAURANT
-                        "place_of_worship" -> MapObjectType.PLACE_OF_WORSHIP
-                        "cafe" -> MapObjectType.CAFE
-                        "fast_food" -> MapObjectType.FAST_FOOD
-                        "kindergarten" -> MapObjectType.KINDER_GARTEN
-                        else -> continue
-                    }
-                }
-                else -> continue
+            val type = determineType(tag.key, tag.value)
+            if (type != null) {
+                rslt.add(type)
             }
-            rslt.add(type)
         }
         return rslt
     }

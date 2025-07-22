@@ -1,0 +1,9 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang
+1,Landkreis Altötting,https://www.bahn.de,Europe/Berlin,de
+10,RVG Regionalverkehr Gera Land GmbH,https://www.bahn.de,Europe/Berlin,de
+100,Regionalverkehr Spreewald,https://www.bahn.de,Europe/Berlin,de
+101,REGIOBAHN,https://www.bahn.de,Europe/Berlin,de
+102,RATIO-Soft Bruns/ABV,https://www.bahn.de,Europe/Berlin,de
+103,Aachener Straßenbahn,http://www.aseag.de,Europe/Berlin,de
+104,Donau-Iller-Nahverkehrs-GmbH (UL+BC),https://www.bahn.de,Europe/Berlin,de
+

@@ -4,7 +4,6 @@ import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.utils.*
 import kotlinx.coroutines.*
 import java.util.*
-import kotlin.collections.ArrayList
 
 /**
  * Creates agents by determining socio-demographic features as well as work and school locations.

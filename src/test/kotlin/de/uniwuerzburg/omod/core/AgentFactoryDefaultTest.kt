@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.core
 
 import de.uniwuerzburg.omod.core.models.*
+import de.uniwuerzburg.omod.io.geojson.property.BuildingProperties
 import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection
 import de.uniwuerzburg.omod.io.json.readJson
 import de.uniwuerzburg.omod.io.json.readJsonFromResource
@@ -34,7 +35,7 @@ class AgentFactoryDefaultTest {
 
         // Get buildings
         val buildingFile = File(Omod::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
-        val collection: GeoJsonFeatureCollection = readJson(buildingFile)
+        val collection: GeoJsonFeatureCollection<BuildingProperties> = readJson(buildingFile)
         val buildings =  Building.fromGeoJson(
             collection, GeometryFactory(), CRSTransformer( 11.630883577905143 ), locChoiceWeightFuns
         )
@@ -82,7 +83,7 @@ class AgentFactoryDefaultTest {
 
         // Get buildings
         val buildingFile = File(Omod::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
-        val collection: GeoJsonFeatureCollection = readJson(buildingFile)
+        val collection: GeoJsonFeatureCollection<BuildingProperties> = readJson(buildingFile)
         val buildings =  Building.fromGeoJson(
             collection, GeometryFactory(), CRSTransformer( 11.630883577905143 ), locChoiceWeightFuns
         )
@@ -120,7 +121,7 @@ class AgentFactoryDefaultTest {
 
         // Get buildings
         val buildingFile = File(Omod::class.java.classLoader.getResource("testBuildings.geojson")!!.file)
-        val collection: GeoJsonFeatureCollection = readJson(buildingFile)
+        val collection: GeoJsonFeatureCollection<BuildingProperties> = readJson(buildingFile)
         val buildings =  Building.fromGeoJson(
             collection, GeometryFactory(), CRSTransformer( 11.630883577905143 ), locChoiceWeightFuns
         )

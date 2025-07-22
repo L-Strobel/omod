@@ -3,13 +3,15 @@ package de.uniwuerzburg.omod.core
 import com.graphhopper.GraphHopper
 import com.graphhopper.gtfs.GraphHopperGtfs
 import com.graphhopper.gtfs.PtRouter
-import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.io.geojson.*
+import de.uniwuerzburg.omod.io.geojson.property.BuildingProperties
 import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
 import de.uniwuerzburg.omod.io.gtfs.getPublicTransitSimDays
 import de.uniwuerzburg.omod.io.json.*
+import de.uniwuerzburg.omod.io.osm.BuildingData
 import de.uniwuerzburg.omod.io.osm.readOSM
+import de.uniwuerzburg.omod.io.overture.readOverture
 import de.uniwuerzburg.omod.io.readCensus
 import de.uniwuerzburg.omod.routing.RoutingCache
 import de.uniwuerzburg.omod.routing.RoutingMode
@@ -18,7 +20,10 @@ import de.uniwuerzburg.omod.routing.createGraphHopperGTFS
 import de.uniwuerzburg.omod.utils.CRSTransformer
 import de.uniwuerzburg.omod.utils.ProgressBar
 import de.uniwuerzburg.omod.utils.fastCovers
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
@@ -73,6 +78,7 @@ class Omod(
     activityGroupFile: File? = null,
     nWorker: Int? = null,
     private val gtfsFile: File? = null,
+    overtureRelease: String? = null,
     carOwnershipOption: CarOwnershipOption = CarOwnershipOption.FIX,
     private val modeSpeedUp: Map<Mode, Double> = mapOf()
 ) {
@@ -137,10 +143,11 @@ class Omod(
         val utmArea = utmFocusArea.buffer(bufferRadius).convexHull()
         fullArea = transformer.toLatLon(utmArea)
 
-        // Get spatial data
+        // Get map data
+        val mapDataSource = if (overtureRelease != null) MapDataSource.OVERTURE else MapDataSource.OSM
         buildings = getBuildings(
             focusArea, fullArea, osmFile, bufferRadius,  transformer,
-            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns
+            geometryFactory, censusFile, cacheDir, cache, locChoiceWeightFuns, mapDataSource, nWorker
         )
 
         // Create KD-Tree for faster access
@@ -245,7 +252,8 @@ class Omod(
                              osmFile: File, bufferRadius: Double = 0.0,
                              transformer: CRSTransformer, geometryFactory: GeometryFactory,
                              censusFile: File?, cacheDir: Path, cache: Boolean,
-                             locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>
+                             locChoiceWeightFuns: Map<ActivityType, LocationChoiceDCWeightFun>,
+                             mapType: MapDataSource = MapDataSource.OSM, nWorker:Int?
     ) : List<Building> {
         // Is cached?
         val bound = focusArea.envelopeInternal
@@ -258,25 +266,30 @@ class Omod(
         )
 
         // Check cache
-        val collection: GeoJsonFeatureCollection =  if (cache and cachePath.toFile().exists()) {
+        val collection: GeoJsonFeatureCollection<BuildingProperties> =  if (cache and cachePath.toFile().exists()) {
             readJsonStream(cachePath)
         } else {
             // Load data
-            var osmBuildings = readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
+            var buildings: List<BuildingData> = when(mapType) {
+                MapDataSource.OVERTURE -> readOverture(
+                    focusArea, fullArea, geometryFactory, transformer, nWorker, cacheDir
+                )
+                MapDataSource.OSM -> readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
+            }
 
             // Add census data if available
             if (censusFile != null) {
-                osmBuildings = readCensus(osmBuildings, transformer, geometryFactory, censusFile, mainRng)
+                buildings = readCensus(buildings, transformer, geometryFactory, censusFile, mainRng)
             }
 
             // Convert to GeoJSON
             val collection = GeoJsonFeatureCollection(
-                features = osmBuildings.map {
+                features = buildings.map {
                     val center = it.geometry.centroid
                     val coords = transformer.toLatLon(center).coordinate
                     val geometry = GeoJsonPoint(listOf(coords.y, coords.x))
 
-                    val properties = GeoJsonBuildingProperties(
+                    val properties = BuildingProperties(
                         osm_id = it.osm_id,
                         in_focus_area = it.inFocusArea,
                         area = it.area,
@@ -416,7 +429,7 @@ class Omod(
             ActivityType.SCHOOL -> agent.school
             else -> throw Exception("Start must be either Home, Work, School, or coordinates must be given. Agent: ${agent.id}")
         }
-        return getActivitySchedule(agent, rng, weekday, from, location, )
+        return getActivitySchedule(agent, rng, weekday, from, location )
     }
 
     /**

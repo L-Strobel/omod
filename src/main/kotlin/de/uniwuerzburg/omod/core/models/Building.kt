@@ -1,7 +1,7 @@
 package de.uniwuerzburg.omod.core.models
 
 import de.uniwuerzburg.omod.core.*
-import de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties
+import de.uniwuerzburg.omod.io.geojson.property.BuildingProperties
 import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection
 import de.uniwuerzburg.omod.utils.CRSTransformer
 import org.apache.commons.math3.ml.clustering.Clusterable
@@ -22,7 +22,6 @@ import org.locationtech.jts.geom.Point
  * @param cell Grid cell the building is inside in
  */
 class Building  (
-    @Suppress("unused")
     val osmID: Long,
     override val coord: Coordinate,
     override val latlonCoord: Coordinate,
@@ -46,14 +45,10 @@ class Building  (
          * only be one destination function per activity type right now.
          * @return buildings
          */
-        fun fromGeoJson(collection: GeoJsonFeatureCollection, geometryFactory: GeometryFactory,
+        fun fromGeoJson(collection: GeoJsonFeatureCollection<BuildingProperties>, geometryFactory: GeometryFactory,
                         transformer: CRSTransformer,
                         dcFunctions: Map<ActivityType, LocationChoiceDCWeightFun>): List<Building> {
             return collection.features.map {
-                require(it.properties is GeoJsonBuildingProperties) {
-                    "Geo json contains features that are not buildings!"
-                }
-
                 val properties = it.properties
                 val point = transformer.toModelCRS( it.geometry.toJTS(geometryFactory) ).centroid
 
