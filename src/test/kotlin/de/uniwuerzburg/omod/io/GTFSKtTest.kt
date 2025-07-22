@@ -40,7 +40,7 @@ class GTFSKtTest {
 
     fun clipGTFSTest(input: Path, expectedFolder: File, outputBaseDir: File, actualClippedFolder: File, bbBox: Envelope) {
         if (actualClippedFolder.exists()) actualClippedFolder.deleteRecursively()
-        val dispatcher =Dispatchers.Default.limitedParallelism(1)
+        val dispatcher = Dispatchers.Default.limitedParallelism(1)
         try {
             clipGTFSFile(
                 bbBox,
