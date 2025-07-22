@@ -84,6 +84,9 @@ Good mapping information about the location and size of buildings, land use zone
 Census information of the region is not required but helpful;
 see python_tools/format_zensus2011.py for an example of how to correctly format census data for OMOD.
 
+With Version 2.2 you can know also use [Overture Maps](https://overturemaps.org) instead of OSM for building data,
+which is more complete in certain parts of the world (e.g., South Korea).
+
 The methodology behind the demand generation process is explained in the publication [OMOD: An open-source tool for creating disaggregated mobility demand based on OpenStreetMap](https://doi.org/10.1016/j.compenvurbsys.2023.102029).
 
 ## Get Started
@@ -237,6 +240,9 @@ class App {
 ## CLI Options
 
 ```
+Usage: run [<options>] <area_geojson> <osm_file>
+
+Options:
   --n_agents=<int>              Number of agents to simulate. If
                                 populate_buffer_area = y, additional agents are
                                 created to populate the buffer area.
@@ -315,9 +321,14 @@ class App {
                                 (GTFS) for the area. Required for public
                                 transit routing,for example if public transit
                                 is an option in mode choice. Must be a .zip
-                                file or a directory (see https://gtfs.org/
-                                ).Recommended download platform for Germany:
+                                file or a directory (see https://gtfs.org/).
+                                Recommended download platform for Germany:
                                 https://gtfs.de/
+  --mapdata_overture=<text>     Use overture map data instead of OSM for
+                                buildings and POIs. Usage: --mapdata_overture
+                                RELEASE. Where RELEASE is a valid overture
+                                release. For an introduction to Overture Maps
+                                see https://overturemaps.org/
   --matsim_output_crs=<text>    CRS of MatSIM output. Must be a code understood
                                 by org.geotools.referencing.CRS.decode().
   --mode_speed_up=<value>       Value: MODE=FACTOR. Multiply the travel time of
