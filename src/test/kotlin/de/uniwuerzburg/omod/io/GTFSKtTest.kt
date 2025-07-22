@@ -16,6 +16,7 @@ import kotlin.io.path.Path
 
 class GTFSKtTest {
     val bbox_germany_small= Envelope(49.787, 49.79,9.92, 9.93)
+    val bbox_korea_small= Envelope(36.3435, 36.345, 127.38,127.40)
     @Test
     fun clipGTFSGermanTest(){
         val input = Paths.get(javaClass.getResource("/clippedGTFSGermanyBig")!!.toURI())
@@ -23,7 +24,7 @@ class GTFSKtTest {
 
         val outputBaseDir = File("build/test-output").apply { mkdirs() }
         val actualClippedFolder = File(outputBaseDir, "clippedGTFS")
-        clipGTFSTest(input, actualClippedFolder, outputBaseDir,actualClippedFolder)
+        clipGTFSTest(input, expectedFolder, outputBaseDir,actualClippedFolder,bbox_germany_small)
     }
 
     @Test
@@ -32,16 +33,16 @@ class GTFSKtTest {
         val expectedFolder = File(javaClass.getResource("/clippedGTFSKoreaSmall")!!.toURI())
         val outputBaseDir = File("build/test-output").apply { mkdirs() }
         val actualClippedFolder = File(outputBaseDir, "clippedGTFS")
-        clipGTFSTest(input, actualClippedFolder, outputBaseDir,actualClippedFolder)
+        clipGTFSTest(input, expectedFolder, outputBaseDir,actualClippedFolder,bbox_korea_small)
     }
 
 
-    fun clipGTFSTest(input: Path, expectedFolder: File, outputBaseDir: File, actualClippedFolder: File) {
+    fun clipGTFSTest(input: Path, expectedFolder: File, outputBaseDir: File, actualClippedFolder: File, bbBox: Envelope) {
         if (actualClippedFolder.exists()) actualClippedFolder.deleteRecursively()
 
         try {
             clipGTFSFile(
-                bbox_germany_small,
+                bbBox,
                 input,
                 outputBaseDir.toPath(),
                 Dispatchers.Default
@@ -63,10 +64,5 @@ class GTFSKtTest {
             // Clean up after test
             if (outputBaseDir.exists()) outputBaseDir.deleteRecursively()
         }
-    }
-
-    @Test
-    fun clipKoreanGTFS(){
-
     }
 }
