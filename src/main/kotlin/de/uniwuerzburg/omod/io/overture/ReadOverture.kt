@@ -21,6 +21,7 @@ import java.sql.DriverManager
 import de.uniwuerzburg.omod.io.osm.getShortLanduseDescription
 import de.uniwuerzburg.omod.io.inFocusArea
 import de.uniwuerzburg.omod.io.osm.determineType
+import java.io.FileNotFoundException
 
 val typeThemeMap = mapOf(
     "address" to "addresses",
@@ -113,8 +114,8 @@ fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
     conn.close()
 }
 
-fun loadTagsDict(path: String): Map<String, Map<String, String>> {
-    val jsonString = File(path).readText()
+fun loadTagsDict(file: File): Map<String, Map<String, String>> {
+    val jsonString = file.readText()
     val json = Json { ignoreUnknownKeys = true }
     return json.decodeFromString(jsonString)
 }
@@ -155,7 +156,11 @@ fun readOverture(
         .toMutableList()
 
     // POIs and Landuse
-    val tagsDict = loadTagsDict("C:\\Daten\\Forschung\\Sustainable Work Culture\\Code\\MapDataEnhancement\\tags.json")
+    val file = File(
+        object {}.javaClass.classLoader.getResource("tags.json")?.toURI()
+            ?: throw FileNotFoundException("tags.json not found")
+    )
+    val tagsDict = loadTagsDict(file)
     var idCounter = 0L
     val extraInfoTree = HPRtree()
 
