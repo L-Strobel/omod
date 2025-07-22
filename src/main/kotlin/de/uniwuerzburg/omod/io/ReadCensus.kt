@@ -1,6 +1,7 @@
 package de.uniwuerzburg.omod.io
 
 import de.uniwuerzburg.omod.io.geojson.*
+import de.uniwuerzburg.omod.io.geojson.property.CensusProperties
 import de.uniwuerzburg.omod.io.json.readJsonStream
 import de.uniwuerzburg.omod.io.osm.BuildingData
 import de.uniwuerzburg.omod.utils.CRSTransformer
@@ -33,10 +34,10 @@ fun readCensus(
         buildingsTree.insert(building.geometry.envelopeInternal, building)
     }
 
-    val censusData: GeoJsonFeatureCollection = readJsonStream(censusFile)
+    val censusData: GeoJsonFeatureCollection<CensusProperties> = readJsonStream(censusFile)
 
     for (censusEntree in censusData.features) {
-        var population = (censusEntree.properties as GeoJsonCensusProperties).population
+        var population = censusEntree.properties.population
         if (population <= 0) { continue }
 
         val censusZone = transformer.toModelCRS( censusEntree.geometry.toJTS(geometryFactory) )

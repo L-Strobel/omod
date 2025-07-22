@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  * @param features List of contained GeoJSON features
  */
 @Serializable
-data class GeoJsonFeatureCollection (
+data class GeoJsonFeatureCollection<T: GeoJsonProperties> (
     val type: String = "FeatureCollection",
-    val features: List<GeoJsonFeature>
+    val features: List<GeoJsonFeature<T>>
 )

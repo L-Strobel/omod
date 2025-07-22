@@ -1,6 +1,7 @@
-package de.uniwuerzburg.omod.io.geojson
+package de.uniwuerzburg.omod.io.geojson.property
 
 import de.uniwuerzburg.omod.core.models.Landuse
+import de.uniwuerzburg.omod.io.geojson.GeoJsonProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -19,7 +20,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @SerialName("BuildingEntree")
-data class GeoJsonBuildingProperties (
+data class BuildingProperties (
     val osm_id: Long,
     val in_focus_area: Boolean,
     val area: Double,

@@ -5,6 +5,7 @@ import com.graphhopper.gtfs.GraphHopperGtfs
 import com.graphhopper.gtfs.PtRouter
 import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.io.geojson.*
+import de.uniwuerzburg.omod.io.geojson.property.BuildingProperties
 import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
 import de.uniwuerzburg.omod.io.gtfs.getPublicTransitSimDays
 import de.uniwuerzburg.omod.io.json.*
@@ -265,7 +266,7 @@ class Omod(
         )
 
         // Check cache
-        val collection: GeoJsonFeatureCollection =  if (cache and cachePath.toFile().exists()) {
+        val collection: GeoJsonFeatureCollection<BuildingProperties> =  if (cache and cachePath.toFile().exists()) {
             readJsonStream(cachePath)
         } else {
             // Load data
@@ -288,7 +289,7 @@ class Omod(
                     val coords = transformer.toLatLon(center).coordinate
                     val geometry = GeoJsonPoint(listOf(coords.y, coords.x))
 
-                    val properties = GeoJsonBuildingProperties(
+                    val properties = BuildingProperties(
                         osm_id = it.osm_id,
                         in_focus_area = it.inFocusArea,
                         area = it.area,
@@ -428,7 +429,7 @@ class Omod(
             ActivityType.SCHOOL -> agent.school
             else -> throw Exception("Start must be either Home, Work, School, or coordinates must be given. Agent: ${agent.id}")
         }
-        return getActivitySchedule(agent, rng, weekday, from, location, )
+        return getActivitySchedule(agent, rng, weekday, from, location )
     }
 
     /**

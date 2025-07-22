@@ -1,10 +1,9 @@
 package de.uniwuerzburg.omod.io.overture
 
 import com.graphhopper.util.Helper.round
-import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollectionNoProperties
-import de.uniwuerzburg.omod.io.geojson.GeoJsonFeaturePlaces
-import de.uniwuerzburg.omod.io.geojson.GeoJsonLandUse
-import de.uniwuerzburg.omod.io.geojson.GeoJsonPlaces
+import de.uniwuerzburg.omod.io.geojson.*
+import de.uniwuerzburg.omod.io.geojson.property.OverturePlaceProperties
+import de.uniwuerzburg.omod.io.geojson.property.OvertureLandUseProperties
 import de.uniwuerzburg.omod.io.inFocusArea
 import de.uniwuerzburg.omod.io.json.readJson
 import de.uniwuerzburg.omod.io.json.readJsonFromResource
@@ -43,7 +42,7 @@ val typeThemeMap = mapOf(
  * @return All MapObjectTypes of the object
  */
 private fun determineTypes(
-    entity: GeoJsonFeaturePlaces, tagsDict:Map<String, Map<String, String>>
+    entity: GeoJsonFeature<OverturePlaceProperties>, tagsDict:Map<String, Map<String, String>>
 ) : List<MapObjectType> {
     val rslt = mutableListOf<MapObjectType>()
     val primary = tagsDict[entity.properties.categories.primary]
@@ -101,10 +100,10 @@ fun downloadOvertureLayer(fullArea: Geometry, type: String, overtureTmpDir: Path
             filename = true,
             hive_partitioning = 1
         )
-        WHERE bbox.xmin BETWEEN ${xmin} AND ${xmax}
-          AND bbox.ymin BETWEEN ${ymin} AND ${ymax}
+        WHERE bbox.xmin BETWEEN $xmin AND $xmax
+          AND bbox.ymin BETWEEN $ymin AND $ymax
     )
-    TO '${cacheLocation}'
+    TO '$cacheLocation'
     WITH (FORMAT GDAL, DRIVER 'GeoJSON');
     """.trimIndent()
 
@@ -118,7 +117,7 @@ fun readOverture(
     focusArea: Geometry, fullArea: Geometry, geometryFactory:GeometryFactory, transformer: CRSTransformer,
     nWorker: Int?, cacheDir: Path
 ): List<BuildingData> {
-    logger.info("Start reading OvertureMap-File... (If this is too slow use smaller buffer size)")
+
 
     val overtureTmpDir = Paths.get(cacheDir.toString(),
         "overture/"
@@ -132,22 +131,25 @@ fun readOverture(
     val ymax: Double = round(env.maxX,2)
 
     // Download
+    logger.info("Downloading OvertureMap-File... (If this is too slow use smaller buffer size)")
     for (type in listOf("place", "land_use", "building")) {
         downloadOvertureLayer(fullArea, type, overtureTmpDir, nWorker)
     }
+    logger.info("OvertureMap-File downloaded!")
 
+    logger.info("Start reading OvertureMap-File...")
     // Read downloaded files
     val geoBuildings:GeoJsonFeatureCollectionNoProperties = readJson(
         Paths.get(overtureTmpDir.toString(),
             "building${xmin}_${xmax}_${ymin}_${ymax}.geojson"
         )
     )
-    val geoPlaces: GeoJsonPlaces = readJson(
+    val geoPlaces: GeoJsonFeatureCollection<OverturePlaceProperties> = readJson(
         Paths.get(overtureTmpDir.toString(),
             "place${xmin}_${xmax}_${ymin}_${ymax}.geojson"
         )
     )
-    val geoLandUse: GeoJsonLandUse= readJson(
+    val geoLandUse: GeoJsonFeatureCollection<OvertureLandUseProperties> = readJson(
         Paths.get(overtureTmpDir.toString(),
             "land_use${xmin}_${xmax}_${ymin}_${ymax}.geojson"
         )
@@ -166,8 +168,8 @@ fun readOverture(
     var idCounter = 0L
     val extraInfoTree = HPRtree()
 
-    geoPlaces.features = geoPlaces.features.filter { it.properties.confidence >0.5 }
-    geoPlaces.features.forEach { point ->
+    val placesFeatures = geoPlaces.features.filter { it.properties.confidence >0.5 }
+    placesFeatures.forEach { point ->
         val types = determineTypes(point, tagsDict)
         if (types.isNotEmpty()) {
             val geom = transformer.toModelCRS(point.geometry.toJTS(factory = geometryFactory))

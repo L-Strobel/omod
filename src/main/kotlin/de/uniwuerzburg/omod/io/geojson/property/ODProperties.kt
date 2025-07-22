@@ -1,6 +1,7 @@
-package de.uniwuerzburg.omod.io.geojson
+package de.uniwuerzburg.omod.io.geojson.property
 
 import de.uniwuerzburg.omod.core.models.ActivityType
+import de.uniwuerzburg.omod.io.geojson.GeoJsonProperties
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,7 +15,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @SerialName("ODEntry")
-data class GeoJsonODProperties (
+data class ODProperties (
     val origin: String,
     val origin_activity: ActivityType,
     val destination_activity: ActivityType,

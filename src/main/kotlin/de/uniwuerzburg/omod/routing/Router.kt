@@ -14,12 +14,9 @@ import com.graphhopper.routing.weighting.Weighting
 import com.graphhopper.storage.index.Snap
 import com.graphhopper.util.PMap
 import de.uniwuerzburg.omod.core.models.LocationOption
-import de.uniwuerzburg.omod.core.models.Mode
 import de.uniwuerzburg.omod.core.models.RealLocation
 import java.time.Instant
-import java.util.Random
 import kotlin.math.abs
-import kotlin.math.ln
 
 /**
  * Calculate the Euclidean distance between two locations

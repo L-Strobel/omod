@@ -10,8 +10,8 @@ import kotlinx.serialization.Serializable
  * @param properties Other information about the feature
  */
 @Serializable
-data class GeoJsonFeature (
+data class GeoJsonFeature<T: GeoJsonProperties> (
     val type: String = "Feature",
     val geometry: GeoJsonGeom,
-    val properties: GeoJsonProperties
+    val properties: T
 )
