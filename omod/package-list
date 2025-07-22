@@ -29,7 +29,7 @@ $dokka.location:de.uniwuerzburg.omod.core.models/AgeGrp/valueOf/#kotlin.String/P
 $dokka.location:de.uniwuerzburg.omod.core.models/AgeGrp/values/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-age-grp/values.html
 $dokka.location:de.uniwuerzburg.omod.core.models/AggLocation///PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-agg-location/index.html
 $dokka.location:de.uniwuerzburg.omod.core.models/Building.Companion///PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-building/-companion/index.html
-$dokka.location:de.uniwuerzburg.omod.core.models/Building.Companion/fromGeoJson/#de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection#org.locationtech.jts.geom.GeometryFactory#de.uniwuerzburg.omod.utils.CRSTransformer#kotlin.collections.Map[de.uniwuerzburg.omod.core.models.ActivityType,de.uniwuerzburg.omod.core.LocationChoiceDCWeightFun]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-building/-companion/from-geo-json.html
+$dokka.location:de.uniwuerzburg.omod.core.models/Building.Companion/fromGeoJson/#de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollection[de.uniwuerzburg.omod.io.geojson.property.BuildingProperties]#org.locationtech.jts.geom.GeometryFactory#de.uniwuerzburg.omod.utils.CRSTransformer#kotlin.collections.Map[de.uniwuerzburg.omod.core.models.ActivityType,de.uniwuerzburg.omod.core.LocationChoiceDCWeightFun]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-building/-companion/from-geo-json.html
 $dokka.location:de.uniwuerzburg.omod.core.models/Building///PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-building/index.html
 $dokka.location:de.uniwuerzburg.omod.core.models/Building/Building/#kotlin.Long#org.locationtech.jts.geom.Coordinate#org.locationtech.jts.geom.Coordinate#de.uniwuerzburg.omod.core.models.ODZone?#kotlin.Boolean#kotlin.collections.Map[kotlin.Int,kotlin.Double]#kotlin.Double#org.locationtech.jts.geom.Point#de.uniwuerzburg.omod.core.models.Cell?/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-building/-building.html
 $dokka.location:de.uniwuerzburg.omod.core.models/Building/attractions/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-building/attractions.html
@@ -105,6 +105,12 @@ $dokka.location:de.uniwuerzburg.omod.core.models/LocationOption/getAggLoc/#/Poin
 $dokka.location:de.uniwuerzburg.omod.core.models/LocationOption/inFocusArea/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-location-option/in-focus-area.html
 $dokka.location:de.uniwuerzburg.omod.core.models/LocationOption/latlonCoord/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-location-option/latlon-coord.html
 $dokka.location:de.uniwuerzburg.omod.core.models/LocationOption/odZone/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-location-option/od-zone.html
+$dokka.location:de.uniwuerzburg.omod.core.models/MapDataSource.OSM///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}omod/de.uniwuerzburg.omod.core.models/-map-data-source/-o-s-m/index.html
+$dokka.location:de.uniwuerzburg.omod.core.models/MapDataSource.OVERTURE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}omod/de.uniwuerzburg.omod.core.models/-map-data-source/-o-v-e-r-t-u-r-e/index.html
+$dokka.location:de.uniwuerzburg.omod.core.models/MapDataSource///PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-map-data-source/index.html
+$dokka.location:de.uniwuerzburg.omod.core.models/MapDataSource/entries/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-map-data-source/entries.html
+$dokka.location:de.uniwuerzburg.omod.core.models/MapDataSource/valueOf/#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-map-data-source/value-of.html
+$dokka.location:de.uniwuerzburg.omod.core.models/MapDataSource/values/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-map-data-source/values.html
 $dokka.location:de.uniwuerzburg.omod.core.models/MobiAgent///PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-mobi-agent/index.html
 $dokka.location:de.uniwuerzburg.omod.core.models/MobiAgent/MobiAgent/#kotlin.Int#de.uniwuerzburg.omod.core.models.HomogeneousGrp#de.uniwuerzburg.omod.core.models.MobilityGrp#kotlin.Int?#de.uniwuerzburg.omod.core.models.LocationOption#de.uniwuerzburg.omod.core.models.LocationOption#de.uniwuerzburg.omod.core.models.LocationOption#de.uniwuerzburg.omod.core.models.Sex#kotlin.Boolean#kotlin.collections.MutableList[de.uniwuerzburg.omod.core.models.Diary]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-mobi-agent/-mobi-agent.html
 $dokka.location:de.uniwuerzburg.omod.core.models/MobiAgent/age/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core.models/-mobi-agent/age.html
@@ -227,7 +233,7 @@ $dokka.location:de.uniwuerzburg.omod.core/AgentFactoryDefault/createAgents/#kotl
 $dokka.location:de.uniwuerzburg.omod.core/AppConstants///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-app-constants/index.html
 $dokka.location:de.uniwuerzburg.omod.core/AppConstants/nAllowedCoroutines/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-app-constants/n-allowed-coroutines.html
 $dokka.location:de.uniwuerzburg.omod.core/ByPopulation///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-by-population/index.html
-$dokka.location:de.uniwuerzburg.omod.core/ByPopulation/calcAttraction/#de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-by-population/calc-attraction.html
+$dokka.location:de.uniwuerzburg.omod.core/ByPopulation/calcAttraction/#de.uniwuerzburg.omod.io.geojson.property.BuildingProperties/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-by-population/calc-attraction.html
 $dokka.location:de.uniwuerzburg.omod.core/ByPopulation/calcFor/#de.uniwuerzburg.omod.core.models.RealLocation#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-by-population/calc-for.html
 $dokka.location:de.uniwuerzburg.omod.core/ByPopulation/coeffBuildingUnits/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-by-population/coeff-building-units.html
 $dokka.location:de.uniwuerzburg.omod.core/ByPopulation/coeffCafeUnits/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-by-population/coeff-cafe-units.html
@@ -309,7 +315,7 @@ $dokka.location:de.uniwuerzburg.omod.core/IDDispenser///PointingToDeclaration/o
 $dokka.location:de.uniwuerzburg.omod.core/IDDispenser/next/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-i-d-dispenser/next.html
 $dokka.location:de.uniwuerzburg.omod.core/IDDispenser/nextID/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-i-d-dispenser/next-i-d.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/index.html
-$dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/calcAttraction/#de.uniwuerzburg.omod.io.geojson.GeoJsonBuildingProperties/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/calc-attraction.html
+$dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/calcAttraction/#de.uniwuerzburg.omod.io.geojson.property.BuildingProperties/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/calc-attraction.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/calcFor/#de.uniwuerzburg.omod.core.models.RealLocation#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/calc-for.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/calcForNoOrigin/#de.uniwuerzburg.omod.core.models.RealLocation/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/calc-for-no-origin.html
 $dokka.location:de.uniwuerzburg.omod.core/LocationChoiceDCWeightFun/coeffBuildingUnits/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-location-choice-d-c-weight-fun/coeff-building-units.html
@@ -417,7 +423,7 @@ $dokka.location:de.uniwuerzburg.omod.core/ModeUtility/weekdayCoeff/#/PointingToD
 $dokka.location:de.uniwuerzburg.omod.core/Omod.Companion///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/-companion/index.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod.Companion/defaultFactory/#java.io.File#java.io.File/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/-companion/default-factory.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod///PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/index.html
-$dokka.location:de.uniwuerzburg.omod.core/Omod/Omod/#java.io.File#java.io.File#de.uniwuerzburg.omod.routing.RoutingMode#kotlin.Boolean#java.nio.file.Path#java.io.File?#kotlin.Double#kotlin.Long?#kotlin.Double#java.io.File?#kotlin.Boolean#kotlin.Long#java.io.File?#java.io.File?#kotlin.Int?#java.io.File?#de.uniwuerzburg.omod.core.models.CarOwnershipOption#kotlin.collections.Map[de.uniwuerzburg.omod.core.models.Mode,kotlin.Double]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/-omod.html
+$dokka.location:de.uniwuerzburg.omod.core/Omod/Omod/#java.io.File#java.io.File#de.uniwuerzburg.omod.routing.RoutingMode#kotlin.Boolean#java.nio.file.Path#java.io.File?#kotlin.Double#kotlin.Long?#kotlin.Double#java.io.File?#kotlin.Boolean#kotlin.Long#java.io.File?#java.io.File?#kotlin.Int?#java.io.File?#kotlin.String?#de.uniwuerzburg.omod.core.models.CarOwnershipOption#kotlin.collections.Map[de.uniwuerzburg.omod.core.models.Mode,kotlin.Double]/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/-omod.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/buildings/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/buildings.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/distanceCacheSize/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/distance-cache-size.html
 $dokka.location:de.uniwuerzburg.omod.core/Omod/doModeChoice/#kotlin.collections.List[de.uniwuerzburg.omod.core.models.MobiAgent]#de.uniwuerzburg.omod.core.models.ModeChoiceOption#kotlin.Boolean/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-omod/do-mode-choice.html
@@ -453,34 +459,52 @@ $dokka.location:de.uniwuerzburg.omod.core/PureAttraction/coeffTourismUnits/#/Poi
 $dokka.location:de.uniwuerzburg.omod.core/PureAttraction/coeffUniUnits/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-pure-attraction/coeff-uni-units.html
 $dokka.location:de.uniwuerzburg.omod.core/PureAttraction/coeffUniversityArea/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-pure-attraction/coeff-university-area.html
 $dokka.location:de.uniwuerzburg.omod.core/PureAttraction/deterrenceFunction/#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.core/-pure-attraction/deterrence-function.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property////PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/BuildingProperties/#kotlin.Long#kotlin.Boolean#kotlin.Double#kotlin.Double?#de.uniwuerzburg.omod.core.models.Landuse#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/-building-properties.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/area/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/area.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/in_focus_area/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/in_focus_area.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/landuse/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/landuse.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_cafe/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_cafe.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_fast_food/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_fast_food.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_kindergarten/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_kindergarten.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_offices/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_offices.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_place_of_worship/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_place_of_worship.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_schools/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_schools.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_shops/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_shops.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_tourism/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_tourism.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/number_universities/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/number_universities.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/osm_id/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/osm_id.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/BuildingProperties/population/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-building-properties/population.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/CensusProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-census-properties/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/CensusProperties/CensusProperties/#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-census-properties/-census-properties.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/CensusProperties/population/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-census-properties/population.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/ODProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-o-d-properties/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/ODProperties/ODProperties/#kotlin.String#de.uniwuerzburg.omod.core.models.ActivityType#de.uniwuerzburg.omod.core.models.ActivityType#kotlin.collections.Map[kotlin.String,kotlin.Double]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-o-d-properties/-o-d-properties.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/ODProperties/destination_activity/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-o-d-properties/destination_activity.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/ODProperties/destinations/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-o-d-properties/destinations.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/ODProperties/origin/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-o-d-properties/origin.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/ODProperties/origin_activity/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-o-d-properties/origin_activity.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OvertureLandUseProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-land-use-properties/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OvertureLandUseProperties/OvertureLandUseProperties/#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-land-use-properties/-overture-land-use-properties.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OvertureLandUseProperties/landUseClass/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-land-use-properties/land-use-class.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceCategories///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-categories/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceCategories/OverturePlaceCategories/#kotlin.String#kotlin.collections.List[kotlin.String]?/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-categories/-overture-place-categories.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceCategories/alternate/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-categories/alternate.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceCategories/primary/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-categories/primary.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-properties/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceProperties/OverturePlaceProperties/#kotlin.Double#de.uniwuerzburg.omod.io.geojson.property.OverturePlaceCategories/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-properties/-overture-place-properties.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceProperties/categories/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-properties/categories.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson.property/OverturePlaceProperties/confidence/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson.property/-overture-place-properties/confidence.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson////PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/index.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson//readGeoJsonGeom/#java.io.File#org.locationtech.jts.geom.GeometryFactory/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/read-geo-json-geom.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/index.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/GeoJsonBuildingProperties/#kotlin.Long#kotlin.Boolean#kotlin.Double#kotlin.Double?#de.uniwuerzburg.omod.core.models.Landuse#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/-geo-json-building-properties.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/area/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/area.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/in_focus_area/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/in_focus_area.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/landuse/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/landuse.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_cafe/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_cafe.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_fast_food/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_fast_food.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_kindergarten/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_kindergarten.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_offices/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_offices.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_place_of_worship/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_place_of_worship.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_schools/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_schools.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_shops/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_shops.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_tourism/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_tourism.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/number_universities/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/number_universities.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/osm_id/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/osm_id.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonBuildingProperties/population/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-building-properties/population.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonCensusProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-census-properties/index.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonCensusProperties/GeoJsonCensusProperties/#kotlin.Double/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-census-properties/-geo-json-census-properties.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonCensusProperties/population/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-census-properties/population.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeature///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature/index.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeature/GeoJsonFeature/#kotlin.String#de.uniwuerzburg.omod.io.geojson.GeoJsonGeom#de.uniwuerzburg.omod.io.geojson.GeoJsonProperties/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature/-geo-json-feature.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeature/GeoJsonFeature/#kotlin.String#de.uniwuerzburg.omod.io.geojson.GeoJsonGeom#TypeParam(bounds=[de.uniwuerzburg.omod.io.geojson.GeoJsonProperties])/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature/-geo-json-feature.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeature/geometry/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature/geometry.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeature/properties/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature/properties.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeature/type/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature/type.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeatureCollection///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature-collection/index.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeatureCollection/GeoJsonFeatureCollection/#kotlin.String#kotlin.collections.List[de.uniwuerzburg.omod.io.geojson.GeoJsonFeature]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature-collection/-geo-json-feature-collection.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeatureCollection/GeoJsonFeatureCollection/#kotlin.String#kotlin.collections.List[de.uniwuerzburg.omod.io.geojson.GeoJsonFeature[TypeParam(bounds=[de.uniwuerzburg.omod.io.geojson.GeoJsonProperties])]]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature-collection/-geo-json-feature-collection.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeatureCollection/features/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature-collection/features.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeatureCollection/type/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature-collection/type.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonFeatureCollectionNoProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-feature-collection-no-properties/index.html
@@ -513,12 +537,6 @@ $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonMultiPoly/GeoJsonMultiPol
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonMultiPoly/coordinates/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-multi-poly/coordinates.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonMultiPoly/toJTS/#org.locationtech.jts.geom.GeometryFactory/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-multi-poly/to-j-t-s.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonNoProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-no-properties/index.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonODProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-o-d-properties/index.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonODProperties/GeoJsonODProperties/#kotlin.String#de.uniwuerzburg.omod.core.models.ActivityType#de.uniwuerzburg.omod.core.models.ActivityType#kotlin.collections.Map[kotlin.String,kotlin.Double]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-o-d-properties/-geo-json-o-d-properties.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonODProperties/destination_activity/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-o-d-properties/destination_activity.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonODProperties/destinations/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-o-d-properties/destinations.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonODProperties/origin/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-o-d-properties/origin.html
-$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonODProperties/origin_activity/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-o-d-properties/origin_activity.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonPoint///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-point/index.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonPoint/GeoJsonPoint/#kotlin.collections.List[kotlin.Double]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-point/-geo-json-point.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonPoint/coordinates/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-point/coordinates.html
@@ -528,6 +546,7 @@ $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonPoly/GeoJsonPoly/#kotlin.
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonPoly/coordinates/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-poly/coordinates.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonPoly/toJTS/#org.locationtech.jts.geom.GeometryFactory/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-poly/to-j-t-s.html
 $dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonProperties///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-properties/index.html
+$dokka.location:de.uniwuerzburg.omod.io.geojson/GeoJsonProperties/GeoJsonProperties/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.geojson/-geo-json-properties/-geo-json-properties.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs////PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/index.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs//clipGTFSFile/#org.locationtech.jts.geom.Envelope#java.nio.file.Path#java.nio.file.Path#kotlinx.coroutines.CoroutineDispatcher/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/clip-g-t-f-s-file.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs//getPublicTransitSimDays/#java.nio.file.Path/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/get-public-transit-sim-days.html
@@ -535,7 +554,7 @@ $dokka.location:de.uniwuerzburg.omod.io.gtfs/BBFilter///PointingToDeclaration/o
 $dokka.location:de.uniwuerzburg.omod.io.gtfs/BBFilter/BBFilter/#org.locationtech.jts.geom.Envelope/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-b-b-filter/-b-b-filter.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs/BBFilter/filter/#kotlin.collections.List[kotlin.String]#kotlin.collections.Map[kotlin.String,kotlin.Int]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-b-b-filter/filter.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs/ForeignKeyFilter///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-foreign-key-filter/index.html
-$dokka.location:de.uniwuerzburg.omod.io.gtfs/ForeignKeyFilter/ForeignKeyFilter/#kotlin.collections.Set[kotlin.Int]#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-foreign-key-filter/-foreign-key-filter.html
+$dokka.location:de.uniwuerzburg.omod.io.gtfs/ForeignKeyFilter/ForeignKeyFilter/#kotlin.collections.Set[kotlin.String]#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-foreign-key-filter/-foreign-key-filter.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs/ForeignKeyFilter/filter/#kotlin.collections.List[kotlin.String]#kotlin.collections.Map[kotlin.String,kotlin.Int]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-foreign-key-filter/filter.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs/GTFSFilter///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-g-t-f-s-filter/index.html
 $dokka.location:de.uniwuerzburg.omod.io.gtfs/GTFSFilter/filter/#kotlin.collections.List[kotlin.String]#kotlin.collections.Map[kotlin.String,kotlin.Int]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.gtfs/-g-t-f-s-filter/filter.html
@@ -619,10 +638,13 @@ $dokka.location:de.uniwuerzburg.omod.io.matsim////PointingToDeclaration/omod/de
 $dokka.location:de.uniwuerzburg.omod.io.matsim//writeMatSim/#kotlin.collections.List[de.uniwuerzburg.omod.io.json.OutputEntry]#java.io.File#kotlin.Int#kotlin.String#kotlin.collections.Map[kotlin.String,kotlin.String]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.matsim/write-mat-sim.html
 $dokka.location:de.uniwuerzburg.omod.io.matsim//writeSingleDay/#kotlin.collections.List[de.uniwuerzburg.omod.io.json.OutputEntry]#java.io.File#kotlin.Int#kotlin.String#kotlin.collections.Map[kotlin.String,kotlin.String]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.matsim/write-single-day.html
 $dokka.location:de.uniwuerzburg.omod.io.osm////PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/index.html
+$dokka.location:de.uniwuerzburg.omod.io.osm//determineType/#kotlin.String#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/determine-type.html
 $dokka.location:de.uniwuerzburg.omod.io.osm//getMapObjects/#org.locationtech.jts.geom.Geometry#java.io.File#org.locationtech.jts.geom.GeometryFactory/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/get-map-objects.html
+$dokka.location:de.uniwuerzburg.omod.io.osm//getShortLanduseDescription/#kotlin.String/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/get-short-landuse-description.html
 $dokka.location:de.uniwuerzburg.omod.io.osm//readOSM/#org.locationtech.jts.geom.Geometry#org.locationtech.jts.geom.Geometry#java.io.File#org.locationtech.jts.geom.GeometryFactory#de.uniwuerzburg.omod.utils.CRSTransformer/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/read-o-s-m.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/BuildingData///PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-building-data/index.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/BuildingData/BuildingData/#kotlin.Long#org.locationtech.jts.geom.Geometry/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-building-data/-building-data.html
+$dokka.location:de.uniwuerzburg.omod.io.osm/BuildingData/addInformation/#kotlin.collections.List[de.uniwuerzburg.omod.io.osm.MapObject]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-building-data/add-information.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/BuildingData/area/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-building-data/area.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/BuildingData/geometry/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-building-data/geometry.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/BuildingData/inFocusArea/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-building-data/in-focus-area.html
@@ -669,6 +691,7 @@ $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor///PointingToDeclaration
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/OSMProcessor/#org.openstreetmap.osmosis.core.filter.common.IdTrackerType#org.locationtech.jts.geom.GeometryFactory/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/-o-s-m-processor.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/close/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/close.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/complete/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/complete.html
+$dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/determineTypes/#org.openstreetmap.osmosis.core.domain.v0_6.Entity/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/determine-types.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/initialize/#kotlin.collections.MutableMap[kotlin.String,kotlin.Any]?/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/initialize.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/mapObjects/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/map-objects.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/process/#org.openstreetmap.osmosis.core.container.v0_6.BoundContainer/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/process.html
@@ -676,10 +699,15 @@ $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/process/#org.openstreet
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/process/#org.openstreetmap.osmosis.core.container.v0_6.NodeContainer/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/process.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/process/#org.openstreetmap.osmosis.core.container.v0_6.RelationContainer/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/process.html
 $dokka.location:de.uniwuerzburg.omod.io.osm/OSMProcessor/process/#org.openstreetmap.osmosis.core.container.v0_6.WayContainer/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.osm/-o-s-m-processor/process.html
+$dokka.location:de.uniwuerzburg.omod.io.overture////PointingToDeclaration/omod/de.uniwuerzburg.omod.io.overture/index.html
+$dokka.location:de.uniwuerzburg.omod.io.overture//downloadOvertureLayer/#org.locationtech.jts.geom.Geometry#kotlin.String#java.nio.file.Path#kotlin.Int?/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.overture/download-overture-layer.html
+$dokka.location:de.uniwuerzburg.omod.io.overture//readOverture/#org.locationtech.jts.geom.Geometry#org.locationtech.jts.geom.Geometry#org.locationtech.jts.geom.GeometryFactory#de.uniwuerzburg.omod.utils.CRSTransformer#kotlin.Int?#java.nio.file.Path/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.overture/read-overture.html
+$dokka.location:de.uniwuerzburg.omod.io.overture//typeThemeMap/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.overture/type-theme-map.html
 $dokka.location:de.uniwuerzburg.omod.io.sqlite////PointingToDeclaration/omod/de.uniwuerzburg.omod.io.sqlite/index.html
 $dokka.location:de.uniwuerzburg.omod.io.sqlite//writeSQLite/#kotlin.collections.List[de.uniwuerzburg.omod.io.json.OutputEntry]#java.io.File#kotlin.collections.Map[kotlin.String,kotlin.String]/PointingToDeclaration/omod/de.uniwuerzburg.omod.io.sqlite/write-s-q-lite.html
 $dokka.location:de.uniwuerzburg.omod.io////PointingToDeclaration/omod/de.uniwuerzburg.omod.io/index.html
 $dokka.location:de.uniwuerzburg.omod.io//formatOutput/#de.uniwuerzburg.omod.core.models.MobiAgent/PointingToDeclaration/omod/de.uniwuerzburg.omod.io/format-output.html
+$dokka.location:de.uniwuerzburg.omod.io//inFocusArea/#kotlin.collections.List[de.uniwuerzburg.omod.io.osm.BuildingData]#org.locationtech.jts.geom.Geometry#org.locationtech.jts.geom.GeometryFactory#de.uniwuerzburg.omod.utils.CRSTransformer/PointingToDeclaration/omod/de.uniwuerzburg.omod.io/in-focus-area.html
 $dokka.location:de.uniwuerzburg.omod.io//jsonHandler/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io/json-handler.html
 $dokka.location:de.uniwuerzburg.omod.io//logger/#/PointingToDeclaration/omod/de.uniwuerzburg.omod.io/logger.html
 $dokka.location:de.uniwuerzburg.omod.io//readCensus/#kotlin.collections.List[de.uniwuerzburg.omod.io.osm.BuildingData]#de.uniwuerzburg.omod.utils.CRSTransformer#org.locationtech.jts.geom.GeometryFactory#java.io.File#java.util.Random/PointingToDeclaration/omod/de.uniwuerzburg.omod.io/read-census.html
@@ -769,10 +797,12 @@ de.uniwuerzburg.omod.core
 de.uniwuerzburg.omod.core.models
 de.uniwuerzburg.omod.io
 de.uniwuerzburg.omod.io.geojson
+de.uniwuerzburg.omod.io.geojson.property
 de.uniwuerzburg.omod.io.gtfs
 de.uniwuerzburg.omod.io.json
 de.uniwuerzburg.omod.io.matsim
 de.uniwuerzburg.omod.io.osm
+de.uniwuerzburg.omod.io.overture
 de.uniwuerzburg.omod.io.sqlite
 de.uniwuerzburg.omod.routing
 de.uniwuerzburg.omod.utils
