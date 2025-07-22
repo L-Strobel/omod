@@ -1,4 +1,4 @@
-﻿route_id,agency_id,route_short_name,route_long_name,route_type
+route_id,agency_id,route_short_name,route_long_name,route_type
 BR_TAGO_DJB30300036,A1,101,101번(안산동-대성여고),0
 BR_TAGO_DJB30300039,A1,104,104번(수통골-탄방역),0
 BR_TAGO_DJB30300040,A1,105,105번(충대농대-비래삼호A),0
