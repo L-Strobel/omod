@@ -5,24 +5,20 @@ import de.uniwuerzburg.omod.io.geojson.GeoJsonFeatureCollectionNoProperties
 import de.uniwuerzburg.omod.io.geojson.GeoJsonFeaturePlaces
 import de.uniwuerzburg.omod.io.geojson.GeoJsonLandUse
 import de.uniwuerzburg.omod.io.geojson.GeoJsonPlaces
+import de.uniwuerzburg.omod.io.inFocusArea
 import de.uniwuerzburg.omod.io.json.readJson
+import de.uniwuerzburg.omod.io.json.readJsonFromResource
 import de.uniwuerzburg.omod.io.logger
-import de.uniwuerzburg.omod.io.osm.BuildingData
-import de.uniwuerzburg.omod.io.osm.MapObject
-import de.uniwuerzburg.omod.io.osm.MapObjectType
+import de.uniwuerzburg.omod.io.osm.*
+import de.uniwuerzburg.omod.utils.CRSTransformer
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
-import de.uniwuerzburg.omod.utils.CRSTransformer
-import kotlinx.serialization.json.Json
-import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.sql.DriverManager
-import de.uniwuerzburg.omod.io.osm.getShortLanduseDescription
-import de.uniwuerzburg.omod.io.inFocusArea
-import de.uniwuerzburg.omod.io.json.readJsonFromResource
-import de.uniwuerzburg.omod.io.osm.determineType
-import java.io.FileNotFoundException
 
 val typeThemeMap = mapOf(
     "address" to "addresses",
@@ -63,7 +59,7 @@ private fun determineTypes(
     return rslt
 }
 
-fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
+fun downloadOvertureLayer(fullArea: Geometry, type: String, overtureTmpDir: Path, nWorker:Int? = null) {
     val theme = typeThemeMap.getOrDefault(type, type)
 
     //Select String based on type
@@ -93,6 +89,9 @@ fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
     stmt.execute("PRAGMA threads=${threads};")
 
     // Perform the COPY query to download filtered places and save to GeoJSON
+    val cacheLocation = Paths.get(overtureTmpDir.toString(),
+        "$type${xmin}_${xmax}_${ymin}_${ymax}.geojson"
+    ).toString().replace("\\", "/")
     val queryString = """
     COPY (
         SELECT   
@@ -105,7 +104,7 @@ fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
         WHERE bbox.xmin BETWEEN ${xmin} AND ${xmax}
           AND bbox.ymin BETWEEN ${ymin} AND ${ymax}
     )
-    TO 'omod_cache//overture//$type${xmin}_${xmax}_${ymin}_${ymax}.geojson'
+    TO '${cacheLocation}'
     WITH (FORMAT GDAL, DRIVER 'GeoJSON');
     """.trimIndent()
 
@@ -116,9 +115,15 @@ fun downloadOvertureLayer(fullArea: Geometry, type: String,nWorker:Int?) {
 }
 
 fun readOverture(
-    focusArea: Geometry, fullArea: Geometry, geometryFactory:GeometryFactory, transformer: CRSTransformer, nWorker: Int?
+    focusArea: Geometry, fullArea: Geometry, geometryFactory:GeometryFactory, transformer: CRSTransformer,
+    nWorker: Int?, cacheDir: Path
 ): List<BuildingData> {
     logger.info("Start reading OvertureMap-File... (If this is too slow use smaller buffer size)")
+
+    val overtureTmpDir = Paths.get(cacheDir.toString(),
+        "overture/"
+    )
+    Files.createDirectories(overtureTmpDir)
 
     val env: Envelope = fullArea.envelopeInternal
     val xmin: Double = round(env.minY,2)
@@ -128,18 +133,24 @@ fun readOverture(
 
     // Download
     for (type in listOf("place", "land_use", "building")) {
-        downloadOvertureLayer(fullArea, type, nWorker)
+        downloadOvertureLayer(fullArea, type, overtureTmpDir, nWorker)
     }
 
     // Read downloaded files
     val geoBuildings:GeoJsonFeatureCollectionNoProperties = readJson(
-        File("omod_cache//overture//building${xmin}_${xmax}_${ymin}_${ymax}.geojson")
+        Paths.get(overtureTmpDir.toString(),
+            "building${xmin}_${xmax}_${ymin}_${ymax}.geojson"
+        )
     )
     val geoPlaces: GeoJsonPlaces = readJson(
-        File("omod_cache//overture//place${xmin}_${xmax}_${ymin}_${ymax}.geojson")
+        Paths.get(overtureTmpDir.toString(),
+            "place${xmin}_${xmax}_${ymin}_${ymax}.geojson"
+        )
     )
     val geoLandUse: GeoJsonLandUse= readJson(
-        File("omod_cache//overture//land_use${xmin}_${xmax}_${ymin}_${ymax}.geojson")
+        Paths.get(overtureTmpDir.toString(),
+            "land_use${xmin}_${xmax}_${ymin}_${ymax}.geojson"
+        )
     )
 
     // Get buildings
@@ -188,8 +199,7 @@ fun readOverture(
     inFocusArea(buildings,focusArea,geometryFactory,transformer)
 
     // Delete temporary files
-    val dir = File("omod_cache/overture")
-    dir.listFiles { _, name -> name.endsWith(".geojson") }?.forEach { it.delete() }
+    overtureTmpDir.toFile().deleteRecursively()
 
     logger.info("Overture data read!")
     return buildings

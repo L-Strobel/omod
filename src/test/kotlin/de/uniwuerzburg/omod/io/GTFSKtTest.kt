@@ -61,9 +61,4 @@ class GTFSKtTest {
             if (outputBaseDir.exists()) outputBaseDir.deleteRecursively()
         }
     }
-
-    @Test
-    fun clipKoreanGTFS(){
-
-    }
 }

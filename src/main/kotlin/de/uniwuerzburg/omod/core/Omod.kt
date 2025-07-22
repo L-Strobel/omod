@@ -3,7 +3,6 @@ package de.uniwuerzburg.omod.core
 import com.graphhopper.GraphHopper
 import com.graphhopper.gtfs.GraphHopperGtfs
 import com.graphhopper.gtfs.PtRouter
-import de.uniwuerzburg.omod.core.models.ModeChoiceOption
 import de.uniwuerzburg.omod.core.models.*
 import de.uniwuerzburg.omod.io.geojson.*
 import de.uniwuerzburg.omod.io.gtfs.clipGTFSFile
@@ -20,7 +19,10 @@ import de.uniwuerzburg.omod.routing.createGraphHopperGTFS
 import de.uniwuerzburg.omod.utils.CRSTransformer
 import de.uniwuerzburg.omod.utils.ProgressBar
 import de.uniwuerzburg.omod.utils.fastCovers
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.kdtree.KdNode
@@ -268,7 +270,9 @@ class Omod(
         } else {
             // Load data
             var buildings: List<BuildingData> = when(mapType) {
-                MapDataSource.OVERTURE -> readOverture(focusArea, fullArea, geometryFactory, transformer,nWorker)
+                MapDataSource.OVERTURE -> readOverture(
+                    focusArea, fullArea, geometryFactory, transformer, nWorker, cacheDir
+                )
                 MapDataSource.OSM -> readOSM(focusArea, fullArea, osmFile, geometryFactory, transformer)
             }
 

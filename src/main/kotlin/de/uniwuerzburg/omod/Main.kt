@@ -140,7 +140,7 @@ class Run : CliktCommand() {
     ).file(mustExist = true, mustBeReadable = true)
     private val mapdata_overture by option(
         help = "Use overture map data instead of OSM for buildings and POIs. " +
-               "Usage: --mapdata_overture=RELEASE. Where RELEASE is a valid overture release. " +
+               "Usage: --mapdata_overture RELEASE. Where RELEASE is a valid overture release. " +
                "For an introduction to Overture Maps see https://overturemaps.org/"
     )
     private val matsim_output_crs by option(
