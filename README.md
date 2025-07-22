@@ -84,7 +84,7 @@ Good mapping information about the location and size of buildings, land use zone
 Census information of the region is not required but helpful;
 see python_tools/format_zensus2011.py for an example of how to correctly format census data for OMOD.
 
-With Version 2.2 you can know also use [Overture Maps](https://overturemaps.org) instead of OSM for building data,
+With Version 2.2 you can know also use [Overture Maps](https://overturemaps.org) instead of OSM for building and POI data,
 which is more complete in certain parts of the world (e.g., South Korea).
 
 Publications:
